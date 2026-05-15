@@ -1,13 +1,24 @@
 [build-system]
 requires = ["setuptools>=70", "wheel"]
-build-backend = "setuptools.backends.legacy:build"
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "stock-sage"
 version = "0.1.0"
 description = "A股辅助决策工具——量化信号 + LLM 情感分析 + 多 Agent 风控"
+readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
+authors = [{ name = "zeeechenn" }]
+keywords = ["quant", "trading", "a-share", "llm", "fastapi"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Office/Business :: Financial :: Investment",
+    "Framework :: FastAPI",
+]
 dependencies = [
     "fastapi>=0.111.0",
     "uvicorn[standard]>=0.29.0",
@@ -29,11 +40,20 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = [
+test = [
     "pytest>=8.0.0",
+]
+dev = [
+    "stock-sage[test]",
     "ruff>=0.4.0",
     "mypy>=1.10.0",
+    "pre-commit>=3.7.0",
 ]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["backend*"]
+exclude = ["tests*", "frontend*", "docs*", "paper_trading*"]
 
 [tool.ruff]
 target-version = "py311"

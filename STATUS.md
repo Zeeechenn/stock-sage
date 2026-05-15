@@ -15,7 +15,7 @@
 | M4 | 多 Agent 决策深化 | 🟡 部分（长期团 + risk_manager 已上线） |
 | M5 | 自动化执行 | 🔲 后置 |
 | M6 | 持续迭代与扩展 | 🔲 持续 |
-| M7 | 工程化与开源就绪 | 🔲 进行中（A ✅ B1 B2 ✅ C ✅ / B3 B4 进行中） |
+| M7 | 工程化与开源就绪 | ✅ 完成（A/B/C 全 + .editorconfig + Makefile + pyproject 单一真理源） |
 
 ---
 
@@ -76,7 +76,7 @@
 
 ```bash
 cp .env.example .env                   # 填入 ANTHROPIC_API_KEY（必填）和 BARK_KEY（可选）
-pip install -r backend/requirements.txt
+pip install ".[dev]"                   # pyproject 单一真理源，含 dev 工具链
 python3 backend/data/database.py       # 初始化 DB
 cd frontend && npm install
 ```

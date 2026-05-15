@@ -14,7 +14,7 @@
 ```bash
 # 1. 克隆 & 安装依赖
 git clone <repo-url> && cd stock-sage
-pip install -r backend/requirements.txt
+pip install ".[dev]"           # 含 pytest + ruff + mypy + pre-commit；生产部署用 pip install .
 
 # 2. 配置环境变量
 cp .env.example .env          # 填入 ANTHROPIC_API_KEY（必填）和 BARK_KEY（可选）

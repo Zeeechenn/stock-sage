@@ -2,10 +2,12 @@ FROM python:3.11-slim AS backend
 
 WORKDIR /app
 
-COPY backend/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
+# 方案 B（pyproject 单一真理源）：需要 backend/ 存在才能 install，
+# 改 backend 代码会让本层缓存失效（多 ~30s 重装依赖）；后续可用 uv 加速到 < 5s
+COPY pyproject.toml README.md ./
 COPY backend/ ./backend/
+RUN pip install --no-cache-dir .
+
 COPY .env.example .env
 
 ENV PYTHONPATH=/app

@@ -5,7 +5,23 @@
 
 ---
 
-## [M7] 工程化与开源就绪（进行中，2026-05-16 ~）
+## [M7] 工程化与开源就绪 ✅（2026-05-16）
+
+### Changed / Fixed — 收尾（2026-05-16）
+- **方案 B 切换**：`backend/requirements.txt` 删除，`pyproject.toml` 成为依赖唯一真理源
+- **修关键 bug**：`pyproject.toml` 原 `build-backend = "setuptools.backends.legacy:build"` 模块不存在，`pip install .` 直接失败；改为标准 `setuptools.build_meta`
+- `[project.optional-dependencies]` 拆 `test` + `dev` 两组（dev 继承 test），支持 `pip install ".[test]"` / `pip install ".[dev]"` 分级安装
+- `Dockerfile` / `.github/workflows/test.yml` / `README.md` / `STATUS.md` 全部从 `pip install -r requirements.txt` 切到 `pip install ".[*]"`
+- 文档间 M7 状态对齐：PROJECT / STATUS / ROADMAP 三处统一为 ✅ 完成
+- Docstring 口径标注：函数级 99%（290/291）vs 含 class+method 91.6%（306/334）
+
+### Added — 收尾（2026-05-16）
+- `.editorconfig`：统一换行（lf）/ 缩进（py 4 空格 / js 2 空格 / Makefile tab）/ 编码（utf-8）
+- `Makefile`：封装 12 个常用命令（install / test / lint / fmt / typecheck / check / dev / build / clean / docker-build / docker-up / docker-down）
+
+### Removed — 收尾（2026-05-16）
+- `backend/requirements.txt`（被 `pyproject.toml` 替代）
+- 3 个 legacy 空目录（`backend/{analysis,backtest,data}/legacy`，源文件早已 git rm 但目录残留）
 
 ### Added — B + C 组（2026-05-16）
 - `STATUS.md`：当前快照（权重 / 调度 / 验证 / 启动命令），从 PROJECT.md 拆出

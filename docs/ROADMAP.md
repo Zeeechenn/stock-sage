@@ -58,26 +58,34 @@ QMT/miniQMT 券商对接；盘中实时止损；半自动→全自动渐进。
 
 ---
 
-## M7 工程化与开源就绪 🔲（2026-05-16 新增）
+## M7 工程化与开源就绪 ✅（2026-05-16 完成）
 
-### 立即组 A ✅（2026-05-16 完成）
+### 立即组 A ✅
 - [x] M7.A1 README.md
 - [x] M7.A2 LICENSE（MIT）
 - [x] M7.A3 pyproject.toml（ruff + mypy）
 - [x] M7.A4 删除冗余代码（-5 活动文件 / -4 极薄文档 / -3 legacy 目录）
 
-### 中期组 B（2026-05-16 进行中）
+### 中期组 B ✅
 - [x] M7.B1 PROJECT.md 拆分为 PROJECT（索引）/ CHANGELOG / docs/ROADMAP / STATUS
 - [x] M7.B2 `.github/workflows/test.yml` — CI 自动跑 pytest + npm build
-- [x] M7.B3 补 docstring 到 70%+（完成 99%，290/291，2026-05-16）
-- [x] M7.B4 补 return type 注解到 90%+（完成 91%，267/291，2026-05-16）
+- [x] M7.B3 补 docstring：**函数级 99%（290/291）**，含 class+method 口径 91.6%（306/334）
+- [x] M7.B4 补 return type 注解：**函数级 91.8%（267/291）**
 
-### 长期组 C（2026-05-16 完成）
+### 长期组 C ✅
 - [x] M7.C1 `.pre-commit-config.yaml`（ruff + pre-commit-hooks）
 - [x] M7.C2 `Dockerfile` + `docker-compose.yml`（backend + frontend + nginx + sqlite volume）
 - [x] M7.C3 `frontend/README.md`
 - [x] M7.C4 `CONTRIBUTING.md`（代码规范 / 测试 / 核心约束 / PR 流程）
-- [x] M7.C5 CHANGELOG.md 按 Keep a Changelog 规范（与 B1 同步完成）
+- [x] M7.C5 CHANGELOG.md 按 Keep a Changelog 规范
+
+### 收尾（2026-05-16 补）
+- [x] 切方案 B：删除 `backend/requirements.txt`，pyproject 成为依赖唯一真理源；修正 `build-backend` 错配（`setuptools.backends.legacy:build` → `setuptools.build_meta`，否则 `pip install .` 直接失败）
+- [x] 拆分 `[project.optional-dependencies]` 为 `test` + `dev` 两组，dev 继承 test
+- [x] Dockerfile / CI / README / STATUS 全部从 `pip install -r requirements.txt` 切到 `pip install ".[dev]"`
+- [x] 删 3 个 legacy 空目录（`backend/{analysis,backtest,data}/legacy`）
+- [x] 加 `.editorconfig`（统一换行/缩进/编码）
+- [x] 加 `Makefile`（封装 install / test / lint / fmt / typecheck / check / dev / build / clean / docker-* 12 个常用命令）
 
 ---
 
