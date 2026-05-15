@@ -1,0 +1,14 @@
+.env
+*.db
+*.db-*
+__pycache__/
+*.pyc
+.pytest_cache/
+.coverage
+htmlcov/
+.venv/
+node_modules/
+dist/
+.superpowers/
+*.egg-info/
+.DS_Store
