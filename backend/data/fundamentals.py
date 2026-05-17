@@ -4,6 +4,7 @@
 主要接口：
   • sync_industry(db)                — 回填 Stock.industry
   • sync_financial_metrics(symbol, db, years=5) — 同步财报到 FinancialMetric
+  • sync_disclosure_dates(db, years=3)          — 批量回填 FinancialMetric.disclosure_date
   • compute_piotroski_factors(symbol, db)       — 9 因子 F-Score
   • compute_jingqi_deltas(symbol, db, peers=None) — Δ 类指标 + 行业分位
   • compute_roe(net_profit, total_equity)       — 内部 helper
@@ -12,6 +13,7 @@ akshare 接口策略：
   • stock_individual_info_em(symbol)            — 行业信息（每股 1 次）
   • stock_financial_abstract(symbol)            — 66 期财务摘要（每股 1 次）
   • stock_financial_analysis_indicator(symbol)  — ROE/资产周转率等衍生指标（每股 1 次）
+  • stock_report_disclosure(market, period)     — 巨潮预约披露，按期次批量拉全市场披露日
 
 所有同步均幂等：按 (symbol, report_date) 唯一约束跳过已存在记录。
 """
@@ -494,6 +496,93 @@ def compute_jingqi_deltas(symbol: str, db, peers: Iterable[str] | None = None) -
             "roe_prev": prev.roe,
         },
     }
+
+
+# ── 披露日批量回填 ────────────────────────────────────────────────────
+
+# akshare stock_report_disclosure 接受的 period 后缀 → report_date 月日
+# 注意：akshare 用"一季"/"三季"（不带"报"），"半年报"/"年报"（带"报"）
+_PERIOD_SUFFIX: dict[str, str] = {
+    "年报":  "12-31",
+    "三季":  "09-30",
+    "半年报": "06-30",
+    "一季":  "03-31",
+}
+
+
+def _period_to_report_date(year: int, period_name: str) -> str | None:
+    suffix = _PERIOD_SUFFIX.get(period_name)
+    if suffix is None:
+        return None
+    return f"{year}-{suffix}"
+
+
+def sync_disclosure_dates(db, years: int = 3) -> int:
+    """
+    批量回填 FinancialMetric.disclosure_date。
+
+    调用巨潮 stock_report_disclosure（全市场，按期次），将"实际披露"日期写入
+    已存在的 FinancialMetric 行。优先用"实际披露"，若为空则用"首次预约"（预计日期）。
+
+    返回更新条数。
+    """
+    try:
+        import akshare as ak
+    except ImportError:
+        logger.error("akshare 未安装")
+        return 0
+
+    from datetime import datetime
+    current_year = datetime.now().year
+    updated = 0
+
+    for year in range(current_year - years + 1, current_year + 1):
+        for period_name in ("年报", "三季报", "半年报", "一季报"):
+            period_str = f"{year}{period_name}"
+            report_date = _period_to_report_date(year, period_name)
+            if report_date is None:
+                continue
+
+            try:
+                df = ak.stock_report_disclosure(market="沪深京", period=period_str)
+                time.sleep(0.5)
+            except Exception as e:
+                logger.warning("stock_report_disclosure %s 失败: %s", period_str, e)
+                continue
+
+            if df.empty or "股票代码" not in df.columns:
+                continue
+
+            for _, row in df.iterrows():
+                symbol = str(row.get("股票代码", "")).strip().zfill(6)
+                if not symbol:
+                    continue
+
+                # 优先实际披露，回退首次预约
+                actual = row.get("实际披露")
+                scheduled = row.get("首次预约")
+                date_val = actual if pd.notna(actual) else (scheduled if pd.notna(scheduled) else None)
+                if date_val is None:
+                    continue
+
+                try:
+                    disclosure_str = pd.Timestamp(date_val).strftime("%Y-%m-%d")
+                except Exception:
+                    continue
+
+                rows_updated = (
+                    db.query(FinancialMetric)
+                    .filter(
+                        FinancialMetric.symbol == symbol,
+                        FinancialMetric.report_date == report_date,
+                    )
+                    .update({"disclosure_date": disclosure_str}, synchronize_session=False)
+                )
+                updated += rows_updated
+
+    db.commit()
+    logger.info("sync_disclosure_dates: %d rows updated", updated)
+    return updated
 
 
 def list_peers(symbol: str, db, industry: str | None = None) -> list[str]:

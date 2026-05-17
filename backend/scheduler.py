@@ -370,7 +370,7 @@ def job_weekly_longterm() -> None:
     同步 industry + 5 年财报 → 跑 LongTermTeam → save_label
     """
     from backend.data.database import SessionLocal, Stock
-    from backend.data.fundamentals import sync_industry, sync_financial_metrics
+    from backend.data.fundamentals import sync_industry, sync_financial_metrics, sync_disclosure_dates
     from backend.agents.long_term.team import LongTermTeam
     from backend.agents.long_term.storage import save_label
 
@@ -395,6 +395,12 @@ def job_weekly_longterm() -> None:
                     logger.info("financials %s: +%d rows", s.symbol, inserted)
             except Exception as e:
                 logger.error("sync_financial_metrics %s failed: %s", s.symbol, e)
+
+        try:
+            n = sync_disclosure_dates(db, years=settings.financial_backfill_years)
+            logger.info("disclosure dates synced: %d updated", n)
+        except Exception as e:
+            logger.warning("sync_disclosure_dates failed: %s", e)
 
         # 2. 跑团
         team = LongTermTeam()
