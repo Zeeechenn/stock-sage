@@ -12,3 +12,4 @@ dist/
 .superpowers/
 *.egg-info/
 .DS_Store
+.signal_news_cache.json
