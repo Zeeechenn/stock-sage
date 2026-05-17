@@ -2,12 +2,14 @@ import { useEffect, useState } from 'react'
 import {
   getDashboardSummary,
   getDataCoverage,
+  getInitializeStatus,
   getModelStatus,
   getRuntimeConfig,
   getSystemHealth,
   getSystemStatus,
   resetKillSwitch,
   runDeepResearch,
+  startInitialize,
   trainModel,
   triggerKillSwitch,
   triggerLongTermTeam,
@@ -187,6 +189,8 @@ export default function AdminPage() {
   const [deepTopic, setDeepTopic] = useState('')
   const [deepSymbols, setDeepSymbols] = useState('')
   const [deepResult, setDeepResult] = useState(null)
+  const [initStatus, setInitStatus] = useState(null)
+  const initPollingRef = useState(null)
 
   async function loadAdmin() {
     Promise.all([
@@ -218,7 +222,36 @@ export default function AdminPage() {
 
   useEffect(() => {
     loadAdmin()
+    getInitializeStatus().then(setInitStatus).catch(() => null)
   }, [])
+
+  function startInitPolling() {
+    if (initPollingRef[0]) return
+    const id = setInterval(async () => {
+      try {
+        const s = await getInitializeStatus()
+        setInitStatus(s)
+        if (!s.running && (s.step === 'done' || s.step === 'error')) {
+          clearInterval(id)
+          initPollingRef[0] = null
+          if (s.step === 'done') loadAdmin()
+        }
+      } catch (_) {}
+    }, 2000)
+    initPollingRef[0] = id
+  }
+
+  async function handleInitialize() {
+    setMessage('')
+    try {
+      await startInitialize()
+      const s = await getInitializeStatus()
+      setInitStatus(s)
+      startInitPolling()
+    } catch (err) {
+      setMessage(err.message)
+    }
+  }
 
   const weights = summary?.system?.weights || { quant: 0, technical: 0.6, sentiment: 0.4 }
   const cov = coverage?.summary || summary?.coverage?.summary || {}
@@ -390,6 +423,48 @@ export default function AdminPage() {
           <aside className="space-y-4">
             <section className={PANEL}>
               <div className="border-b border-stone-300 p-4 dark:border-slate-700">
+                <div className={LABEL}>冷启动</div>
+                <div className="mt-1 text-sm italic text-stone-950 dark:text-slate-100">一键初始化数据</div>
+              </div>
+              <div className="space-y-3 p-4">
+                <p className="text-xs leading-relaxed text-stone-500 dark:text-slate-400">
+                  首次使用或新加股票后运行：回填价格历史 → 同步财报 → 披露日 → 生成第一批信号。
+                </p>
+                {initStatus && initStatus.step !== 'idle' && (
+                  <div>
+                    <InitStepBar step={initStatus.step} />
+                    {initStatus.log.length > 0 && (
+                      <div className={`mt-2 max-h-36 overflow-y-auto rounded-sm border border-stone-300 bg-[#f3eddc] p-2 font-mono text-[10px] leading-relaxed text-stone-600 dark:border-slate-700 dark:bg-[#161b25] dark:text-slate-300`}>
+                        {initStatus.log.slice(-12).map((line, i) => (
+                          <div key={i}>{line}</div>
+                        ))}
+                      </div>
+                    )}
+                    {initStatus.step === 'done' && initStatus.counts && (
+                      <div className="mt-2 grid grid-cols-3 gap-2">
+                        <MiniStat label="价格条" value={initStatus.counts.price_rows ?? 0} />
+                        <MiniStat label="财报条" value={initStatus.counts.financial_rows ?? 0} />
+                        <MiniStat label="披露日" value={initStatus.counts.disclosure_rows ?? 0} />
+                      </div>
+                    )}
+                    {initStatus.step === 'error' && (
+                      <div className="mt-2 rounded-sm border border-red-400/40 bg-red-400/10 p-2 text-xs text-red-700 dark:text-red-300">
+                        {initStatus.error}
+                      </div>
+                    )}
+                  </div>
+                )}
+                <ActionButton
+                  disabled={initStatus?.running}
+                  onClick={handleInitialize}
+                >
+                  {initStatus?.running ? '初始化中…' : '立即初始化'}
+                </ActionButton>
+              </div>
+            </section>
+
+            <section className={PANEL}>
+              <div className="border-b border-stone-300 p-4 dark:border-slate-700">
                 <div className={LABEL}>草稿差异</div>
                 <div className="mt-1 text-sm italic text-stone-950 dark:text-slate-100">草稿 vs 当前运行</div>
               </div>
@@ -501,6 +576,41 @@ export default function AdminPage() {
           </aside>
         </div>
       </div>
+    </div>
+  )
+}
+
+const INIT_STEPS = [
+  ['prices', '价格'],
+  ['financials', '财报'],
+  ['disclosure', '披露日'],
+  ['signals', '信号'],
+  ['done', '完成'],
+]
+
+function InitStepBar({ step }) {
+  const activeIdx = INIT_STEPS.findIndex(([id]) => id === step)
+  const isError = step === 'error'
+  return (
+    <div className="flex items-center gap-1">
+      {INIT_STEPS.map(([id, label], i) => {
+        const done = !isError && i < activeIdx
+        const active = !isError && i === activeIdx
+        return (
+          <div key={id} className="flex flex-1 flex-col items-center gap-1">
+            <div className={`h-1.5 w-full rounded-full ${
+              isError && i === activeIdx - 1
+                ? 'bg-red-500'
+                : done || active
+                  ? 'bg-cyan-600 dark:bg-cyan-400'
+                  : 'bg-stone-300 dark:bg-slate-700'
+            }`} />
+            <span className={`text-[9px] font-semibold ${
+              active ? 'text-cyan-700 dark:text-cyan-300' : done ? 'text-stone-500 dark:text-slate-400' : 'text-stone-300 dark:text-slate-600'
+            }`}>{label}</span>
+          </div>
+        )
+      })}
     </div>
   )
 }

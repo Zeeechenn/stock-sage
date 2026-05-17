@@ -84,3 +84,9 @@ export const runDeepResearch = ({ topic, symbols = [], as_of = null }) =>
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ topic, symbols, as_of }),
   })
+
+export const startInitialize = () =>
+  request('/system/initialize', { method: 'POST' })
+
+export const getInitializeStatus = () =>
+  request('/system/initialize/status')
