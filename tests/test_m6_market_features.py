@@ -39,7 +39,7 @@ def test_market_snapshot_point_in_time_join(test_db):
 def test_qlib_features_include_market_and_flow_columns():
     from backend.data.qlib_data import FEATURE_COLS
 
+    # log_float_market_cap / north_net_buy / large_order_net_inflow
+    # 已因数据可得性问题从 FEATURE_COLS 移除，见 qlib_data.py 头部注释
     assert "log_market_cap" in FEATURE_COLS
-    assert "north_net_buy" in FEATURE_COLS
     assert "margin_balance" in FEATURE_COLS
-    assert "large_order_net_inflow" in FEATURE_COLS
