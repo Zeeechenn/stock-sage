@@ -17,7 +17,10 @@ def should_remember(text: str, *, category: str | None = None) -> bool:
     normalized = text.strip().lower()
     if not normalized:
         return False
-    if category in {"position", "risk", "decision", "preference", "rule"}:
+    if category in {
+        "position", "risk", "decision", "preference", "rule",
+        "deep_research", "bias_override",
+    }:
         return True
     if any(h.lower() in normalized for h in POSITIVE_HINTS):
         return True

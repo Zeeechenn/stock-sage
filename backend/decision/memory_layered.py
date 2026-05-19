@@ -53,8 +53,12 @@ def save_short_term(symbol: str, signal: dict) -> None:
         arr.pop(0)
 
 
-def save_medium_term(symbol: str, date: str, signal: dict) -> None:
-    """追加到该股的中期记忆 markdown 表（保留全部历史，由 get_layered_context 取最新5笔）"""
+def save_medium_term(symbol: str, date: str, signal: dict, db=None) -> None:
+    """追加到该股的中期记忆 markdown 表（保留全部历史）。
+
+    M9.1：文件 + DB 双写。文件保留作为旧路径兜底，DB 是 source of truth；
+    若未提供 db 则仅写文件（保持兼容）。
+    """
     if not settings.layered_memory_enabled:
         return
     _ensure_dir()
@@ -79,11 +83,79 @@ def save_medium_term(symbol: str, date: str, signal: dict) -> None:
     with path.open("a", encoding="utf-8") as f:
         f.write(row)
 
+    if db is not None:
+        _upsert_layered_row(db, symbol=symbol, layer="medium",
+                            content=path.read_text(encoding="utf-8"))
 
-def save_decision_layered(symbol: str, date: str, signal: dict) -> None:
-    """统一入口：同时写短期+中期"""
+
+def save_decision_layered(symbol: str, date: str, signal: dict, db=None) -> None:
+    """统一入口：同时写短期+中期；若提供 db 则同时写一笔 audit + 双写 DB。"""
     save_short_term(symbol, signal)
-    save_medium_term(symbol, date, signal)
+    save_medium_term(symbol, date, signal, db=db)
+    if db is not None:
+        from backend.memory.audit_log import audit_write
+        audit_write(
+            db,
+            "decision_memory.save",
+            f"symbol={symbol} date={date} rec={signal.get('recommendation','-')} "
+            f"score={signal.get('composite_score', 0):+.0f}",
+            related_symbol=symbol,
+        )
+
+
+_GLOBAL_SENTINEL = "__GLOBAL__"
+
+
+def _coerce_symbol(symbol: str | None) -> str:
+    """Map None → sentinel so UNIQUE(symbol, layer) works under SQLite NULL rules."""
+    return symbol if symbol else _GLOBAL_SENTINEL
+
+
+def _upsert_layered_row(db, *, symbol: str | None, layer: str, content: str) -> None:
+    """Upsert a row into `decision_memory_layered` keyed by (symbol, layer).
+
+    SQLite treats NULL ≠ NULL for UNIQUE, so the long-term row (no symbol)
+    uses a `__GLOBAL__` sentinel internally.
+    """
+    from datetime import datetime as _dt
+    from sqlalchemy import text as _text
+    db.execute(_text("""
+        INSERT INTO decision_memory_layered(symbol, layer, content, updated_at)
+        VALUES(:symbol, :layer, :content, :now)
+        ON CONFLICT(symbol, layer) DO UPDATE SET
+            content = excluded.content,
+            updated_at = excluded.updated_at
+    """), {
+        "symbol": _coerce_symbol(symbol),
+        "layer": layer,
+        "content": content,
+        "now": _dt.utcnow().isoformat(timespec="seconds"),
+    })
+    db.commit()
+
+
+def migrate_layered_files_to_db(db) -> dict:
+    """One-shot ingest of `~/.stock-sage/memory/{medium_*.md, long_term_reflection.md}`
+    into `decision_memory_layered`. Idempotent (upsert). Returns counts dict."""
+    counts = {"medium": 0, "long": 0}
+    if not MEMORY_DIR.exists():
+        return counts
+    for path in MEMORY_DIR.glob("medium_*.md"):
+        symbol = path.stem.removeprefix("medium_")
+        try:
+            content = path.read_text(encoding="utf-8")
+        except OSError:
+            continue
+        _upsert_layered_row(db, symbol=symbol, layer="medium", content=content)
+        counts["medium"] += 1
+    if LONG_TERM_PATH.exists():
+        try:
+            content = LONG_TERM_PATH.read_text(encoding="utf-8")
+            _upsert_layered_row(db, symbol=None, layer="long", content=content)
+            counts["long"] = 1
+        except OSError:
+            pass
+    return counts
 
 
 def get_short_term_context(symbol: str) -> str:
@@ -103,11 +175,21 @@ def get_medium_term_context(symbol: str, db, lookback_days: int = 30) -> str:
     return get_reflection_context(symbol, db, lookback_days)
 
 
-def get_long_term_context() -> str:
-    """全局长期反思（所有股票共享）"""
-    if not LONG_TERM_PATH.exists():
-        return ""
-    text = LONG_TERM_PATH.read_text(encoding="utf-8")
+def get_long_term_context(db=None) -> str:
+    """全局长期反思（所有股票共享）。优先读 DB，缺失时退回文件。"""
+    text: str | None = None
+    if db is not None:
+        from sqlalchemy import text as _text
+        row = db.execute(_text(
+            "SELECT content FROM decision_memory_layered "
+            "WHERE symbol = :sentinel AND layer='long' LIMIT 1"
+        ), {"sentinel": _GLOBAL_SENTINEL}).first()
+        if row and row.content:
+            text = row.content
+    if text is None:
+        if not LONG_TERM_PATH.exists():
+            return ""
+        text = LONG_TERM_PATH.read_text(encoding="utf-8")
     # 只取最近 1 节（## 开头）
     sections = text.split("\n## ")
     return "【长期反思】\n## " + sections[-1] + "\n" if len(sections) > 1 else text
@@ -120,7 +202,7 @@ def get_layered_context(symbol: str, db, lookback_days: int = 30) -> str:
         return get_reflection_context(symbol, db, lookback_days)
 
     parts = []
-    long_term = get_long_term_context()
+    long_term = get_long_term_context(db=db)
     if long_term:
         parts.append(long_term)
     medium = get_medium_term_context(symbol, db, lookback_days)
@@ -129,7 +211,16 @@ def get_layered_context(symbol: str, db, lookback_days: int = 30) -> str:
     short = get_short_term_context(symbol)
     if short:
         parts.append(short)
-    return "\n".join(parts)
+    result = "\n".join(parts)
+    if result:
+        from backend.memory.audit_log import audit_write
+        audit_write(
+            db,
+            "decision_memory.recall",
+            f"symbol={symbol} layers={'+'.join(['L' if long_term else '', 'M' if medium else '', 'S' if short else '']).strip('+')}",
+            related_symbol=symbol,
+        )
+    return result
 
 
 def weekly_long_term_reflect(db) -> str | None:
@@ -201,4 +292,6 @@ def weekly_long_term_reflect(db) -> str | None:
     section = f"\n## {week_label}\n\n失败信号:\n" + "\n".join(fail_lines) + f"\n\n反思:\n{text}\n"
     with LONG_TERM_PATH.open("a", encoding="utf-8") as f:
         f.write(section)
+    _upsert_layered_row(db, symbol=None, layer="long",
+                        content=LONG_TERM_PATH.read_text(encoding="utf-8"))
     return text

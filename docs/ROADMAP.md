@@ -28,6 +28,62 @@
 
 ---
 
+## M9 记忆系统接入与治理 ⏳
+
+> 详细规划与背景：`docs/MEMORY_SYSTEM_PLAN.md`。
+> 现状一句话：盘后分层记忆 + 深度研究索引 + 聊天窗口三条干道在跑；`should_remember` / `ai_memory.remember()` 业务写入 / `audit_log` 三块是装好的骨架，长期没人调用。
+
+### M9.0 死代码接电（无 UI，最高优先级）✅（2026-05-19）
+- [x] `audit_write` 全链路埋点：`memory_layered.{save_decision_layered,get_layered_context}`、`research_memory.remember_deep_research`（自动）、`ai_memory.{remember,recall,forget}`。
+- [x] `should_remember()` 接入 `ai_memory.remember()`，未通过时 `audit_write("memory.skipped", ...)` 记原因；新增 `force=True` 留口子；`should_remember` 白名单扩 `deep_research`/`bias_override`。
+- [x] `save_decision_layered` 加可选 `db=None`；`scheduler.py:278` 调用方已传入 db。
+- [x] 新增测试 `tests/test_m9_audit_wiring.py`（9 用例）；246 项全套通过。
+- [ ] ChatPage 写入接入**延后**到 M9.4（当前主用 Claude Code 跑项目，价值低风险高）。
+
+### M9.1 修正数据存储事实错误 ✅（2026-05-19）
+- [x] 新表 `decision_memory_layered(symbol, layer, content, updated_at)`；layer='long' 全局行用 `__GLOBAL__` sentinel 规避 SQLite `NULL ≠ NULL`。
+- [x] 一次性迁移：`migrate_layered_files_to_db()` 扫 `~/.stock-sage/memory/medium_{symbol}.md` + `long_term_reflection.md` 入表，幂等；由 `init_db()` 自动触发；生产 DB 已迁入 80 行 medium。
+- [x] `save_medium_term` 双写文件 + DB；`get_long_term_context` 优先读 DB、文件兜底；旧 .md 保留 30 天只读兜底。
+- [x] 只读 API：`GET /api/memory/{overview,list,audit,layered}`。
+- [x] 测试：`tests/test_m9_layered_db.py`（11 用例）。
+
+### M9.2 AdminPage 记忆管理 ✅（2026-05-19）
+- [x] AdminPage 新增"07 · 记忆管理"分区，组件 `frontend/src/pages/MemorySection.jsx`。
+- [x] 概览：总数 / 分层行数 / by scope / by category / 最近更新；列表过滤；分层决策记忆只读面板；召回日志 FTS5 搜索。
+- [x] 每行操作：删除 / 固定 / 改 TTL / 改 category（`confirm() / prompt()` 二次确认）；**不**暴露 raw value 编辑。
+- [x] 后端 `DELETE / POST pin / PATCH` 路由，所有写操作 audit 留痕（`memory.forget/pin/patch`）。
+- [x] `npm run build` 通过；风格与现有 AdminPage 一致。
+
+### M9.3 治理 ✅（2026-05-19）
+- [x] **窗口摘要器**新模块 `backend/memory/summarizer.py`：超阈值（默认 50）压缩老消息到 `chat_sessions.summary` + `summary_until_id`；再次触发时只压增量；写 `chat.summary` audit。`chat_sessions` 新增 `summary` / `summary_until_id` 列（幂等 ALTER）；接入 `ai.py:_record_message` 末尾，失败不阻塞。
+- [x] 过期清理：`expire_stale_memories()` 删超 TTL 行，audit 留完整 value 便于恢复；scheduler cron `daily_memory_expire` 每天 01:00。
+- [x] 深度研究召回压缩**天然满足**——`research_memory.remember_deep_research` 只存 indexed JSON `{topic, summary, symbols, report_path}`，从未存原文。
+- [x] 测试：`tests/test_m9_governance.py`（9 用例，stub LLM provider）。
+
+### M9.4 对话改写 + ChatPage 接入 ✅（2026-05-19）
+- [x] `ai.py:_detect_action` 扩 `memory.write`：识别 "记住/记下来/存进记忆/保存为记忆 X"，按关键词分类 rule/preference/risk，key 用 sha1 自动生成。
+- [x] **不直接落库**：候选写入已有 `pending_ai_actions`，AIChatResponse.pending_action 返回前端。
+- [x] 前端 ChatPage `pending_action` 二次确认 UI 已通用（line 197-201），memory.write 自动复用，**零前端改动**。
+- [x] `confirm_action` 扩 `memory.write` 分发：调 `ai_memory.remember(..., force=True)`（用户已二次确认）。
+- [x] 仍**禁止** LLM 改 raw value——元数据修改只走 M9.2 AdminPage。
+- [x] 测试：`tests/test_m9_chat_memory_write.py`（8 用例）；全套 287 项通过。
+
+### M9.横向 反偏差与备份（与 M9.0–M9.2 并行可做）
+- [x] `ai_memory` 增 `category='bias_override'`，召回链路在 Piotroski 输出后注入（2026-05-19）。
+      - `backend/memory/bias_override.py` 提供 `lookup_caveat / set_caveat / seed_default_overrides`。
+      - `piotroski_analyst.analyze()` 末尾查一次；命中时把 caveat 加到 `key_findings[0]` 并写入 `raw["bias_caveat"]`；**不覆盖 `label_vote`**，让 LLM 决策链看到原始投票 + 提示后自行判断。
+      - 默认种子（`piotroski:规避`）由 `init_db()` 自动幂等写入；生产 DB 已种子完成。
+      - `should_remember` 白名单已在 M9.0 扩 `bias_override`，确保写入不被拦截。
+      - 测试：`tests/test_m9_bias_override.py`（7 用例），全套 253 项通过。
+- [x] 每日 dump `ai_memory` 到 `~/.stock-sage/memory/backups/ai_memory_{date}.json`（2026-05-19）。
+      - `backend/memory/backup.py`：`dump_ai_memory` / `cleanup_old_backups`（默认保留 30 天）/ `run_daily_backup`，备份**含已过期行**便于误删恢复；每次执行写一笔 `memory.backup` audit。
+      - `scheduler.py` cron `daily_memory_backup` 每天 00:30 触发；首次 dump 已对生产 DB 执行（3 行）。
+      - `decision_memory_layered` 文件**暂不**进入备份——M9.1 把分层记忆迁 DB 后再扩。
+      - 测试：`tests/test_m9_backup.py`（6 用例）；全套 259 项通过。
+- [ ] TTL 默认值上线后读 `audit_log_fts` 命中率回写校准，不硬编码（占位项，需 ≥ 2 周数据积累才能动）。
+
+---
+
 ## M2 纸上交易验证 ⏳（旧 Phase 6.5 + 执行计划 D + 测试1/测试2）
 
 详细规则与持仓见 `PAPER_TRADING.md` 索引及 `paper_trading/` 拆分文件。
@@ -153,8 +209,7 @@ QMT/miniQMT 券商对接；盘中实时止损；半自动→全自动渐进。
 - [x] 配置页：综合分权重、仓位上限、数据补充参数、复盘触发日期与时间可运行时调整。
 - [x] AI 对话：左侧会话窗口、新建/归档、窗口内记忆隔离、项目内资源问答、长期研究团队模式。
 - [x] 前端显示修复：综合评分双向条、情感进度条、toggle 圆点、顶部导航按钮化。
-- [ ] 记忆管理可视化入口：后置。建议见 Codex 工作区报告
-      `/path/to/codex/2026-05-19/s-2/StockSage-memory-system-management-report.md`。
+- [ ] 记忆管理可视化入口：拆入 **M9 记忆系统接入与治理**，详见 `docs/MEMORY_SYSTEM_PLAN.md`。
 
 ---
 

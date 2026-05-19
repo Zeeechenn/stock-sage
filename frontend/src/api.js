@@ -156,3 +156,34 @@ export const startInitialize = () =>
 
 export const getInitializeStatus = () =>
   request('/system/initialize/status')
+
+// ── M9.2 Memory management ────────────────────────────────────────────────
+
+export const getMemoryOverview = () => request('/memory/overview')
+
+export const getMemoryList = ({ scope = '', category = '', q = '', limit = 100 } = {}) => {
+  const params = new URLSearchParams()
+  if (scope) params.set('scope', scope)
+  if (category) params.set('category', category)
+  if (q) params.set('q', q)
+  params.set('limit', String(limit))
+  return request(`/memory/list?${params.toString()}`)
+}
+
+export const getMemoryAudit = (q, limit = 50) =>
+  request(`/memory/audit?q=${encodeURIComponent(q)}&limit=${limit}`)
+
+export const getMemoryLayered = () => request('/memory/layered')
+
+export const deleteMemory = (id) =>
+  request(`/memory/${id}`, { method: 'DELETE' })
+
+export const pinMemory = (id) =>
+  request(`/memory/${id}/pin`, { method: 'POST' })
+
+export const patchMemory = (id, payload) =>
+  request(`/memory/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })

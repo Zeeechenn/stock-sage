@@ -253,6 +253,22 @@ class PendingAIAction(Base):
     executed_at = Column(DateTime, nullable=True)
 
 
+class DecisionMemoryLayered(Base):
+    """M9.1 分层决策记忆迁 DB：medium(symbol) / long(symbol=NULL) 两层。
+
+    content 是整段 markdown（与原 `~/.stock-sage/memory/{medium_X.md,
+    long_term_reflection.md}` 文件 1:1 对应），写入时整体覆盖。
+    旧文件保留 30 天作为只读兜底。
+    """
+    __tablename__ = "decision_memory_layered"
+    __table_args__ = (UniqueConstraint("symbol", "layer", name="uq_decision_memory_layered"),)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    symbol = Column(String, nullable=True, index=True)  # NULL for long
+    layer = Column(String, nullable=False, index=True)   # 'medium' / 'long'
+    content = Column(Text, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow)
+
+
 class ChatSession(Base):
     """Project AI chat window; memory is scoped to this session only."""
     __tablename__ = "chat_sessions"
@@ -260,6 +276,8 @@ class ChatSession(Base):
     title = Column(String, nullable=True)
     mode = Column(String, default="general")
     archived_at = Column(DateTime, nullable=True)
+    summary = Column(Text, nullable=True)  # M9.3 window summarizer output
+    summary_until_id = Column(Integer, nullable=True)  # last compressed msg id
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow)
 
@@ -452,6 +470,10 @@ def _ensure_runtime_schema() -> None:
         chat_session_cols = [r[1] for r in conn.execute(text("PRAGMA table_info(chat_sessions)")).fetchall()]
         if "archived_at" not in chat_session_cols:
             conn.execute(text("ALTER TABLE chat_sessions ADD COLUMN archived_at DATETIME"))
+        if "summary" not in chat_session_cols:
+            conn.execute(text("ALTER TABLE chat_sessions ADD COLUMN summary TEXT"))
+        if "summary_until_id" not in chat_session_cols:
+            conn.execute(text("ALTER TABLE chat_sessions ADD COLUMN summary_until_id INTEGER"))
         conn.execute(text("""
             CREATE TABLE IF NOT EXISTS chat_messages (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -472,6 +494,19 @@ def init_db() -> None:
     """Create all ORM tables and apply runtime schema patches."""
     Base.metadata.create_all(engine)
     _ensure_runtime_schema()
+    _seed_default_memory()
+
+
+def _seed_default_memory() -> None:
+    """M9.0/M9.1：种子默认 bias-override + 一次性迁移分层记忆文件入 DB。"""
+    from backend.memory.bias_override import seed_default_overrides
+    from backend.decision.memory_layered import migrate_layered_files_to_db
+    db = SessionLocal()
+    try:
+        seed_default_overrides(db)
+        migrate_layered_files_to_db(db)
+    finally:
+        db.close()
 
 
 def get_db():

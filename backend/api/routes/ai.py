@@ -90,6 +90,33 @@ def _detect_action(message: str, db: Session) -> tuple[str, dict] | None:
     if "长期复盘" in message and any(word in message for word in ("触发", "生成", "运行", "跑")):
         return "review.long_term.ensure", {}
 
+    # M9.4：用户说"记住 X" / "把 X 记下来" → memory.write 候选，需用户确认
+    mem_match = re.match(
+        r"^\s*(?:请\s*)?(?:把|帮我)?\s*(?:记住|记下来|存进记忆|存到记忆|保存为记忆)\s*[:：，,]?\s*(.+)$",
+        message,
+    )
+    if mem_match:
+        body = mem_match.group(1).strip()
+        if body:
+            # category 启发：包含"规则"/"偏好"/"风险" 优先归类
+            if any(w in body for w in ("规则", "rule")):
+                category = "rule"
+            elif any(w in body for w in ("偏好", "preference")):
+                category = "preference"
+            elif any(w in body for w in ("风险", "risk", "预警")):
+                category = "risk"
+            else:
+                category = "preference"
+            # key 用截断 body 自动生成；确保 UNIQUE
+            from hashlib import sha1
+            key = f"chat:{category}:{sha1(body.encode('utf-8')).hexdigest()[:10]}"
+            return "memory.write", {
+                "key": key,
+                "value": body,
+                "category": category,
+                "scope": "global",
+            }
+
     if not symbol:
         return None
 
@@ -208,6 +235,11 @@ def _save_message(
     ))
     session.updated_at = datetime.utcnow()
     db.commit()
+    try:
+        from backend.memory.summarizer import summarize_if_needed
+        summarize_if_needed(db, session.id)
+    except Exception:
+        pass  # 摘要失败不应阻塞写入
 
 
 def _long_term_answer(message: str, db: Session) -> AIChatResponse:
@@ -395,5 +427,24 @@ def _execute_action(action: str, payload: dict, db: Session) -> dict:
         from backend.api.routes.reviews import ensure_long_term_review
 
         return ensure_long_term_review(db=db)
+
+    if action == "memory.write":
+        # M9.4：受控写入。should_remember 在 ai_memory.remember 内已做把关；
+        # 这里设 force=True 因为已经过用户二次确认。
+        from backend.memory.ai_memory import remember
+        persisted = remember(
+            db,
+            payload["key"],
+            payload["value"],
+            category=payload.get("category"),
+            scope=payload.get("scope", "global"),
+            ttl_days=payload.get("ttl_days"),
+            force=True,
+        )
+        return {
+            "persisted": persisted,
+            "key": payload["key"],
+            "scope": payload.get("scope", "global"),
+        }
 
     raise HTTPException(400, f"unsupported action: {action}")

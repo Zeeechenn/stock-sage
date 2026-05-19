@@ -23,6 +23,7 @@ import logging
 from backend.agents.long_term.base import LongTermReport
 from backend.config import settings
 from backend.data.fundamentals import compute_piotroski_factors
+from backend.memory.bias_override import lookup_caveat
 
 logger = logging.getLogger(__name__)
 
@@ -99,16 +100,28 @@ def analyze(symbol: str, db) -> LongTermReport:
     # TODO: 上线后若发现模板 findings 质量不够，再接入 LLM
 
     logger.info("piotroski %s: F=%d/9 → %s", symbol, score, label_vote)
+
+    raw_payload = {
+        "f_score": score,
+        "factors": factors,
+        "report_period": result.get("report_period"),
+        "comparison_period": result.get("comparison_period"),
+    }
+
+    # M9.横向 反偏差缓冲：查 ai_memory(scope=bias_override) 是否有针对本路投票
+    # 的 caveat；有则注入到 key_findings 第 0 位（保证 team._merge_findings
+    # 的 [:2] 截断不会丢），并写入 raw["bias_caveat"] 供决策链消费。
+    # 不覆盖 label_vote — 让 LLM 自己看到原始投票 + 提示后判断。
+    caveat = lookup_caveat(db, "piotroski", label_vote)
+    if caveat:
+        findings = [f"⚠️ 偏差提示: {caveat}"] + findings
+        raw_payload["bias_caveat"] = caveat
+
     return LongTermReport(
         role="quality",
         score=signal_score,
         confidence=round(confidence, 2),
         label_vote=label_vote,
         key_findings=findings,
-        raw={
-            "f_score": score,
-            "factors": factors,
-            "report_period": result.get("report_period"),
-            "comparison_period": result.get("comparison_period"),
-        },
+        raw=raw_payload,
     )

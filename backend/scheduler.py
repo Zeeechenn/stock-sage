@@ -275,7 +275,7 @@ def job_postmarket() -> None:
                 save_signal(stock.symbol, date_str, result, db)
                 save_decision(stock.symbol, date_str, result)
                 if settings.layered_memory_enabled:
-                    save_decision_layered(stock.symbol, date_str, result)
+                    save_decision_layered(stock.symbol, date_str, result, db=db)
                 try:
                     from backend.decision.harness import review_latest_signal
                     review_latest_signal(db, stock.symbol)
@@ -435,6 +435,33 @@ def job_weekly_longterm() -> None:
         db.close()
 
 
+def job_daily_memory_backup() -> None:
+    """Daily dump of ai_memory to ~/.stock-sage/memory/backups/ (M9.横向)."""
+    from backend.memory.backup import run_daily_backup
+    db = SessionLocal()
+    try:
+        path = run_daily_backup(db)
+        logger.info("memory backup written: %s", path)
+    except Exception as e:
+        logger.error("memory backup failed: %s", e)
+    finally:
+        db.close()
+
+
+def job_daily_memory_expire() -> None:
+    """Daily cleanup of expired ai_memory rows (M9.3)."""
+    from backend.memory.ai_memory import expire_stale_memories
+    db = SessionLocal()
+    try:
+        removed = expire_stale_memories(db)
+        if removed:
+            logger.info("memory expire: removed %d stale rows", removed)
+    except Exception as e:
+        logger.error("memory expire failed: %s", e)
+    finally:
+        db.close()
+
+
 def start() -> None:
     """Register all cron jobs and start the background scheduler."""
     pre_h, pre_m = settings.schedule_premarket.split(":")
@@ -459,6 +486,16 @@ def start() -> None:
     scheduler.add_job(job_stoploss_check, CronTrigger(
         hour=14, minute=30, day_of_week="mon-fri",
     ), id="stoploss_check", replace_existing=True)
+
+    # 每日 00:30 备份 ai_memory（M9.横向）
+    scheduler.add_job(job_daily_memory_backup, CronTrigger(
+        hour=0, minute=30,
+    ), id="daily_memory_backup", replace_existing=True)
+
+    # 每日 01:00 清理过期 ai_memory（M9.3）
+    scheduler.add_job(job_daily_memory_expire, CronTrigger(
+        hour=1, minute=0,
+    ), id="daily_memory_expire", replace_existing=True)
 
     # 长期分析师团：周一早盘前 + 周五收盘后复盘
     if settings.long_term_team_enabled:

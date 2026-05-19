@@ -4,6 +4,9 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 from sqlalchemy import text
 
+from backend.memory.audit_log import audit_write
+from backend.memory.should_remember import should_remember
+
 
 def _utc_now() -> datetime:
     """Return the current UTC datetime."""
@@ -50,9 +53,23 @@ def remember(
     category: str | None = None,
     scope: str = "global",
     ttl_days: int | None = None,
-) -> None:
-    """Upsert a key-value memory entry with optional TTL."""
+    force: bool = False,
+) -> bool:
+    """Upsert a key-value memory entry with optional TTL.
+
+    Gated by `should_remember(value, category)` unless `force=True`. Returns
+    True when persisted, False when rejected by the gate. Both outcomes write
+    an audit log entry (`memory.write` or `memory.skipped`).
+    """
     _ensure_schema(db)
+    if not force and not should_remember(value, category=category):
+        audit_write(
+            db,
+            "memory.skipped",
+            f"key={key} scope={scope} category={category}: rejected by should_remember",
+            related_scope=scope,
+        )
+        return False
     now = _utc_now().isoformat(timespec="seconds")
     db.execute(text("""
         INSERT INTO ai_memory(key, value, category, scope, ttl_days, created_at, updated_at)
@@ -71,10 +88,21 @@ def remember(
         "now": now,
     })
     db.commit()
+    audit_write(
+        db,
+        "memory.write",
+        f"key={key} scope={scope} category={category} ttl_days={ttl_days}",
+        related_scope=scope,
+    )
+    return True
 
 
 def recall(db, key: str, *, scope: str = "global") -> str | None:
-    """Retrieve a memory value by key and scope, or None if absent or expired."""
+    """Retrieve a memory value by key and scope, or None if absent or expired.
+
+    Hits are audited as `memory.recall`. Misses are not audited (would be
+    high-volume noise from postmarket scans).
+    """
     _ensure_schema(db)
     row = db.execute(text("""
         SELECT key, value, category, scope, ttl_days, updated_at
@@ -83,6 +111,12 @@ def recall(db, key: str, *, scope: str = "global") -> str | None:
     """), {"key": key, "scope": scope}).first()
     if row is None or not _is_active(row, _utc_now()):
         return None
+    audit_write(
+        db,
+        "memory.recall",
+        f"key={key} scope={scope}",
+        related_scope=scope,
+    )
     return row.value
 
 
@@ -93,7 +127,45 @@ def forget(db, key: str, *, scope: str = "global") -> bool:
         DELETE FROM ai_memory WHERE key = :key AND scope = :scope
     """), {"key": key, "scope": scope})
     db.commit()
+    audit_write(
+        db,
+        "memory.forget",
+        f"key={key} scope={scope} removed={result.rowcount > 0}",
+        related_scope=scope,
+    )
     return result.rowcount > 0
+
+
+def expire_stale_memories(db) -> int:
+    """M9.3 daily cleanup: delete rows past their TTL, audit each removal.
+
+    Audits with event `memory.expire` and the row's full value so the row can
+    be reconstructed from `audit_log_fts` within the audit retention window
+    (and from daily backups longer-term). Returns count deleted.
+    """
+    _ensure_schema(db)
+    now = _utc_now()
+    rows = db.execute(text("""
+        SELECT id, key, value, scope, category, ttl_days, updated_at
+        FROM ai_memory
+        WHERE ttl_days IS NOT NULL
+    """)).all()
+    removed = 0
+    for r in rows:
+        if _is_active(r, now):
+            continue
+        db.execute(text("DELETE FROM ai_memory WHERE id = :id"), {"id": r.id})
+        audit_write(
+            db,
+            "memory.expire",
+            f"id={r.id} key={r.key} scope={r.scope} category={r.category} "
+            f"ttl_days={r.ttl_days} value={r.value}",
+            related_scope=r.scope,
+        )
+        removed += 1
+    if removed:
+        db.commit()
+    return removed
 
 
 def list_active(

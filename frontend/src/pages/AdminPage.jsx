@@ -15,6 +15,7 @@ import {
   triggerLongTermTeam,
   updateRuntimeConfig,
 } from '../api'
+import MemorySection from './MemorySection'
 
 const PANEL = 'rounded-sm border border-stone-300 bg-[#faf6ec] dark:border-slate-700 dark:bg-[#1d232e]'
 const INSET = 'rounded-sm border border-stone-300 bg-[#f3eddc] dark:border-slate-700 dark:bg-[#161b25]'
@@ -27,6 +28,7 @@ const SECTIONS = [
   ['data', '数据源', '价格 / 新闻'],
   ['schedule', '调度', 'A 股日历'],
   ['risk', '熔断开关', '风控保护'],
+  ['memory', '记忆管理', '元数据 / 召回日志'],
 ]
 
 const SECTION_COPY = {
@@ -36,6 +38,7 @@ const SECTION_COPY = {
   data: ['04 · 数据源', '数据草稿', '检查价格、财报、新闻覆盖率，并保留本地优先的数据源策略。'],
   schedule: ['05 · 调度', '日历草稿', '展示 A 股交易日相关的盘前、盘后、止损检查调度入口。'],
   risk: ['06 · 熔断开关', '风控草稿', '集中管理会阻断调度或跳过交易建议的保护性开关。'],
+  memory: ['07 · 记忆管理', '受控编辑', '查看活跃记忆 / 删除固定 / 改 TTL / 召回审计日志（M9.2）。'],
 }
 
 function SettingRow({ label, hint, children, danger = false }) {
@@ -618,11 +621,18 @@ export default function AdminPage() {
                   </SettingRow>
                 </>
               )}
-              <SettingRow label="保存运行时配置" hint="只影响当前后端进程；重启后仍以 .env 为准。">
-                <ActionButton onClick={handleSaveRuntime} disabled={saving}>
-                  {saving ? '保存中' : '应用'}
-                </ActionButton>
-              </SettingRow>
+              {active === 'memory' && (
+                <div className="py-2">
+                  <MemorySection />
+                </div>
+              )}
+              {active !== 'memory' && (
+                <SettingRow label="保存运行时配置" hint="只影响当前后端进程；重启后仍以 .env 为准。">
+                  <ActionButton onClick={handleSaveRuntime} disabled={saving}>
+                    {saving ? '保存中' : '应用'}
+                  </ActionButton>
+                </SettingRow>
+              )}
             </div>
           </section>
 
