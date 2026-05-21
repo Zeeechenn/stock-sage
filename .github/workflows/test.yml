@@ -19,7 +19,7 @@ jobs:
           python-version: "3.11"
 
       - name: Install dependencies
-        run: pip install ".[test]"
+        run: pip install ".[test,agent]"
 
       - name: Run pytest
         run: PYTHONPATH=. pytest -q

@@ -155,14 +155,20 @@
 ### M11.2 本地/远程模式保护 ✅
 - [x] 新增 `backend/agent/security.py`：本地模式默认放行；远程模式必须显式 `STOCKSAGE_AGENT_MODE=remote`。
 - [x] 远程模式要求 `STOCKSAGE_AGENT_API_KEY`；远程写操作默认禁止，只有 `STOCKSAGE_AGENT_REMOTE_WRITE_ENABLED=true` 才可放行。
+- [x] stdio MCP 工具在 remote 模式下要求显式传入 `api_key` 参数；未传或不匹配时拒绝调用。
 - [x] `.env.example` 只提供远程 agent 变量占位，不提交真实 key。
 
 ### M11.3 MCP 本地工具桥 ✅
 - [x] 新增 `backend/agent/mcp_server.py`，通过 MCP 暴露 `stock_sage_project_context`、`stock_sage_memory_snapshot`、`stock_sage_stock_context`、`stock_sage_health`。
 - [x] `pyproject.toml` 新增可选依赖组 `agent`，本地可用 `pip install -e ".[agent]"` 后启动 `PYTHONPATH=. python -m backend.agent.mcp_server`。
 
+### M11.4 Agent 运行硬化 ✅
+- [x] 未初始化数据库时，agent context / health 返回空 memory、positions、watchlist 和 symbol context，不因缺表退出。
+- [x] CI 后端安装 `.[test,agent]`，pytest 覆盖真实 MCP stdio 列工具与 health 调用。
+- [x] README / README_EN 记录免费、试用和促销 API key 限额快照，并标注以平台控制台为准。
+
 ### M11 后续可选
-- [ ] 如果需要公网或局域网远程 agent 服务，再单独增加 HTTP/SSE transport、限流、审计与只读 allowlist。
+- [ ] 如果需要公网或局域网远程 agent 服务，再单独增加 HTTP/SSE transport、header 鉴权、限流、审计与只读 allowlist。
 - [ ] 将更多项目动作封装为明确命名的 MCP 写工具，但保持本地默认信任、远程默认只读。
 
 ---

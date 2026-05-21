@@ -2,13 +2,13 @@
 
 Personal A-share decision-support system: local data foundation, quant/technical indicators, LLM news sentiment, multi-agent risk control and memory governance, producing auditable stock-selection and position suggestions. StockSage is advisory only. It does not predict prices, does not place orders and does not make the final investment decision for the user.
 
-![Tests](https://img.shields.io/badge/tests-293%20pytest%20%2B%209%20node-brightgreen)
+![Tests](https://img.shields.io/badge/tests-300%20pytest%20%2B%209%20node-brightgreen)
 ![Python](https://img.shields.io/badge/python-3.11-blue)
 ![Frontend](https://img.shields.io/badge/frontend-React%20%2B%20Vite-22c55e)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![Status](https://img.shields.io/badge/status-M2%20paper%20trading-yellow)
 
-[Product Preview](#product-preview) · [Features](#feature-highlights) · [Quick Start](#quick-start) · [Architecture](#architecture) · [Docs](#documentation) · [Roadmap](#roadmap)
+[Product Preview](#product-preview) · [Features](#feature-highlights) · [Quick Start](#quick-start) · [API Key Limits](#api-key-limits) · [Architecture](#architecture) · [Docs](#documentation) · [Roadmap](#roadmap)
 
 [简体中文](README.md) | [English](README_EN.md)
 
@@ -122,6 +122,22 @@ cd frontend && npm install && npm run dev
 ```
 
 Open http://localhost:5173 for the dashboard. API docs are available at http://localhost:8000/docs.
+
+## API Key Limits
+
+This is a 2026-05-21 snapshot from official docs. Free, trial and promotional quotas can change; always treat each provider dashboard as the source of truth.
+
+| Variable | Purpose | Free/trial limit | StockSage guidance |
+|---|---|---|---|
+| `ANTHROPIC_API_KEY` | Default LLM provider | Anthropic API has no stable daily free-call allowance. Limits depend on account tier, credit balance and rate limits shown in Claude Console. | Set a monthly spend limit and avoid unbounded LLM calls in batch jobs. |
+| `OPENAI_API_KEY` | OpenAI or compatible provider | OpenAI API limits vary by organization, project and model. There is no project-safe daily free-call number to hardcode. | Required only when `AI_PROVIDER=openai`; set a project hard cap. |
+| `TUSHARE_TOKEN` | Optional A-share data source | 120-point tier: 50 RPM and 8000 calls/day, only non-adjusted stock daily prices. 2000-point tier: 200 RPM and 100000 calls/day/API. 5000-point tier: 500 RPM and no regular-data daily cap. | Low/free tiers are suitable only for daily price supplementation. Fundamentals, flow data, HK/US, minute data and news usually need higher points or separate permissions. |
+| `TAVILY_API_KEY` | Optional realtime news supplement | Free Researcher plan: 1000 API credits/month. Basic search costs 1 credit/request; advanced search costs 2. Development keys default to 100 RPM. | Basic search averages about 33 requests/day across a month. StockSage calls Tavily only when local 24h news is sparse. |
+| `ANSPIRE_API_KEY` | Optional strict news backfill | Official pages currently show both 2500 signup points and a 500-call promotion. Standard search is listed at RMB 30/1000 calls. | Do not assume a daily reset. Plan around the console usage page and one-time trial balance. |
+| `BARK_KEY` | Optional iOS push | Not a market-data or LLM API key. StockSage uses it only for buy-signal and stop-loss alerts. | Push failures are logged/audited and do not block signal persistence. |
+| `STOCKSAGE_AGENT_API_KEY` | Remote agent auth | Self-generated project access key, with no third-party quota. | Required only for remote agent mode; local Codex/Claude sessions do not need it. |
+
+Sources: Anthropic [rate limits](https://docs.anthropic.com/en/api/rate-limits), OpenAI [rate limits](https://help.openai.com/en/articles/5955598) / [usage tiers](https://platform.openai.com/docs/guides/rate-limits), Tushare [points and rate table](https://tushare.pro/document/1?doc_id=290), Tavily [credits](https://docs.tavily.com/documentation/api-credits) / [rate limits](https://docs.tavily.com/documentation/rate-limits), Anspire [product page](https://open.anspire.cn/document/docs/searchProduce/) / [best practice](https://open.anspire.cn/document/docs/bestPractice/).
 
 ## Common Commands
 

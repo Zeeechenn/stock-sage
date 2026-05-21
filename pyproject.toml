@@ -47,6 +47,7 @@ test = [
 ]
 dev = [
     "stock-sage[test]",
+    "stock-sage[agent]",
     "ruff>=0.4.0",
     "mypy>=1.10.0",
     "pre-commit>=3.7.0",

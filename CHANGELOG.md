@@ -5,6 +5,20 @@
 
 ---
 
+## [M11] Agent-ready 运行硬化与 API Key 限额说明（2026-05-21）
+
+### Added
+- `tests/test_agent_context.py` 增加未初始化数据库、MCP stdio health、remote `api_key` 鉴权 smoke 覆盖。
+- README / README_EN 增加 API key 免费、试用和促销额度快照，标明每日可用量估算与控制台优先原则。
+
+### Changed
+- `dev` extra 继承 `agent` extra，默认开发安装即可运行完整 pytest 与 MCP smoke。
+- GitHub Actions 后端测试安装 `.[test,agent]`，CI 覆盖 MCP 工具桥入口。
+- remote 模式下 MCP 工具显式接收 `api_key` 参数并传入安全检查；本地模式保持无需 key。
+
+### Fixed
+- `stock_sage_health` / `stock_sage_project_context` 在全新 clone 未初始化 SQLite schema 时返回空状态，不再因 `positions` / `stocks` 等缺表失败。
+
 ## [Docs] 软件与 Agent 双用途文档分层（2026-05-21）
 
 ### Changed

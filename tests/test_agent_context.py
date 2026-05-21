@@ -1,4 +1,9 @@
+import json
+import subprocess
+import sys
+import uuid
 from datetime import datetime
+from pathlib import Path
 
 import pytest
 
@@ -85,6 +90,27 @@ def test_remote_mode_requires_api_key_for_read_and_disallows_write_by_default():
         )
 
 
+def test_stock_sage_context_handles_uninitialized_database(tmp_path):
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+
+    from backend.agent.context import stock_sage_context
+
+    engine = create_engine(f"sqlite:///{tmp_path / 'blank.db'}", connect_args={"check_same_thread": False})
+    Session = sessionmaker(bind=engine)
+    db = Session()
+    try:
+        context = stock_sage_context(db, symbol="300308")
+    finally:
+        db.close()
+
+    assert context["memory"]["ai_memory_count"] == 0
+    assert context["positions"] == {"open_count": 0, "symbols": []}
+    assert context["watchlist"] == {"active_count": 0, "symbols": []}
+    assert context["symbol_context"]["stock"] is None
+    assert context["symbol_context"]["latest_signal"] is None
+
+
 def test_stock_sage_context_includes_rules_memory_and_positions(test_db, sample_stocks):
     from backend.data.database import Position, Signal
     from backend.memory.ai_memory import remember
@@ -126,3 +152,130 @@ def test_stock_sage_context_includes_rules_memory_and_positions(test_db, sample_
     assert context["positions"]["open_count"] == 1
     assert context["symbol_context"]["symbol"] == "300308"
     assert context["symbol_context"]["latest_signal"]["recommendation"] == "可小仓试错"
+
+
+def test_mcp_server_smoke_lists_tools_and_reads_health(tmp_path):
+    db_path = tmp_path / f"agent-smoke-{uuid.uuid4().hex}.db"
+    db_url = f"sqlite:///{db_path}"
+    repo = Path(__file__).resolve().parents[1]
+    script = """
+import asyncio
+import json
+import os
+import sys
+from pathlib import Path
+
+repo = Path(os.environ["PYTHONPATH"])
+db_url = os.environ["DATABASE_URL"]
+
+from backend.data.database import init_db
+from mcp import ClientSession, StdioServerParameters
+from mcp.client.stdio import stdio_client
+
+init_db()
+
+async def main():
+    params = StdioServerParameters(
+        command=sys.executable,
+        args=["-m", "backend.agent.mcp_server"],
+        cwd=str(repo),
+        env=os.environ.copy(),
+    )
+    async with stdio_client(params) as (read, write):
+        async with ClientSession(read, write) as session:
+            await session.initialize()
+            tools = await session.list_tools()
+            result = await session.call_tool("stock_sage_health", arguments={})
+            print(json.dumps({
+                "tools": [tool.name for tool in tools.tools],
+                "content": [getattr(item, "text", "") for item in result.content],
+            }, ensure_ascii=False))
+
+asyncio.run(main())
+"""
+
+    env = {
+        "DATABASE_URL": db_url,
+        "PYTHONPATH": str(repo),
+        "STOCKSAGE_AGENT_MODE": "local",
+    }
+    result = subprocess.run(
+        [sys.executable, "-c", script],
+        cwd=repo,
+        env=env,
+        text=True,
+        capture_output=True,
+        timeout=15,
+        check=True,
+    )
+
+    payload = result.stdout.strip().splitlines()[-1]
+    data = json.loads(payload)
+
+    assert data["tools"] == [
+        "stock_sage_project_context",
+        "stock_sage_memory_snapshot",
+        "stock_sage_stock_context",
+        "stock_sage_health",
+    ]
+    assert '"ok": true' in data["content"][0]
+
+
+def test_mcp_server_remote_mode_requires_tool_api_key(tmp_path):
+    db_path = tmp_path / f"agent-remote-{uuid.uuid4().hex}.db"
+    db_url = f"sqlite:///{db_path}"
+    repo = Path(__file__).resolve().parents[1]
+    script = """
+import asyncio
+import json
+import os
+import sys
+from pathlib import Path
+
+repo = Path(os.environ["PYTHONPATH"])
+
+from backend.data.database import init_db
+from mcp import ClientSession, StdioServerParameters
+from mcp.client.stdio import stdio_client
+
+init_db()
+
+async def main():
+    params = StdioServerParameters(
+        command=sys.executable,
+        args=["-m", "backend.agent.mcp_server"],
+        cwd=str(repo),
+        env=os.environ.copy(),
+    )
+    async with stdio_client(params) as (read, write):
+        async with ClientSession(read, write) as session:
+            await session.initialize()
+            denied = await session.call_tool("stock_sage_health", arguments={})
+            allowed = await session.call_tool("stock_sage_health", arguments={"api_key": "secret"})
+            print(json.dumps({
+                "denied": [getattr(item, "text", "") for item in denied.content],
+                "allowed": [getattr(item, "text", "") for item in allowed.content],
+            }, ensure_ascii=False))
+
+asyncio.run(main())
+"""
+    env = {
+        "DATABASE_URL": db_url,
+        "PYTHONPATH": str(repo),
+        "STOCKSAGE_AGENT_MODE": "remote",
+        "STOCKSAGE_AGENT_API_KEY": "secret",
+    }
+    result = subprocess.run(
+        [sys.executable, "-c", script],
+        cwd=repo,
+        env=env,
+        text=True,
+        capture_output=True,
+        timeout=15,
+        check=True,
+    )
+
+    data = json.loads(result.stdout.strip().splitlines()[-1])
+
+    assert "invalid StockSage agent API key" in data["denied"][0]
+    assert '"ok": true' in data["allowed"][0]

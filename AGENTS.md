@@ -43,6 +43,13 @@ Remote mode must require `STOCKSAGE_AGENT_API_KEY` at the hosting/API layer.
 Remote tools are read-only by default. Mutating remote tools require an explicit
 allowlist and `STOCKSAGE_AGENT_REMOTE_WRITE_ENABLED=true`.
 
+For the bundled stdio MCP bridge, remote-mode tool calls must pass the same key
+as the optional `api_key` argument, for example
+`stock_sage_health(api_key="...")`. Local mode does not require this argument.
+If a future HTTP/SSE transport validates the `Authorization` header before
+forwarding requests, keep that gateway check equivalent to
+`backend.agent.security.require_agent_access()`.
+
 Keep real keys out of Git. `.env.example` may contain placeholders only.
 
 ## LLM/API Boundary
@@ -84,6 +91,10 @@ Useful agent tools are:
 - `stock_sage_memory_snapshot`
 - `stock_sage_stock_context`
 - `stock_sage_health`
+
+On a fresh clone, run `python3 backend/data/database.py` before expecting live
+positions, watchlist, signals or memory. The MCP health tool returns empty
+counts instead of failing when the database schema has not been initialized.
 
 ## Trading And Risk Constraints
 

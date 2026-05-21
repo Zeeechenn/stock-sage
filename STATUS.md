@@ -78,7 +78,7 @@
 
 ## 测试套件
 
-- `PYTHONPATH=. pytest -q` → **293 passed, 1 warning**（2026-05-20 M10.0-M10.4 完成后）
+- `PYTHONPATH=. pytest -q` → **300 passed, 1 warning**（2026-05-21 M11 agent-ready hardening 后）
 - `python3 -m compileall backend tests` → 通过
 - `cd frontend && node --test src/*.test.js src/pages/*.test.js` → **9 passed**
 - `cd frontend && npm run build` → 通过（57 modules，约 453 KB / gzip 142 KB）
@@ -87,7 +87,8 @@
 
 ```bash
 cp .env.example .env                   # 填入 ANTHROPIC_API_KEY（必填）和 BARK_KEY（可选）
-pip install ".[dev]"                   # pyproject 单一真理源，含 dev 工具链
+pip install ".[dev]"                   # 含 dev/test/agent 工具链
+pip install -e ".[agent]"              # 可选：只安装本地 MCP agent 工具桥
 python3 backend/data/database.py       # 初始化 DB
 cd frontend && npm install
 ```
@@ -114,5 +115,6 @@ curl http://localhost:8000/api/signals/eval/600519?days=60
 ## Agent-Ready Snapshot
 
 - 本地 Codex / Claude Code 使用 StockSage 时默认信任，可直接跑测试、查 DB、运行纸上交易统计和项目研究流程。
-- 远程 agent 暴露必须显式设置 `STOCKSAGE_AGENT_MODE=remote`，并配置 `STOCKSAGE_AGENT_API_KEY`；远程写操作默认关闭。
-- 项目记忆入口在 `backend/agent/context.py`，MCP 启动入口为 `PYTHONPATH=. python3 -m backend.agent.mcp_server`。
+- 远程 agent 暴露必须显式设置 `STOCKSAGE_AGENT_MODE=remote`，并配置 `STOCKSAGE_AGENT_API_KEY`；stdio MCP 工具调用需传入 `api_key` 参数，远程写操作默认关闭。
+- 项目记忆入口在 `backend/agent/context.py`，MCP 启动入口为 `PYTHONPATH=. python3 -m backend.agent.mcp_server`；未初始化数据库时 health/context 返回空状态，不抛出缺表错误。
+- 免费/试用 API key 限额见 README 的 "API Key 限额" 表，额度以各平台控制台为准。

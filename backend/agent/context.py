@@ -143,12 +143,15 @@ def stock_sage_memory_snapshot(
 
 
 def _latest_signal(db: Session, symbol: str) -> dict | None:
-    row = (
-        db.query(Signal)
-        .filter(Signal.symbol == symbol)
-        .order_by(Signal.date.desc(), Signal.id.desc())
-        .first()
-    )
+    try:
+        row = (
+            db.query(Signal)
+            .filter(Signal.symbol == symbol)
+            .order_by(Signal.date.desc(), Signal.id.desc())
+            .first()
+        )
+    except OperationalError:
+        return None
     if row is None:
         return None
     return {
@@ -164,19 +167,24 @@ def _latest_signal(db: Session, symbol: str) -> dict | None:
 
 def stock_sage_stock_context(db: Session, symbol: str) -> dict:
     """Return the project context most useful before discussing one stock."""
-    stock = db.query(Stock).filter(Stock.symbol == symbol).first()
-    position = (
-        db.query(Position)
-        .filter(Position.symbol == symbol, Position.status == "open")
-        .order_by(Position.opened_at.desc(), Position.id.desc())
-        .first()
-    )
-    label = (
-        db.query(LongTermLabel)
-        .filter(LongTermLabel.symbol == symbol)
-        .order_by(LongTermLabel.date.desc(), LongTermLabel.id.desc())
-        .first()
-    )
+    try:
+        stock = db.query(Stock).filter(Stock.symbol == symbol).first()
+        position = (
+            db.query(Position)
+            .filter(Position.symbol == symbol, Position.status == "open")
+            .order_by(Position.opened_at.desc(), Position.id.desc())
+            .first()
+        )
+        label = (
+            db.query(LongTermLabel)
+            .filter(LongTermLabel.symbol == symbol)
+            .order_by(LongTermLabel.date.desc(), LongTermLabel.id.desc())
+            .first()
+        )
+    except OperationalError:
+        stock = None
+        position = None
+        label = None
     layered = _rows(
         db,
         """
@@ -218,7 +226,10 @@ def stock_sage_stock_context(db: Session, symbol: str) -> dict:
 
 
 def _open_positions(db: Session) -> dict:
-    rows = db.query(Position).filter(Position.status == "open").all()
+    try:
+        rows = db.query(Position).filter(Position.status == "open").all()
+    except OperationalError:
+        rows = []
     return {
         "open_count": len(rows),
         "symbols": [row.symbol for row in rows],
@@ -226,7 +237,10 @@ def _open_positions(db: Session) -> dict:
 
 
 def _watchlist(db: Session) -> dict:
-    rows = db.query(Stock).filter(Stock.active).order_by(Stock.symbol.asc()).all()
+    try:
+        rows = db.query(Stock).filter(Stock.active).order_by(Stock.symbol.asc()).all()
+    except OperationalError:
+        rows = []
     return {
         "active_count": len(rows),
         "symbols": [row.symbol for row in rows[:80]],

@@ -2,13 +2,13 @@
 
 个人 A 股辅助决策系统：用本地数据底座、量化/技术指标、LLM 新闻情感、多 Agent 风控和记忆治理，给出可审计的择股与持仓建议。系统只做研究和辅助决策，不做价格预测，不自动下单，最终决策由用户自行负责。
 
-![Tests](https://img.shields.io/badge/tests-293%20pytest%20%2B%209%20node-brightgreen)
+![Tests](https://img.shields.io/badge/tests-300%20pytest%20%2B%209%20node-brightgreen)
 ![Python](https://img.shields.io/badge/python-3.11-blue)
 ![Frontend](https://img.shields.io/badge/frontend-React%20%2B%20Vite-22c55e)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![Status](https://img.shields.io/badge/status-M2%20paper%20trading-yellow)
 
-[产品预览](#产品预览) · [功能特性](#功能特性) · [快速开始](#快速开始) · [系统架构](#系统架构) · [文档中心](#文档中心) · [未来规划](#未来规划)
+[产品预览](#产品预览) · [功能特性](#功能特性) · [快速开始](#快速开始) · [API Key 限额](#api-key-限额) · [系统架构](#系统架构) · [文档中心](#文档中心) · [未来规划](#未来规划)
 
 [简体中文](README.md) | [English](README_EN.md)
 
@@ -150,6 +150,22 @@ cd frontend && npm install && npm run dev
 ```
 
 浏览器访问 http://localhost:5173 打开操作台。后端 API 文档位于 http://localhost:8000/docs。
+
+### API Key 限额
+
+以下为 2026-05-21 官方文档快照；免费、试用和促销额度会变，实际剩余额度以各平台控制台为准。
+
+| 变量 | 用途 | 免费/试用上限 | StockSage 使用建议 |
+|---|---|---|---|
+| `ANTHROPIC_API_KEY` | 默认 LLM provider | Anthropic API 没有稳定的每日免费次数；额度按账号 tier、余额和速率限制计算，可在 Claude Console 查看。 | 生产建议设置月度 spend limit；盘后批量任务避免无节制 LLM 调用。 |
+| `OPENAI_API_KEY` | OpenAI 或兼容 provider | OpenAI API 限额按组织/project/model 变化，没有可写死的每日免费次数；控制台和响应 header 会显示当前限制。 | 仅在 `AI_PROVIDER=openai` 时需要；为项目设置 hard cap。 |
+| `TUSHARE_TOKEN` | 可选 A 股数据源 | 120 积分档：50 次/分钟、8000 次/天，只能调股票非复权日线；2000 积分档：200 次/分钟、100000 次/天/接口；5000 积分档：500 次/分钟，常规数据无总量上限。 | 免费/低积分只适合日线补充；财务、资金流、港美股、分钟和新闻舆情通常需要更高积分或独立权限。 |
+| `TAVILY_API_KEY` | 可选实时新闻补充 | Free Researcher：1000 API credits/月；basic search 1 credit/次，advanced search 2 credits/次；development key 默认 100 RPM。 | 按 basic search 粗算平均约 33 次/天；只在本地 24h 新闻不足时触发。 |
+| `ANSPIRE_API_KEY` | 可选严格新闻补缺 | 官方页面同时出现注册实名赠 2500 点和活动赠 500 次免费调用两种口径；标准版标价为 30 元/1000 次。 | 不要假设每天刷新；按一次性试用额度和控制台用量页规划。 |
+| `BARK_KEY` | 可选 iOS 推送 | 不是数据/LLM API key；项目仅在买入信号和止损预警时调用。 | 失败会记录日志/审计，不阻塞信号保存。 |
+| `STOCKSAGE_AGENT_API_KEY` | 远程 agent 鉴权 | 自己生成的访问密钥，无第三方调用额度。 | 只用于 remote agent；本地 Codex/Claude 不需要。 |
+
+官方来源：Anthropic [rate limits](https://docs.anthropic.com/en/api/rate-limits)、OpenAI [rate limits](https://help.openai.com/en/articles/5955598) / [usage tiers](https://platform.openai.com/docs/guides/rate-limits)、Tushare [积分频次表](https://tushare.pro/document/1?doc_id=290)、Tavily [credits](https://docs.tavily.com/documentation/api-credits) / [rate limits](https://docs.tavily.com/documentation/rate-limits)、Anspire [产品介绍](https://open.anspire.cn/document/docs/searchProduce/) / [最佳实践](https://open.anspire.cn/document/docs/bestPractice/)。
 
 ### 常用命令
 
