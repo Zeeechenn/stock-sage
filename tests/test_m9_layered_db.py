@@ -106,7 +106,6 @@ def test_migrate_layered_files_to_db_is_idempotent(test_db, tmp_path, monkeypatc
 # 以避免 dependency_overrides + lifespan 与真实 DB engine 的冲突。
 
 def test_api_overview(test_db):
-    import pytest
     from backend.api.routes.memory import memory_overview
     from backend.memory.ai_memory import remember
 
@@ -145,7 +144,7 @@ def test_api_audit_search(test_db):
 
 
 def test_api_delete_pin_patch(test_db):
-    from backend.api.routes.memory import memory_delete, memory_pin, memory_patch, PatchPayload
+    from backend.api.routes.memory import PatchPayload, memory_delete, memory_patch, memory_pin
     from backend.memory.ai_memory import remember
 
     remember(test_db, "rule:t1", "v1", category="rule", scope="test1", ttl_days=7)
@@ -176,7 +175,8 @@ def test_api_delete_pin_patch(test_db):
 def test_api_patch_rejects_empty_payload(test_db):
     import pytest
     from fastapi import HTTPException
-    from backend.api.routes.memory import memory_patch, PatchPayload
+
+    from backend.api.routes.memory import PatchPayload, memory_patch
     from backend.memory.ai_memory import remember
 
     remember(test_db, "rule:t1", "v1", category="rule", scope="test1")
@@ -190,6 +190,7 @@ def test_api_patch_rejects_empty_payload(test_db):
 def test_api_404_on_unknown_id(test_db):
     import pytest
     from fastapi import HTTPException
+
     from backend.api.routes.memory import memory_delete
     from backend.memory.ai_memory import _ensure_schema
 

@@ -13,6 +13,7 @@
   • 极小仓位归零
 """
 from __future__ import annotations
+
 from unittest.mock import patch
 
 from backend.agents.portfolio_manager import (

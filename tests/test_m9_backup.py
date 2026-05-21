@@ -25,6 +25,7 @@ def test_dump_ai_memory_writes_all_rows(test_db, tmp_path):
 def test_dump_ai_memory_includes_expired_rows(test_db, tmp_path):
     """Backups intentionally include expired rows so deletes are recoverable."""
     from sqlalchemy import text
+
     from backend.memory.ai_memory import remember
     from backend.memory.backup import dump_ai_memory
 
@@ -74,6 +75,7 @@ def test_cleanup_skips_malformed_filenames(tmp_path):
 
 def test_run_daily_backup_writes_file_and_audits(test_db, tmp_path):
     from sqlalchemy import text
+
     from backend.memory.ai_memory import remember
     from backend.memory.backup import run_daily_backup
 

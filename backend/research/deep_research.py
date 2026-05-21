@@ -323,11 +323,11 @@ def _persist_report(db, report: DeepResearchReport, audits: list[NewsAudit]) -> 
             for audit in audits[:20]
         ],
     }
-    for symbol in report.symbols or [None]:
+    for symbol in report.symbols or [""]:
         record_decision_run(
             db,
             run_type="deep_research",
-            symbol=symbol or "",
+            symbol=symbol,
             as_of=report.as_of,
             result=result,
             input_snapshot=input_snapshot,

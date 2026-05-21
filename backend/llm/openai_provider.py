@@ -1,7 +1,9 @@
+import functools
 import json
 import logging
 import time
-import functools
+from typing import Any
+
 from backend.llm.base import LLMProvider
 
 logger = logging.getLogger(__name__)
@@ -43,8 +45,8 @@ class OpenAIProvider(LLMProvider):
         try:
             from openai import OpenAI
         except ImportError:
-            raise RuntimeError("openai 包未安装，运行：pip install openai")
-        kwargs = {"api_key": api_key, "timeout": 30.0}
+            raise RuntimeError("openai 包未安装，运行：pip install openai") from None
+        kwargs: dict[str, Any] = {"api_key": api_key, "timeout": 30.0}
         if base_url:
             kwargs["base_url"] = base_url
             # OpenRouter 要求这两个 header 用于路由追踪
@@ -76,7 +78,7 @@ class OpenAIProvider(LLMProvider):
         messages.append({"role": "user", "content": prompt})
 
         try:
-            resp = self._client.chat.completions.create(
+            resp = self._client.chat.completions.create(  # type: ignore[call-overload]
                 model=_MODELS.get(model_tier, _MODELS["fast"]),
                 max_tokens=max_tokens,
                 tools=[{"type": "function", "function": function_def}],

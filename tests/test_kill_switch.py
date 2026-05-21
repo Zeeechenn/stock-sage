@@ -3,6 +3,7 @@
 状态文件用 tmp_path 隔离，避免污染用户家目录。
 """
 from datetime import datetime
+
 import pytest
 
 
@@ -102,7 +103,7 @@ def test_check_data_staleness_none_triggers():
 
 def test_run_all_checks_returns_first_trigger():
     from backend.ops import kill_switch
-    today = datetime(2026, 5, 15)
+    datetime(2026, 5, 15)
     res = kill_switch.run_all_checks(
         trade_returns=[-0.01] * kill_switch.DEFAULT_CONSECUTIVE_LOSSES,
         drawdown_pct=10.0,
@@ -116,14 +117,14 @@ def test_run_all_checks_returns_first_trigger():
 def test_run_all_checks_idempotent_when_active():
     """已激活后再调 run_all_checks 不应改写原因"""
     from backend.ops import kill_switch
-    first = kill_switch.trigger("first", push=False)
+    kill_switch.trigger("first", push=False)
     res = kill_switch.run_all_checks(trade_returns=[-0.01] * 10)
     assert res.reason == "first"
 
 
 def test_scheduler_guard_skips_when_active(monkeypatch):
-    from backend.ops import kill_switch
     from backend import scheduler
+    from backend.ops import kill_switch
 
     kill_switch.trigger("manual stop", push=False)
 

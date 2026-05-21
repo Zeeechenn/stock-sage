@@ -21,9 +21,10 @@ Vote 映射：
 按 Δ 绝对值阈值兜底打分。
 """
 from __future__ import annotations
+
 import logging
 
-from backend.agents.long_term.base import LongTermReport
+from backend.agents.long_term.base import LongTermReport, VoteLabel
 from backend.config import settings
 from backend.data.fundamentals import compute_jingqi_deltas, list_peers
 
@@ -79,7 +80,7 @@ def _apply_bonuses(score: float, deltas: dict) -> float:
     return round(max(-100, min(100, score)), 1)
 
 
-def _score_to_label_vote(score: float, deltas: dict, pctile: dict) -> str:
+def _score_to_label_vote(score: float, deltas: dict, pctile: dict) -> VoteLabel:
     """Map composite score and percentile to a label vote string."""
     base_signals = [p for p in pctile.values() if p is not None]
     avg_pctile = sum(base_signals) / len(base_signals) if base_signals else None

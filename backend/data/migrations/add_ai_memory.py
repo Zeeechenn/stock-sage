@@ -5,9 +5,10 @@
   PYTHONPATH=. python -m backend.data.migrations.add_ai_memory
 """
 import logging
+
 from sqlalchemy import text
 
-from backend.data.database import engine, init_db, SessionLocal
+from backend.data.database import SessionLocal, engine, init_db
 from backend.memory.audit_log import audit_write
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")

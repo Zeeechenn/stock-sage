@@ -158,7 +158,7 @@ def _detect_action(message: str, db: Session) -> tuple[str, dict] | None:
 
 def _context_answer(message: str, db: Session, session_id: str | None = None) -> AIChatResponse:
     """Deterministic fallback answer using internal StockSage resources."""
-    stocks = db.query(Stock).filter(Stock.active == True).limit(6).all()
+    stocks = db.query(Stock).filter(Stock.active).limit(6).all()
     positions = db.query(Position).filter(Position.status == "open").limit(6).all()
     parts = ["我会在 StockSage 项目内回答：已读取自选股、持仓、信号、复盘和研究记忆。"]
     if session_id:

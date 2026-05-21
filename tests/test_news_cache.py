@@ -3,9 +3,10 @@
 不调用真实 LLM，全部 mock。
 """
 from __future__ import annotations
+
 from datetime import datetime
-from unittest.mock import MagicMock, patch
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 import pytest
 

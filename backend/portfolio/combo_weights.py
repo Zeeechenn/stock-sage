@@ -4,7 +4,6 @@
 
 输入：候选股票列表 + 历史统计 → 输出：每只股票的仓位权重（和为1）
 """
-import numpy as np
 
 
 # ── 等权分配 ─────────────────────────────────────────────────────────
@@ -75,11 +74,12 @@ def vol_weight(
     if not candidates:
         return []
 
-    vols = [c.get("vol20", None) for c in candidates]
+    vols: list[float | None] = [c.get("vol20", None) for c in candidates]
     if any(v is None or v <= 0 for v in vols):
         return equal_weight(len(candidates), max_per)
 
-    inv = [1.0 / v for v in vols]
+    valid_vols = [v for v in vols if v is not None]
+    inv = [1.0 / v for v in valid_vols]
     total_inv = sum(inv)
     raw = [min(x / total_inv, max_per) for x in inv]
     # Don't renormalize — sum < 1 means remaining is cash, preserving per-stock cap
@@ -101,7 +101,7 @@ def apply_sector_cap(
     w = list(weights)
     for _ in range(3):
         sector_sum: dict[str, float] = {}
-        for c, wi in zip(candidates, w):
+        for c, wi in zip(candidates, w, strict=False):
             sec = c.get("sector", "未知")
             sector_sum[sec] = sector_sum.get(sec, 0) + wi
 
@@ -110,7 +110,7 @@ def apply_sector_cap(
             if sw > sector_max + 1e-9:
                 scale = sector_max / sw
                 excess = sw - sector_max
-                other_sum = sum(wj for c, wj in zip(candidates, w)
+                other_sum = sum(wj for c, wj in zip(candidates, w, strict=False)
                                 if c.get("sector") != sec)
                 for k, c in enumerate(candidates):
                     if c.get("sector") == sec:
@@ -165,7 +165,7 @@ def size_positions(
     weights = apply_sector_cap(candidates, weights, sector_max, max_per=max_per)
 
     result = []
-    for c, w in zip(candidates, weights):
+    for c, w in zip(candidates, weights, strict=False):
         item = dict(c)
         item["weight"]      = w
         item["capital_pct"] = round(w * 100, 2)

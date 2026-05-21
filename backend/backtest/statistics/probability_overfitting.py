@@ -11,10 +11,11 @@ Probability of Backtest Overfitting（PBO，Bailey & López de Prado, 2014）
 输出：PBO（0-1，越低越好；> 0.5 视为高度过拟合）。
 """
 from __future__ import annotations
+
 import math
+from collections.abc import Sequence
 from dataclasses import dataclass
 from itertools import combinations
-from typing import Sequence
 
 
 @dataclass

@@ -21,8 +21,8 @@ def _mock_piotroski_raw(score: int) -> dict:
 
 
 def test_seed_default_overrides_is_idempotent(test_db):
-    from backend.memory.bias_override import seed_default_overrides
     from backend.memory.ai_memory import list_active
+    from backend.memory.bias_override import seed_default_overrides
 
     seed_default_overrides(test_db)
     seed_default_overrides(test_db)
@@ -34,7 +34,7 @@ def test_seed_default_overrides_is_idempotent(test_db):
 
 def test_piotroski_injects_caveat_on_weak_vote(test_db):
     from backend.agents.long_term import piotroski_analyst
-    from backend.memory.bias_override import seed_default_overrides, PIOTROSKI_WEAK_DEFAULT
+    from backend.memory.bias_override import PIOTROSKI_WEAK_DEFAULT, seed_default_overrides
 
     seed_default_overrides(test_db)
 
@@ -84,8 +84,8 @@ def test_piotroski_no_caveat_on_strong_vote_even_with_weak_seed(test_db):
 def test_caveat_survives_team_merge(test_db, monkeypatch):
     """注入的 caveat 必须能流到 LongTermLabel.key_findings 里，否则决策链看不到。"""
     from backend.agents.long_term.team import LongTermTeam
-    from backend.memory.bias_override import seed_default_overrides
     from backend.config import settings
+    from backend.memory.bias_override import seed_default_overrides
 
     seed_default_overrides(test_db)
 
@@ -114,7 +114,7 @@ def test_lookup_caveat_returns_none_when_missing(test_db):
 
 
 def test_set_caveat_persists_and_recall_works(test_db):
-    from backend.memory.bias_override import set_caveat, lookup_caveat
+    from backend.memory.bias_override import lookup_caveat, set_caveat
 
     persisted = set_caveat(test_db, "piotroski", "规避", "自定义提示")
     assert persisted is True

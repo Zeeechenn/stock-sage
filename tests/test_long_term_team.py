@@ -3,17 +3,15 @@
 
 mock 三个分析师，验证 label 映射规则的所有分支。
 """
-import pytest
 from unittest.mock import patch
 
-from backend.agents.long_term.base import LongTermReport, LongTermLabel
+from backend.agents.long_term.base import LongTermLabel, LongTermReport, VoteLabel
+from backend.agents.long_term.storage import bulk_get_labels, get_active_label, save_label
 from backend.agents.long_term.team import LongTermTeam, _aggregate_score, _resolve_label
-from backend.agents.long_term.storage import save_label, get_active_label, bulk_get_labels
-
 
 # ── 工具 ──────────────────────────────────────────────────────────────
 
-def _mk_report(role: str, score: float, vote: str, conf: float = 0.8) -> LongTermReport:
+def _mk_report(role: str, score: float, vote: VoteLabel, conf: float = 0.8) -> LongTermReport:
     return LongTermReport(
         role=role, score=score, confidence=conf, label_vote=vote,
         key_findings=[f"{role} finding 1"], raw={},

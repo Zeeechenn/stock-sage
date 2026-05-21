@@ -117,9 +117,13 @@ def test_is_qfii_holder_matches_keywords():
 
 def test_team_includes_flow_analyst_in_votes(monkeypatch):
     """team.LongTermTeam.run 调用了 flow analyst，最终 votes 含 'flow' 键"""
+    from backend.agents.long_term import (
+        a_teacher_analyst,
+        jingqi_analyst,
+        piotroski_analyst,
+        qfii_flow_analyst,
+    )
     from backend.agents.long_term import team as team_mod
-    from backend.agents.long_term import qfii_flow_analyst, a_teacher_analyst
-    from backend.agents.long_term import piotroski_analyst, jingqi_analyst
     from backend.agents.long_term.base import LongTermReport
 
     history = _history(

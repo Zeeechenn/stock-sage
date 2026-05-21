@@ -63,7 +63,7 @@ def test_max_drawdown_empty():
 
 def test_simulate_path_collects_entry_returns():
     """高分 → ENTRY 信号 → 收集 T+5 收益率"""
-    from backend.backtest.compare_paths import _path_a, _no_llm_settings
+    from backend.backtest.compare_paths import _no_llm_settings, _path_a
 
     inputs = [
         _make_input(quant_score=70, tech_score=70, sentiment=0.6,
@@ -82,7 +82,7 @@ def test_simulate_path_collects_entry_returns():
 
 def test_simulate_path_skips_non_entry():
     """负分 → 非 ENTRY 信号 → 不进 trades"""
-    from backend.backtest.compare_paths import _path_a, _no_llm_settings
+    from backend.backtest.compare_paths import _no_llm_settings, _path_a
 
     inputs = [
         _make_input(quant_score=-50, tech_score=-50, sentiment=-0.5),

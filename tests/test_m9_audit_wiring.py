@@ -26,7 +26,7 @@ def test_remember_audits_on_success(test_db):
 
 
 def test_remember_skipped_when_should_remember_rejects(test_db):
-    from backend.memory.ai_memory import remember, recall
+    from backend.memory.ai_memory import recall, remember
 
     result = remember(test_db, "noise", "今天查一下新闻")
 
@@ -36,7 +36,7 @@ def test_remember_skipped_when_should_remember_rejects(test_db):
 
 
 def test_remember_force_bypasses_should_remember(test_db):
-    from backend.memory.ai_memory import remember, recall
+    from backend.memory.ai_memory import recall, remember
 
     result = remember(test_db, "raw", "今天查一下新闻", force=True)
 
@@ -46,7 +46,7 @@ def test_remember_force_bypasses_should_remember(test_db):
 
 
 def test_recall_audits_on_hit_only(test_db):
-    from backend.memory.ai_memory import remember, recall
+    from backend.memory.ai_memory import recall, remember
 
     remember(test_db, "rule", "测试1规则", category="rule", scope="test1")
 
@@ -58,7 +58,7 @@ def test_recall_audits_on_hit_only(test_db):
 
 
 def test_forget_audits_always(test_db):
-    from backend.memory.ai_memory import remember, forget
+    from backend.memory.ai_memory import forget, remember
 
     remember(test_db, "rule", "测试1规则", category="rule", scope="test1")
 
@@ -69,8 +69,8 @@ def test_forget_audits_always(test_db):
 
 
 def test_remember_deep_research_persists_via_extended_whitelist(test_db):
-    from backend.memory.research_memory import remember_deep_research
     from backend.memory.ai_memory import recall
+    from backend.memory.research_memory import remember_deep_research
 
     remember_deep_research(
         test_db,

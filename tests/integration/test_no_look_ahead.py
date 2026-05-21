@@ -7,6 +7,7 @@ Look-Ahead 集成测试（Tier 3）
 种子数据：故意把"未来数据"和"历史数据"混在一起，验证拦截器能挡住未来。
 """
 from datetime import datetime
+
 import pytest
 
 
@@ -14,7 +15,12 @@ import pytest
 def seeded_db(test_db):
     """种 4 类时间字段的数据，跨越 as_of 边界"""
     from backend.data.database import (
-        Price, Signal, LongTermLabel, FinancialMetric, NewsItem, IndexPrice,
+        FinancialMetric,
+        IndexPrice,
+        LongTermLabel,
+        NewsItem,
+        Price,
+        Signal,
     )
 
     # Price：历史 + 未来
@@ -145,7 +151,7 @@ def test_pit_session_passthrough_non_managed_models(seeded_db):
 
 def test_simulated_decision_path_uses_only_historical_data(seeded_db):
     """端到端：模拟一次 as_of=2024-10-01 的决策访问，全部用 PIT 包装"""
-    from backend.data.database import Price, Signal, LongTermLabel, FinancialMetric
+    from backend.data.database import FinancialMetric, LongTermLabel, Price, Signal
     from backend.data.point_in_time import pit_session
 
     with pit_session(seeded_db, "2024-10-01") as db:
@@ -156,5 +162,5 @@ def test_simulated_decision_path_uses_only_historical_data(seeded_db):
 
     assert all(p.date <= "2024-10-01" for p in prices)
     assert all(s.date <= "2024-10-01" for s in signals)
-    assert all(l.date <= "2024-10-01" for l in labels)
+    assert all(label.date <= "2024-10-01" for label in labels)
     assert all(f.report_date <= "2024-10-01" for f in fins)

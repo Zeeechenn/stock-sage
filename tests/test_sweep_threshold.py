@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 from backend.backtest.compare_paths import SignalInput
-from backend.backtest.sweep_threshold import sweep, _metrics, _recommend, ThresholdMetrics
+from backend.backtest.sweep_threshold import ThresholdMetrics, _metrics, _recommend, sweep
 
 
 def _make(score_hint: int, fwd: list[float]) -> SignalInput:

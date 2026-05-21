@@ -5,12 +5,13 @@
 测试1保留旧三路含 Qlib，测试2/生产使用新框架。
 """
 from __future__ import annotations
+
 from dataclasses import dataclass
 
 from backend.agents.analyst import AnalystReport
 from backend.agents.researcher import ResearcherConclusion
-from backend.config import settings, active_signal_weights
 from backend.analysis.factors import calc_stop_take
+from backend.config import active_signal_weights, settings
 from backend.decision.signal_policy import score_to_recommendation
 
 

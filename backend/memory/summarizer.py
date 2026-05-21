@@ -9,7 +9,6 @@ from __future__ import annotations
 
 from sqlalchemy import text
 
-
 SUMMARY_TOOL = {
     "name": "compress_chat",
     "description": "把多轮聊天压缩为一段简明的摘要，保留对后续决策有意义的事实、规则、用户偏好。",

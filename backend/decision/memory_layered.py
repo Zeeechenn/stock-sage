@@ -14,12 +14,12 @@ FinMem 风格分层决策记忆（阶段C）
   • weekly_long_term_reflect() — 调度器周末调用，生成长期反思
 """
 from __future__ import annotations
-import json
+
 from datetime import datetime, timedelta
 from pathlib import Path
-from backend.decision.signal_policy import entry_recommendations
 
 from backend.config import settings
+from backend.decision.signal_policy import entry_recommendations
 
 MEMORY_DIR = Path.home() / ".stock-sage" / "memory"
 LONG_TERM_PATH = MEMORY_DIR / "long_term_reflection.md"
@@ -118,6 +118,7 @@ def _upsert_layered_row(db, *, symbol: str | None, layer: str, content: str) -> 
     uses a `__GLOBAL__` sentinel internally.
     """
     from datetime import datetime as _dt
+
     from sqlalchemy import text as _text
     db.execute(_text("""
         INSERT INTO decision_memory_layered(symbol, layer, content, updated_at)
@@ -228,7 +229,7 @@ def weekly_long_term_reflect(db) -> str | None:
     调度器周末调用：把过去 7 天所有失败信号丢给 Sonnet，写入 long_term_reflection.md。
     返回新增章节的摘要；失败返回 None。
     """
-    from backend.data.database import Signal, Price
+    from backend.data.database import Price, Signal
     from backend.llm import get_provider
 
     cutoff = (datetime.utcnow() - timedelta(days=7)).strftime("%Y-%m-%d")

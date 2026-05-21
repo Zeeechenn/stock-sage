@@ -109,8 +109,8 @@ def test_fetch_cn_index_uses_index_provider_fallback(monkeypatch):
 
 
 def test_universe_upsert_deduplicates(test_db):
-    from backend.data.universe import UniverseCandidate, merge_candidates, upsert_universe
     from backend.data.database import Stock
+    from backend.data.universe import UniverseCandidate, merge_candidates, upsert_universe
 
     candidates = merge_candidates(
         [UniverseCandidate("600519", "贵州茅台")],

@@ -3,17 +3,15 @@
 
 不依赖网络：用 fixture 直接喂入 FinancialMetric 数据。
 """
-import pytest
 
-from backend.data.database import FinancialMetric, Stock
+from backend.data.database import FinancialMetric
 from backend.data.fundamentals import (
-    compute_piotroski_factors,
-    compute_jingqi_deltas,
-    compute_roe,
     compute_asset_turnover,
+    compute_jingqi_deltas,
+    compute_piotroski_factors,
+    compute_roe,
     list_peers,
 )
-
 
 # ── 数据 helper ───────────────────────────────────────────────────────
 

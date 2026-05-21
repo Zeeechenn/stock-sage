@@ -25,9 +25,10 @@ DSR 输出可解读为：
   • DSR < 0.50 → 几乎可断定为侥幸
 """
 from __future__ import annotations
+
 import math
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Sequence
 
 EULER_MASCHERONI = 0.5772156649
 

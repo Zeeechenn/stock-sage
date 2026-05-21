@@ -4,8 +4,8 @@ from __future__ import annotations
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from backend.api.schemas import LongTermLabelOut, WatchlistItem
 from backend.api.routes._shared import latest_signal, signal_to_schema
+from backend.api.schemas import LongTermLabelOut, WatchlistItem
 from backend.data.database import SessionLocal, Stock, get_db
 
 router = APIRouter()
@@ -42,7 +42,7 @@ def get_watchlist(db: Session = Depends(get_db)):
     """Return all active watchlist stocks with their latest signal and long-term label."""
     from backend.agents.long_term.storage import bulk_get_labels
 
-    stocks = db.query(Stock).filter(Stock.active == True).all()
+    stocks = db.query(Stock).filter(Stock.active).all()
     labels = bulk_get_labels([s.symbol for s in stocks], db) if stocks else {}
     result = []
     for s in stocks:

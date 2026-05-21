@@ -11,9 +11,8 @@
   • pipeline.run_pipeline 透传 rounds 字段
 """
 from __future__ import annotations
-from unittest.mock import MagicMock, patch
 
-import pytest
+from unittest.mock import MagicMock, patch
 
 from backend.agents.analyst import AnalystReport
 from backend.agents.researcher import (

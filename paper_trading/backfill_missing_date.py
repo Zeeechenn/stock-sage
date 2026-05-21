@@ -31,9 +31,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from backend.data.database import SessionLocal, Stock, Price
-from backend.data.market import fetch_daily
-from backend.analysis.factors import add_all_factors
+from backend.analysis.factors import add_all_factors  # noqa: E402
+from backend.data.database import Price, SessionLocal, Stock  # noqa: E402
+from backend.data.market import fetch_daily  # noqa: E402
 
 
 def backfill_one_symbol(db, symbol: str, market: str, target_date: str,
@@ -46,7 +46,7 @@ def backfill_one_symbol(db, symbol: str, market: str, target_date: str,
         Price.symbol == symbol, Price.date == target_date
     ).first()
     if existing:
-        return 0, f"skip(already exists)"
+        return 0, "skip(already exists)"
 
     try:
         df = fetch_daily(symbol, market, days=fetch_days)
@@ -94,7 +94,7 @@ def main() -> None:
 
     db = SessionLocal()
     try:
-        q = db.query(Stock).filter(Stock.active == True)
+        q = db.query(Stock).filter(Stock.active)
         if args.symbols:
             wanted = set(args.symbols.split(","))
             q = q.filter(Stock.symbol.in_(wanted))
@@ -117,8 +117,8 @@ def main() -> None:
 
         db.commit()
         print(f"\n[backfill] 完成：写入 {ok} 行，跳过 {skipped} 行（已存在），失败 {failed} 行")
-        print(f"[backfill] 后续步骤：跑 postmarket 信号")
-        print(f"  python3 -c \"import sys; sys.path.insert(0,'.'); from backend.scheduler import job_postmarket; job_postmarket()\"")
+        print("[backfill] 后续步骤：跑 postmarket 信号")
+        print("  python3 -c \"import sys; sys.path.insert(0,'.'); from backend.scheduler import job_postmarket; job_postmarket()\"")
     finally:
         db.close()
 

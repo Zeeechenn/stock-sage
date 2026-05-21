@@ -1,6 +1,7 @@
 """长期分析师团共享数据结构"""
 from __future__ import annotations
-from dataclasses import dataclass, field, asdict
+
+from dataclasses import asdict, dataclass, field
 from typing import Literal
 
 VoteLabel = Literal["值得持有", "估值偏高", "观望", "规避"]
@@ -29,7 +30,7 @@ class LongTermLabel:
     date: str                  # 生成日 "2026-05-17"
     label: VoteLabel
     score: float
-    votes: dict[str, str]      # {role: vote}
+    votes: dict[str, VoteLabel]      # {role: vote}
     key_findings: list[str]    # 合并后 ≤6 条
     expires_at: str            # "2026-05-27"
 

@@ -3,6 +3,7 @@
 阶段B 升级：MA → ICU EMA；ADX 震荡市过滤；可选项通过 settings 切换。
 """
 import pandas as pd
+
 from backend.analysis.factors import add_all_factors
 from backend.config import settings
 

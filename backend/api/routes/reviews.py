@@ -150,8 +150,9 @@ def ensure_daily_review(
 
 
 def _run_long_term_review(day: str, db: Session) -> dict:
+    from backend.data.database import LongTermLabel as LongTermLabelRow
+    from backend.data.database import Stock
     from backend.scheduler import job_weekly_longterm
-    from backend.data.database import LongTermLabel as LongTermLabelRow, Stock
 
     job_weekly_longterm()
     rows = (

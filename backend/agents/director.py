@@ -13,8 +13,9 @@ M4.2 Research Director Agent —— 协调层。
 设计目标：纯规则、零 LLM。议题生成基于 reports 内部结构，避免额外成本。
 """
 from __future__ import annotations
-from dataclasses import dataclass, field
+
 import statistics
+from dataclasses import dataclass, field
 
 from backend.agents.analyst import AnalystReport
 from backend.config import settings

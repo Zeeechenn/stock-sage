@@ -3,15 +3,12 @@
 
 不依赖网络/真实 LLM：mock 三个长期分析师返回固定标签。
 """
-import pytest
 from unittest.mock import patch
 
-from backend.data.database import Stock, Price, FinancialMetric
-from backend.agents.long_term.base import LongTermLabel
-from backend.agents.long_term.storage import save_label, bulk_get_labels
+from backend.agents.long_term.base import LongTermLabel, LongTermReport
+from backend.agents.long_term.storage import bulk_get_labels, save_label
 from backend.agents.long_term.team import LongTermTeam
-from backend.agents.long_term.base import LongTermReport
-
+from backend.data.database import Price, Stock
 
 # ── 数据 helper ───────────────────────────────────────────────────────
 
@@ -100,7 +97,7 @@ def test_postmarket_pipeline_respects_avoid_label(
     """端到端：'规避' label 应让短期信号被风险经理否决"""
     from backend.decision.aggregator import aggregate_v2
 
-    stocks = _seed_stocks_with_data(test_db)
+    _seed_stocks_with_data(test_db)
 
     # 给 600036 标"规避"
     save_label(LongTermLabel(

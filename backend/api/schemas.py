@@ -1,8 +1,9 @@
 """Pydantic response schemas"""
 from __future__ import annotations
+
 import json
+
 from pydantic import BaseModel, field_validator
-from typing import Optional
 
 
 class StockOut(BaseModel):
@@ -27,13 +28,13 @@ class SignalOut(BaseModel):
     composite_score: float
     recommendation: str
     confidence: str
-    stop_loss: Optional[float] = None
-    take_profit: Optional[float] = None
-    limit_status: Optional[str] = None
-    quant_score: Optional[float] = None
-    technical_score: Optional[float] = None
-    sentiment_score: Optional[float] = None
-    llm_arbitration: Optional[LLMArbitration] = None
+    stop_loss: float | None = None
+    take_profit: float | None = None
+    limit_status: str | None = None
+    quant_score: float | None = None
+    technical_score: float | None = None
+    sentiment_score: float | None = None
+    llm_arbitration: LLMArbitration | None = None
 
     model_config = {"from_attributes": True}
 
@@ -67,35 +68,35 @@ class WatchlistItem(BaseModel):
     symbol: str
     name: str
     market: str
-    industry: Optional[str] = None
-    latest_signal: Optional[SignalOut] = None
-    long_term_label: Optional[LongTermLabelOut] = None
+    industry: str | None = None
+    latest_signal: SignalOut | None = None
+    long_term_label: LongTermLabelOut | None = None
 
 
 class PositionCreate(BaseModel):
     symbol: str
-    name: Optional[str] = None
+    name: str | None = None
     market: str = "CN"
     quantity: float
     avg_cost: float
-    opened_at: Optional[str] = None
-    stop_loss: Optional[float] = None
-    take_profit: Optional[float] = None
-    note: Optional[str] = None
+    opened_at: str | None = None
+    stop_loss: float | None = None
+    take_profit: float | None = None
+    note: str | None = None
 
 
 class PositionUpdate(BaseModel):
-    name: Optional[str] = None
-    market: Optional[str] = None
-    quantity: Optional[float] = None
-    avg_cost: Optional[float] = None
-    opened_at: Optional[str] = None
-    stop_loss: Optional[float] = None
-    take_profit: Optional[float] = None
-    closed_at: Optional[str] = None
-    close_price: Optional[float] = None
-    note: Optional[str] = None
-    status: Optional[str] = None
+    name: str | None = None
+    market: str | None = None
+    quantity: float | None = None
+    avg_cost: float | None = None
+    opened_at: str | None = None
+    stop_loss: float | None = None
+    take_profit: float | None = None
+    closed_at: str | None = None
+    close_price: float | None = None
+    note: str | None = None
+    status: str | None = None
 
 
 class PositionOut(BaseModel):
@@ -106,20 +107,20 @@ class PositionOut(BaseModel):
     quantity: float
     avg_cost: float
     opened_at: str
-    stop_loss: Optional[float] = None
-    take_profit: Optional[float] = None
-    closed_at: Optional[str] = None
-    close_price: Optional[float] = None
-    realized_pnl: Optional[float] = None
-    realized_pnl_pct: Optional[float] = None
-    note: Optional[str] = None
+    stop_loss: float | None = None
+    take_profit: float | None = None
+    closed_at: str | None = None
+    close_price: float | None = None
+    realized_pnl: float | None = None
+    realized_pnl_pct: float | None = None
+    note: str | None = None
     status: str
-    latest_price: Optional[float] = None
-    latest_price_date: Optional[str] = None
-    market_value: Optional[float] = None
-    cost_value: Optional[float] = None
-    pnl: Optional[float] = None
-    pnl_pct: Optional[float] = None
+    latest_price: float | None = None
+    latest_price_date: str | None = None
+    market_value: float | None = None
+    cost_value: float | None = None
+    pnl: float | None = None
+    pnl_pct: float | None = None
 
 
 class PriceBar(BaseModel):
@@ -135,8 +136,8 @@ class SignalEvalRecord(BaseModel):
     date: str
     recommendation: str
     composite_score: float
-    next_day_return: Optional[float] = None   # 次日收益率 %
-    correct: Optional[bool] = None            # 方向是否正确
+    next_day_return: float | None = None   # 次日收益率 %
+    correct: bool | None = None            # 方向是否正确
 
 
 class SignalEvalOut(BaseModel):
@@ -144,11 +145,11 @@ class SignalEvalOut(BaseModel):
     days: int
     total_signals: int
     evaluated: int           # 有后续价格数据的信号数
-    win_rate: Optional[float] = None          # 方向正确率 %
-    avg_return: Optional[float] = None        # 平均次日收益 %
-    avg_return_on_buy: Optional[float] = None # 买入信号的平均次日收益 %
-    avg_return_on_neutral: Optional[float] = None
-    avg_return_on_sell: Optional[float] = None
+    win_rate: float | None = None          # 方向正确率 %
+    avg_return: float | None = None        # 平均次日收益 %
+    avg_return_on_buy: float | None = None # 买入信号的平均次日收益 %
+    avg_return_on_neutral: float | None = None
+    avg_return_on_sell: float | None = None
     records: list[SignalEvalRecord] = []
 
 
@@ -158,7 +159,7 @@ class NewsOut(BaseModel):
     url: str
     published_at: str
     source: str
-    sentiment_score: Optional[float] = None
+    sentiment_score: float | None = None
 
     model_config = {"from_attributes": True}
 
@@ -166,19 +167,19 @@ class NewsOut(BaseModel):
 class DecisionRunOut(BaseModel):
     run_id: str
     run_type: str
-    symbol: Optional[str] = None
-    as_of: Optional[str] = None
-    profile: Optional[str] = None
-    rule_version: Optional[str] = None
-    recommendation: Optional[str] = None
-    composite_score: Optional[float] = None
+    symbol: str | None = None
+    as_of: str | None = None
+    profile: str | None = None
+    rule_version: str | None = None
+    recommendation: str | None = None
+    composite_score: float | None = None
     input_snapshot: dict = {}
     agent_outputs: dict = {}
     risk_decision: dict = {}
     final_action: dict = {}
-    eval_result: Optional[dict] = None
-    notes: Optional[str] = None
-    created_at: Optional[str] = None
+    eval_result: dict | None = None
+    notes: str | None = None
+    created_at: str | None = None
 
 
 class ResearchStateOut(BaseModel):
@@ -187,19 +188,19 @@ class ResearchStateOut(BaseModel):
     risks: list[str] = []
     open_questions: list[str] = []
     last_signal_summary: str = ""
-    last_review: Optional[dict] = None
-    updated_at: Optional[str] = None
+    last_review: dict | None = None
+    updated_at: str | None = None
 
 
 class DataCoverageStockOut(BaseModel):
     symbol: str
-    name: Optional[str] = None
-    market: Optional[str] = None
-    industry: Optional[str] = None
+    name: str | None = None
+    market: str | None = None
+    industry: str | None = None
     price_rows: int = 0
-    first_price_date: Optional[str] = None
-    latest_price_date: Optional[str] = None
-    latest_financial_report: Optional[str] = None
+    first_price_date: str | None = None
+    latest_price_date: str | None = None
+    latest_financial_report: str | None = None
     news_24h_count: int = 0
 
 
@@ -212,7 +213,7 @@ class DataCoverageOut(BaseModel):
 class DeepResearchRequest(BaseModel):
     topic: str
     symbols: list[str] = []
-    as_of: Optional[str] = None
+    as_of: str | None = None
 
 
 class DeepResearchResponse(BaseModel):
@@ -220,7 +221,7 @@ class DeepResearchResponse(BaseModel):
     symbols: list[str] = []
     as_of: str
     summary: str
-    report_path: Optional[str] = None
+    report_path: str | None = None
     source_count: int = 0
     risk_flags: list[str] = []
 
@@ -229,11 +230,11 @@ class AIChatRequest(BaseModel):
     message: str
     mode: str = "general"  # general / long_term_team
     history: list[dict] = []
-    session_id: Optional[str] = None
+    session_id: str | None = None
 
 
 class AIChatResponse(BaseModel):
     answer: str
     citations: list[str] = []
     used_resources: list[str] = []
-    pending_action: Optional[dict] = None
+    pending_action: dict | None = None

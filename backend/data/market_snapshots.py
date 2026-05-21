@@ -22,13 +22,13 @@ import json
 import logging
 import subprocess
 import time
-from dataclasses import dataclass
-from datetime import date, datetime, timedelta
+from datetime import datetime
+from typing import Any
 
 import pandas as pd
 from sqlalchemy import text
 
-from backend.data.database import MarketSnapshot, Price, Stock
+from backend.data.database import Price, Stock
 
 logger = logging.getLogger(__name__)
 
@@ -194,8 +194,14 @@ def _none_if_nan(v) -> float | None:
 
 def backfill_all_snapshots(db, since: str = "2024-01-01") -> dict:
     """为所有 active 自选股回填快照，返回统计 dict。"""
-    stocks = db.query(Stock).filter(Stock.active == True, Stock.market == "CN").all()
-    summary = {"total": len(stocks), "ok": 0, "skipped": 0, "rows_written": 0, "failures": []}
+    stocks = db.query(Stock).filter(Stock.active, Stock.market == "CN").all()
+    summary: dict[str, Any] = {
+        "total": len(stocks),
+        "ok": 0,
+        "skipped": 0,
+        "rows_written": 0,
+        "failures": [],
+    }
     for i, s in enumerate(stocks, 1):
         try:
             n = build_snapshots_for_symbol(s.symbol, db, since=since)

@@ -3,7 +3,6 @@
 ADX 用于震荡市过滤，ICU 均线对趋势捕捉更灵敏（中泰证券 20230412 研报）。
 """
 import pandas as pd
-import numpy as np
 
 
 def calc_atr(df: pd.DataFrame, period: int = 14) -> pd.Series:

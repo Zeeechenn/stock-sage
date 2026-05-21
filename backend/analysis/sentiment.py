@@ -1,5 +1,6 @@
 """LLM 新闻情感分析"""
 import hashlib
+
 from backend.llm import get_provider
 
 _cache: dict[str, dict] = {}  # 进程内缓存，避免相同新闻重复调用 API

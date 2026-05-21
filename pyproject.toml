@@ -87,6 +87,7 @@ known-first-party = ["backend"]
 
 [tool.mypy]
 python_version = "3.11"
+plugins = ["sqlalchemy.ext.mypy.plugin"]
 ignore_missing_imports = true
 warn_return_any = false
 warn_unused_ignores = true

@@ -1,10 +1,10 @@
 """个股新闻抓取：AkShare stock_news_em（A股）/ RSS（美股，Phase 7）"""
-import time
-import logging
 import functools
 import hashlib
-from datetime import datetime, timedelta
+import logging
+import time
 from dataclasses import dataclass
+from datetime import datetime, timedelta
 from urllib.parse import urlparse
 
 logger = logging.getLogger(__name__)
@@ -98,7 +98,9 @@ def _fetch_news_df(symbol: str):
     失败时 fallback 到 AkShare stock_news_em（pageSize=10）。
     """
     import json as _json
-    import requests, pandas as pd
+
+    import pandas as pd
+    import requests
 
     _CB = "jQuery_stocksage"
     inner = {
@@ -121,7 +123,7 @@ def _fetch_news_df(symbol: str):
                 "Referer": "https://so.eastmoney.com/",
                 "User-Agent": "Mozilla/5.0",
             },
-            proxies={"http": None, "https": None},
+            proxies={"http": None, "https": None},  # type: ignore[dict-item]
             timeout=10,
         )
         resp.raise_for_status()
@@ -177,10 +179,7 @@ def fetch_stock_news_cn(symbol: str, limit: int = 20) -> list[RawNews]:
 
             # 无链接时用 symbol+title 的 hash 生成稳定唯一 URL
             if not url or url == "nan":
-                url = "em://{}#{}".format(
-                    symbol,
-                    hashlib.md5(title.encode()).hexdigest()[:8],
-                )
+                url = f"em://{symbol}#{hashlib.md5(title.encode()).hexdigest()[:8]}"
 
             if url in seen_urls or not title:
                 continue
@@ -350,6 +349,7 @@ def fetch_stock_news_anspire(
     start = current - timedelta(days=days)
 
     import json as _json
+
     import requests
 
     params = {
@@ -439,7 +439,7 @@ def search_titles_tavily(query: str, days: int = 1, max_results: int = 5) -> lis
                 "days": days,
                 "include_answer": False,
             },
-            proxies={"http": None, "https": None},  # 直连，绕过系统代理
+            proxies={"http": None, "https": None},  # type: ignore[dict-item]  # 直连，绕过系统代理
             timeout=10,
         )
         resp.raise_for_status()

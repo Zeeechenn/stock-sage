@@ -10,6 +10,7 @@
   • pipeline 集成：director_assessment 进 to_signal_dict
 """
 from __future__ import annotations
+
 from unittest.mock import patch
 
 from backend.agents.analyst import AnalystReport

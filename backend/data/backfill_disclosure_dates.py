@@ -8,10 +8,10 @@
 import argparse
 import logging
 
-logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
-
 from backend.data.database import SessionLocal
 from backend.data.fundamentals import sync_disclosure_dates
+
+logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
 
 
 def main() -> None:

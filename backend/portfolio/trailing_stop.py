@@ -11,9 +11,9 @@ Trailing Stop 跟踪（阶段B）
 落库位置：~/.stock-sage/positions.json
 """
 from __future__ import annotations
+
 import json
-from dataclasses import dataclass, asdict, field
-from datetime import datetime
+from dataclasses import asdict, dataclass
 from pathlib import Path
 
 from backend.config import settings
@@ -39,7 +39,7 @@ class TrailingStopTracker:
 
     @classmethod
     def open(cls, symbol: str, entry_date: str, entry_price: float, atr: float,
-             atr_mult: float | None = None, rr: float | None = None) -> "TrailingStopTracker":
+             atr_mult: float | None = None, rr: float | None = None) -> TrailingStopTracker:
         """Create a new open position tracker with initial stop and take-profit levels."""
         atr_mult = atr_mult or settings.atr_multiplier
         rr = rr or settings.risk_reward_ratio

@@ -64,8 +64,8 @@ def test_exit_logic_run_wraps_owned_session_with_pit(monkeypatch):
 
 
 def test_scheduler_postmarket_runs_kill_switch_checks(monkeypatch):
-    from backend import scheduler
     import backend.ops as ops
+    from backend import scheduler
 
     calls = []
 

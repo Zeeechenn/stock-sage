@@ -37,6 +37,7 @@ def test_update_runtime_config_mutates_allowed_settings(monkeypatch):
 
 def test_update_runtime_config_rejects_unknown_keys():
     from fastapi import HTTPException
+
     from backend.api.routes import update_runtime_config
 
     try:

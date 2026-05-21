@@ -11,9 +11,9 @@ M4.6 信号新闻特征缓存。
   • cache miss 时按需调 analyze_news()
 """
 from __future__ import annotations
+
 import json
 import logging
-import os
 from datetime import datetime, timedelta
 from pathlib import Path
 

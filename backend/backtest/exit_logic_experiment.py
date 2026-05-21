@@ -6,14 +6,13 @@
 """
 from __future__ import annotations
 
-from collections import Counter
 import math
 import statistics
+from collections import Counter
 
-from backend.data.database import SessionLocal, Signal, Price
+from backend.data.database import Price, SessionLocal, Signal
 from backend.data.point_in_time import pit_session
 from backend.decision.signal_policy import entry_recommendations
-
 
 LONG_RECS = set(entry_recommendations(include_legacy=True))
 
@@ -145,7 +144,9 @@ def _run_scan(
         "trailing_atr_2_5x": lambda rows, idx, sigs: _exit_trailing(rows, idx, 2.5),
         "signal_reverse": _exit_signal_reverse,
     }
-    results = {name: {"returns": [], "reasons": []} for name in experiments}
+    results: dict[str, dict[str, list]] = {
+        name: {"returns": [], "reasons": []} for name in experiments
+    }
 
     for symbol in symbols:
         rows = _prices(db, symbol, as_of_end=as_of_end)

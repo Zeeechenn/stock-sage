@@ -1,9 +1,11 @@
 """AkShare/SQLite → LightGBM 特征/标签构建器"""
 import logging
+
 import numpy as np
 import pandas as pd
-from backend.data.database import FinancialMetric, Price, Stock
+
 from backend.analysis.factors import add_all_factors
+from backend.data.database import FinancialMetric, Price, Stock
 from backend.data.market_features import MARKET_FEATURE_COLS, attach_market_features
 
 logger = logging.getLogger(__name__)
@@ -143,7 +145,7 @@ def build_training_data(db, min_rows: int = 120) -> pd.DataFrame:
     读取所有自选股历史价格 → 特征矩阵 + label。
     min_rows: 该股至少需要多少行价格才纳入训练集。
     """
-    stocks = db.query(Stock).filter(Stock.active == True).all()
+    stocks = db.query(Stock).filter(Stock.active).all()
     symbols = [s.symbol for s in stocks]
     industries = {s.symbol: s.industry for s in stocks}
     frames = []

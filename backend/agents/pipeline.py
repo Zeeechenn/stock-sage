@@ -6,19 +6,20 @@
   → Trader → RiskManager
 """
 from __future__ import annotations
-from dataclasses import dataclass, asdict
+
+from dataclasses import dataclass
 
 from backend.agents.analyst import (
-    technical_analyst,
+    AnalystReport,
+    news_analyst,
     quant_analyst,
     sentiment_analyst,
-    news_analyst,
-    AnalystReport,
+    technical_analyst,
 )
-from backend.agents.director import assess, assessment_to_dict, DirectorAssessment
+from backend.agents.director import DirectorAssessment, assess, assessment_to_dict
 from backend.agents.researcher import debate, has_divergence, quick_consensus
-from backend.agents.trader import propose, TraderProposal
-from backend.agents.risk_manager import review, RiskDecision
+from backend.agents.risk_manager import RiskDecision, review
+from backend.agents.trader import TraderProposal, propose
 from backend.analysis.timing.regime import RegimeReport
 from backend.config import settings
 

@@ -6,8 +6,8 @@ import subprocess
 import time
 from datetime import date, timedelta
 
-import pandas as pd
 import akshare as ak
+import pandas as pd
 import yfinance as yf
 
 from backend.data.providers import (
@@ -323,8 +323,9 @@ def load_price_df(symbol: str, db, days: int = 200) -> pd.DataFrame:
     从 Price 表读取历史行情，返回 OHLCV DataFrame（index=date str，升序）。
     days=200 确保 MA60 / ATR14 有足够数据。
     """
-    from backend.data.database import Price
     from datetime import date, timedelta
+
+    from backend.data.database import Price
 
     cutoff = (date.today() - timedelta(days=days)).strftime("%Y-%m-%d")
     rows = (
@@ -386,8 +387,8 @@ def backfill_if_needed(symbol: str, market: str, db, years: int | None = None,
 
     返回新写入或更新的记录条数。
     """
-    from backend.data.database import Price, get_latest_price_date
     from backend.analysis.factors import add_all_factors
+    from backend.data.database import Price, get_latest_price_date
 
     latest_date_str = get_latest_price_date(symbol, db)
 

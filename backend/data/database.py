@@ -1,8 +1,20 @@
 from datetime import datetime
-from sqlalchemy import create_engine, Column, String, Float, Integer, DateTime, Text, Boolean, UniqueConstraint, event, text
-from sqlalchemy.orm import DeclarativeBase, sessionmaker
-from backend.config import settings
 
+from sqlalchemy import (
+    Boolean,
+    DateTime,
+    Float,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+    create_engine,
+    event,
+    text,
+)
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
+
+from backend.config import settings
 
 engine = create_engine(settings.database_url, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(bind=engine)
@@ -23,94 +35,94 @@ class Base(DeclarativeBase):
 class Stock(Base):
     """自选股列表"""
     __tablename__ = "stocks"
-    symbol = Column(String, primary_key=True)   # e.g. "600519" or "AAPL"
-    name = Column(String)
-    market = Column(String)                      # "CN" or "US"
-    active = Column(Boolean, default=True)
-    industry = Column(String, nullable=True)     # 申万一级行业（由 sync_industry 回填）
-    added_at = Column(DateTime, default=datetime.utcnow)
+    symbol: Mapped[str] = mapped_column(String, primary_key=True)   # e.g. "600519" or "AAPL"
+    name: Mapped[str] = mapped_column(String)
+    market: Mapped[str] = mapped_column(String)                      # "CN" or "US"
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    industry: Mapped[str | None] = mapped_column(String, nullable=True)     # 申万一级行业（由 sync_industry 回填）
+    added_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
 class Position(Base):
     """手动维护的真实/模拟持仓。"""
     __tablename__ = "positions"
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    symbol = Column(String, index=True)
-    name = Column(String, nullable=True)
-    market = Column(String, default="CN")
-    quantity = Column(Float)
-    avg_cost = Column(Float)
-    opened_at = Column(String, index=True)
-    stop_loss = Column(Float, nullable=True)
-    take_profit = Column(Float, nullable=True)
-    closed_at = Column(String, nullable=True)
-    close_price = Column(Float, nullable=True)
-    realized_pnl = Column(Float, nullable=True)
-    realized_pnl_pct = Column(Float, nullable=True)
-    note = Column(Text, nullable=True)
-    status = Column(String, default="open")  # open / closed
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    symbol: Mapped[str] = mapped_column(String, index=True)
+    name: Mapped[str | None] = mapped_column(String, nullable=True)
+    market: Mapped[str] = mapped_column(String, default="CN")
+    quantity: Mapped[float] = mapped_column(Float)
+    avg_cost: Mapped[float] = mapped_column(Float)
+    opened_at: Mapped[str] = mapped_column(String, index=True)
+    stop_loss: Mapped[float | None] = mapped_column(Float, nullable=True)
+    take_profit: Mapped[float | None] = mapped_column(Float, nullable=True)
+    closed_at: Mapped[str | None] = mapped_column(String, nullable=True)
+    close_price: Mapped[float | None] = mapped_column(Float, nullable=True)
+    realized_pnl: Mapped[float | None] = mapped_column(Float, nullable=True)
+    realized_pnl_pct: Mapped[float | None] = mapped_column(Float, nullable=True)
+    note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    status: Mapped[str] = mapped_column(String, default="open")  # open / closed
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
 class Price(Base):
     """日线行情"""
     __tablename__ = "prices"
     __table_args__ = (UniqueConstraint("symbol", "date", name="uq_price_symbol_date"),)
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    symbol = Column(String, index=True)
-    date = Column(String, index=True)           # "2024-01-15"
-    open = Column(Float)
-    high = Column(Float)
-    low = Column(Float)
-    close = Column(Float)
-    volume = Column(Float)
-    atr14 = Column(Float, nullable=True)        # 预计算 ATR(14)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    symbol: Mapped[str] = mapped_column(String, index=True)
+    date: Mapped[str] = mapped_column(String, index=True)           # "2024-01-15"
+    open: Mapped[float] = mapped_column(Float)
+    high: Mapped[float] = mapped_column(Float)
+    low: Mapped[float] = mapped_column(Float)
+    close: Mapped[float] = mapped_column(Float)
+    volume: Mapped[float] = mapped_column(Float)
+    atr14: Mapped[float | None] = mapped_column(Float, nullable=True)        # 预计算 ATR(14)
 
 
 class NewsItem(Base):
     """新闻条目"""
     __tablename__ = "news"
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    symbol = Column(String, index=True, nullable=True)  # None = 宏观新闻
-    title = Column(String)
-    url = Column(String, unique=True)
-    published_at = Column(DateTime)
-    source = Column(String)
-    summary = Column(Text, nullable=True)       # LLM 生成摘要
-    sentiment_score = Column(Float, nullable=True)  # -1.0 ~ +1.0
-    fetched_at = Column(DateTime, default=datetime.utcnow)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    symbol: Mapped[str | None] = mapped_column(String, index=True, nullable=True)  # None = 宏观新闻
+    title: Mapped[str] = mapped_column(String)
+    url: Mapped[str] = mapped_column(String, unique=True)
+    published_at: Mapped[datetime] = mapped_column(DateTime)
+    source: Mapped[str] = mapped_column(String, nullable=True)
+    summary: Mapped[str | None] = mapped_column(Text, nullable=True)       # LLM 生成摘要
+    sentiment_score: Mapped[float | None] = mapped_column(Float, nullable=True)  # -1.0 ~ +1.0
+    fetched_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
 class IndexPrice(Base):
     """大盘指数日线（用于宏观相对强弱对比）"""
     __tablename__ = "index_prices"
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    symbol = Column(String, index=True)    # e.g. "sh000300"（沪深300）
-    date = Column(String, index=True)      # "2024-01-15"
-    close = Column(Float)
-    change_pct = Column(Float, nullable=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    symbol: Mapped[str] = mapped_column(String, index=True)    # e.g. "sh000300"（沪深300）
+    date: Mapped[str] = mapped_column(String, index=True)      # "2024-01-15"
+    close: Mapped[float] = mapped_column(Float)
+    change_pct: Mapped[float | None] = mapped_column(Float, nullable=True)
 
 
 class Signal(Base):
     """信号记录"""
     __tablename__ = "signals"
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    symbol = Column(String, index=True)
-    date = Column(String, index=True)
-    quant_score = Column(Float, nullable=True)      # Qlib 量化得分
-    technical_score = Column(Float, nullable=True)  # 技术分析得分
-    sentiment_score = Column(Float, nullable=True)  # 新闻情感得分
-    composite_score = Column(Float)                 # 综合得分 -100~+100
-    recommendation = Column(String)                 # 强买/买/观望/卖/强卖
-    confidence = Column(String)                     # 高/中/低
-    stop_loss = Column(Float, nullable=True)
-    take_profit = Column(Float, nullable=True)
-    limit_status = Column(String, nullable=True)    # normal / limit_up / limit_down
-    llm_rationale = Column(Text, nullable=True)     # LLM 综合判断理由
-    rule_version = Column(String, nullable=True)     # 决策规则版本
-    data_timestamp = Column(String, nullable=True)   # 信号使用的数据日期/时间戳
-    created_at = Column(DateTime, default=datetime.utcnow)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    symbol: Mapped[str] = mapped_column(String, index=True)
+    date: Mapped[str] = mapped_column(String, index=True)
+    quant_score: Mapped[float | None] = mapped_column(Float, nullable=True)      # Qlib 量化得分
+    technical_score: Mapped[float | None] = mapped_column(Float, nullable=True)  # 技术分析得分
+    sentiment_score: Mapped[float | None] = mapped_column(Float, nullable=True)  # 新闻情感得分
+    composite_score: Mapped[float] = mapped_column(Float)                 # 综合得分 -100~+100
+    recommendation: Mapped[str] = mapped_column(String)                 # 强买/买/观望/卖/强卖
+    confidence: Mapped[str] = mapped_column(String)                     # 高/中/低
+    stop_loss: Mapped[float | None] = mapped_column(Float, nullable=True)
+    take_profit: Mapped[float | None] = mapped_column(Float, nullable=True)
+    limit_status: Mapped[str | None] = mapped_column(String, nullable=True)    # normal / limit_up / limit_down
+    llm_rationale: Mapped[str | None] = mapped_column(Text, nullable=True)     # LLM 综合判断理由
+    rule_version: Mapped[str | None] = mapped_column(String, nullable=True)     # 决策规则版本
+    data_timestamp: Mapped[str | None] = mapped_column(String, nullable=True)   # 信号使用的数据日期/时间戳
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
 class FinancialMetric(Base):
@@ -120,26 +132,26 @@ class FinancialMetric(Base):
     """
     __tablename__ = "financial_metrics"
     __table_args__ = (UniqueConstraint("symbol", "report_date", name="uq_fm_symbol_date"),)
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    symbol = Column(String, index=True)
-    report_date = Column(String, index=True)        # "2024-09-30"
-    disclosure_date = Column(String, index=True, nullable=True)  # 实际披露日，缺失时回退 report_date
-    period_type = Column(String, nullable=True)     # "Q1"/"Q2"/"Q3"/"Annual"
-    revenue = Column(Float, nullable=True)
-    revenue_yoy = Column(Float, nullable=True)      # 营业总收入同比 %
-    net_profit = Column(Float, nullable=True)
-    net_profit_yoy = Column(Float, nullable=True)   # 净利润同比 %
-    total_assets = Column(Float, nullable=True)
-    total_equity = Column(Float, nullable=True)
-    long_term_debt = Column(Float, nullable=True)
-    current_ratio = Column(Float, nullable=True)
-    operating_cf = Column(Float, nullable=True)
-    shares_outstanding = Column(Float, nullable=True)
-    gross_margin = Column(Float, nullable=True)
-    roe = Column(Float, nullable=True)              # 计算: 净利润 / 净资产
-    asset_turnover = Column(Float, nullable=True)   # 计算: 收入 / 总资产
-    raw_json = Column(Text, nullable=True)          # 完整原始字段备份
-    fetched_at = Column(DateTime, default=datetime.utcnow)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    symbol: Mapped[str] = mapped_column(String, index=True)
+    report_date: Mapped[str] = mapped_column(String, index=True)        # "2024-09-30"
+    disclosure_date: Mapped[str | None] = mapped_column(String, index=True, nullable=True)  # 实际披露日，缺失时回退 report_date
+    period_type: Mapped[str | None] = mapped_column(String, nullable=True)     # "Q1"/"Q2"/"Q3"/"Annual"
+    revenue: Mapped[float | None] = mapped_column(Float, nullable=True)
+    revenue_yoy: Mapped[float | None] = mapped_column(Float, nullable=True)      # 营业总收入同比 %
+    net_profit: Mapped[float | None] = mapped_column(Float, nullable=True)
+    net_profit_yoy: Mapped[float | None] = mapped_column(Float, nullable=True)   # 净利润同比 %
+    total_assets: Mapped[float | None] = mapped_column(Float, nullable=True)
+    total_equity: Mapped[float | None] = mapped_column(Float, nullable=True)
+    long_term_debt: Mapped[float | None] = mapped_column(Float, nullable=True)
+    current_ratio: Mapped[float | None] = mapped_column(Float, nullable=True)
+    operating_cf: Mapped[float | None] = mapped_column(Float, nullable=True)
+    shares_outstanding: Mapped[float | None] = mapped_column(Float, nullable=True)
+    gross_margin: Mapped[float | None] = mapped_column(Float, nullable=True)
+    roe: Mapped[float | None] = mapped_column(Float, nullable=True)              # 计算: 净利润 / 净资产
+    asset_turnover: Mapped[float | None] = mapped_column(Float, nullable=True)   # 计算: 收入 / 总资产
+    raw_json: Mapped[str | None] = mapped_column(Text, nullable=True)          # 完整原始字段备份
+    fetched_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
 class MarketSnapshot(Base):
@@ -150,17 +162,17 @@ class MarketSnapshot(Base):
     """
     __tablename__ = "market_snapshots"
     __table_args__ = (UniqueConstraint("symbol", "date", name="uq_ms_symbol_date"),)
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    symbol = Column(String, index=True)
-    date = Column(String, index=True)
-    market_cap = Column(Float, nullable=True)
-    float_market_cap = Column(Float, nullable=True)
-    shares_outstanding = Column(Float, nullable=True)
-    north_net_buy = Column(Float, nullable=True)
-    margin_balance = Column(Float, nullable=True)
-    large_order_net_inflow = Column(Float, nullable=True)
-    source = Column(String, nullable=True)
-    fetched_at = Column(DateTime, default=datetime.utcnow)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    symbol: Mapped[str] = mapped_column(String, index=True)
+    date: Mapped[str] = mapped_column(String, index=True)
+    market_cap: Mapped[float | None] = mapped_column(Float, nullable=True)
+    float_market_cap: Mapped[float | None] = mapped_column(Float, nullable=True)
+    shares_outstanding: Mapped[float | None] = mapped_column(Float, nullable=True)
+    north_net_buy: Mapped[float | None] = mapped_column(Float, nullable=True)
+    margin_balance: Mapped[float | None] = mapped_column(Float, nullable=True)
+    large_order_net_inflow: Mapped[float | None] = mapped_column(Float, nullable=True)
+    source: Mapped[str | None] = mapped_column(String, nullable=True)
+    fetched_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
 class LongTermLabel(Base):
@@ -170,15 +182,15 @@ class LongTermLabel(Base):
     """
     __tablename__ = "long_term_labels"
     __table_args__ = (UniqueConstraint("symbol", "date", name="uq_ltl_symbol_date"),)
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    symbol = Column(String, index=True)
-    date = Column(String, index=True)               # 生成日 "2026-05-17"
-    label = Column(String)                          # 值得持有/估值偏高/观望/规避
-    score = Column(Float)                           # 团综合分 -100~+100
-    votes_json = Column(Text, nullable=True)        # {role: vote} JSON
-    key_findings_json = Column(Text, nullable=True) # [str] JSON，≤6 条
-    expires_at = Column(String)                     # "2026-05-27"
-    created_at = Column(DateTime, default=datetime.utcnow)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    symbol: Mapped[str] = mapped_column(String, index=True)
+    date: Mapped[str] = mapped_column(String, index=True)               # 生成日 "2026-05-17"
+    label: Mapped[str] = mapped_column(String)                          # 值得持有/估值偏高/观望/规避
+    score: Mapped[float] = mapped_column(Float)                           # 团综合分 -100~+100
+    votes_json: Mapped[str | None] = mapped_column(Text, nullable=True)        # {role: vote} JSON
+    key_findings_json: Mapped[str | None] = mapped_column(Text, nullable=True) # [str] JSON，≤6 条
+    expires_at: Mapped[str] = mapped_column(String)                     # "2026-05-27"
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
 class DecisionRun(Base):
@@ -189,22 +201,22 @@ class DecisionRun(Base):
     """
     __tablename__ = "decision_runs"
     __table_args__ = (UniqueConstraint("run_id", name="uq_decision_run_id"),)
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    run_id = Column(String, index=True)
-    run_type = Column(String, index=True)          # postmarket/backtest/paper_trade/...
-    symbol = Column(String, index=True, nullable=True)
-    as_of = Column(String, index=True, nullable=True)
-    profile = Column(String, nullable=True)
-    rule_version = Column(String, nullable=True)
-    recommendation = Column(String, nullable=True)
-    composite_score = Column(Float, nullable=True)
-    input_snapshot_json = Column(Text, nullable=True)
-    agent_outputs_json = Column(Text, nullable=True)
-    risk_decision_json = Column(Text, nullable=True)
-    final_action_json = Column(Text, nullable=True)
-    eval_result_json = Column(Text, nullable=True)
-    notes = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    run_id: Mapped[str] = mapped_column(String, index=True)
+    run_type: Mapped[str] = mapped_column(String, index=True)          # postmarket/backtest/paper_trade/...
+    symbol: Mapped[str | None] = mapped_column(String, index=True, nullable=True)
+    as_of: Mapped[str | None] = mapped_column(String, index=True, nullable=True)
+    profile: Mapped[str | None] = mapped_column(String, nullable=True)
+    rule_version: Mapped[str | None] = mapped_column(String, nullable=True)
+    recommendation: Mapped[str | None] = mapped_column(String, nullable=True)
+    composite_score: Mapped[float | None] = mapped_column(Float, nullable=True)
+    input_snapshot_json: Mapped[str | None] = mapped_column(Text, nullable=True)
+    agent_outputs_json: Mapped[str | None] = mapped_column(Text, nullable=True)
+    risk_decision_json: Mapped[str | None] = mapped_column(Text, nullable=True)
+    final_action_json: Mapped[str | None] = mapped_column(Text, nullable=True)
+    eval_result_json: Mapped[str | None] = mapped_column(Text, nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
 class ResearchState(Base):
@@ -215,42 +227,42 @@ class ResearchState(Base):
     """
     __tablename__ = "research_states"
     __table_args__ = (UniqueConstraint("symbol", name="uq_research_state_symbol"),)
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    symbol = Column(String, index=True)
-    thesis = Column(Text, nullable=True)
-    risks_json = Column(Text, nullable=True)
-    open_questions_json = Column(Text, nullable=True)
-    last_signal_summary = Column(Text, nullable=True)
-    last_review_json = Column(Text, nullable=True)
-    updated_at = Column(DateTime, default=datetime.utcnow)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    symbol: Mapped[str] = mapped_column(String, index=True)
+    thesis: Mapped[str | None] = mapped_column(Text, nullable=True)
+    risks_json: Mapped[str | None] = mapped_column(Text, nullable=True)
+    open_questions_json: Mapped[str | None] = mapped_column(Text, nullable=True)
+    last_signal_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
+    last_review_json: Mapped[str | None] = mapped_column(Text, nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
 class ReviewRun(Base):
     """复盘运行记录：daily / long_term。"""
     __tablename__ = "review_runs"
     __table_args__ = (UniqueConstraint("kind", "as_of", name="uq_review_kind_as_of"),)
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    kind = Column(String, index=True)
-    as_of = Column(String, index=True)
-    summary = Column(Text, nullable=True)
-    path = Column(String, nullable=True)
-    status = Column(String, default="created")
-    payload_json = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    kind: Mapped[str] = mapped_column(String, index=True)
+    as_of: Mapped[str] = mapped_column(String, index=True)
+    summary: Mapped[str | None] = mapped_column(Text, nullable=True)
+    path: Mapped[str | None] = mapped_column(String, nullable=True)
+    status: Mapped[str] = mapped_column(String, default="created")
+    payload_json: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
 class PendingAIAction(Base):
     """AI 对话生成、等待用户确认的项目内操作。"""
     __tablename__ = "pending_ai_actions"
-    action_id = Column(String, primary_key=True)
-    action = Column(String, index=True)
-    payload_json = Column(Text)
-    status = Column(String, default="pending")  # pending / executed / cancelled / failed
-    result_json = Column(Text, nullable=True)
-    user_message = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    executed_at = Column(DateTime, nullable=True)
+    action_id: Mapped[str] = mapped_column(String, primary_key=True)
+    action: Mapped[str] = mapped_column(String, index=True)
+    payload_json: Mapped[str] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(String, default="pending")  # pending / executed / cancelled / failed
+    result_json: Mapped[str | None] = mapped_column(Text, nullable=True)
+    user_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    executed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
 
 class DecisionMemoryLayered(Base):
@@ -262,35 +274,35 @@ class DecisionMemoryLayered(Base):
     """
     __tablename__ = "decision_memory_layered"
     __table_args__ = (UniqueConstraint("symbol", "layer", name="uq_decision_memory_layered"),)
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    symbol = Column(String, nullable=True, index=True)  # NULL for long
-    layer = Column(String, nullable=False, index=True)   # 'medium' / 'long'
-    content = Column(Text, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    symbol: Mapped[str | None] = mapped_column(String, nullable=True, index=True)  # NULL for long
+    layer: Mapped[str] = mapped_column(String, nullable=False, index=True)   # 'medium' / 'long'
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
 class ChatSession(Base):
     """Project AI chat window; memory is scoped to this session only."""
     __tablename__ = "chat_sessions"
-    id = Column(String, primary_key=True)
-    title = Column(String, nullable=True)
-    mode = Column(String, default="general")
-    archived_at = Column(DateTime, nullable=True)
-    summary = Column(Text, nullable=True)  # M9.3 window summarizer output
-    summary_until_id = Column(Integer, nullable=True)  # last compressed msg id
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow)
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    title: Mapped[str | None] = mapped_column(String, nullable=True)
+    mode: Mapped[str] = mapped_column(String, default="general")
+    archived_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    summary: Mapped[str | None] = mapped_column(Text, nullable=True)  # M9.3 window summarizer output
+    summary_until_id: Mapped[int | None] = mapped_column(Integer, nullable=True)  # last compressed msg id
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
 class ChatMessage(Base):
     """Messages stored per chat window."""
     __tablename__ = "chat_messages"
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    session_id = Column(String, index=True)
-    role = Column(String)
-    content = Column(Text)
-    payload_json = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    session_id: Mapped[str] = mapped_column(String, index=True)
+    role: Mapped[str] = mapped_column(String)
+    content: Mapped[str] = mapped_column(Text)
+    payload_json: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
 def get_latest_price_date(symbol: str, db) -> str | None:
@@ -499,8 +511,8 @@ def init_db() -> None:
 
 def _seed_default_memory() -> None:
     """M9.0/M9.1：种子默认 bias-override + 一次性迁移分层记忆文件入 DB。"""
-    from backend.memory.bias_override import seed_default_overrides
     from backend.decision.memory_layered import migrate_layered_files_to_db
+    from backend.memory.bias_override import seed_default_overrides
     db = SessionLocal()
     try:
         seed_default_overrides(db)

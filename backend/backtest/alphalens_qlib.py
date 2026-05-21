@@ -19,18 +19,19 @@ Qlib (LightGBM Alpha) 有效性硬验证 — 阶段A 决策点
   PYTHONPATH=. python3 backend/backtest/alphalens_qlib.py --walk-forward
 """
 from __future__ import annotations
+
 import argparse
 import json
 import warnings
 from typing import Any
-import numpy as np
+
 import pandas as pd
 from scipy.stats import spearmanr
 
-warnings.filterwarnings("ignore")
-
 from backend.data.database import SessionLocal, Stock
 from backend.data.qlib_data import FEATURE_COLS, build_training_data
+
+warnings.filterwarnings("ignore")
 
 
 def load_panel(db) -> pd.DataFrame:
@@ -40,7 +41,7 @@ def load_panel(db) -> pd.DataFrame:
         return pd.DataFrame()
     names = {
         s.symbol: s.name
-        for s in db.query(Stock).filter(Stock.active == True, Stock.market == "CN").all()
+        for s in db.query(Stock).filter(Stock.active, Stock.market == "CN").all()
     }
     panel = panel[panel["symbol"].isin(names.keys())].copy()
     if panel.empty:
@@ -55,7 +56,7 @@ def train_lgbm(X_train, y_train, X_val, y_val) -> Any:
     try:
         import lightgbm as lgb
     except ImportError:
-        raise RuntimeError("缺少 lightgbm，pip install lightgbm")
+        raise RuntimeError("缺少 lightgbm，pip install lightgbm") from None
     model = lgb.LGBMRegressor(
         n_estimators=300, learning_rate=0.05, num_leaves=31,
         min_child_samples=20, subsample=0.8, colsample_bytree=0.8,
@@ -161,7 +162,7 @@ def report(predictions: pd.DataFrame, label: str = "") -> None:
     win = metrics["ic_positive_rate"]
 
     print(f"\n  ── {label} ──")
-    print(f"    样本日数:    {len(ic)}")
+    print(f"    样本日数:    {metrics['ic_days']}")
     print(f"    IC 均值:    {ic_mean:+.4f}")
     print(f"    IC 标准差:   {ic_std:.4f}")
     print(f"    ICIR:       {icir:+.3f}")
@@ -245,7 +246,7 @@ def walk_forward(panel: pd.DataFrame, train_months: int = 12, test_months: int =
         cur += pd.DateOffset(months=test_months)
     if not all_preds:
         print("walk-forward 数据不足")
-        return
+        return None
     print(f"\n  walk-forward 共 {iteration} 个窗口")
     preds = pd.concat(all_preds, ignore_index=True)
     report(preds, label="Walk-Forward")
@@ -278,7 +279,7 @@ def main() -> None:
         print("  Qlib (LightGBM Alpha) 有效性验证 — 阶段A 决策点")
         print("=" * 70)
 
-        reports = {
+        reports: dict[str, Any] = {
             "panel": {
                 "n_rows": len(panel),
                 "n_features": len(FEATURE_COLS),

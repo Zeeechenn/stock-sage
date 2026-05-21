@@ -18,16 +18,18 @@ akshare 接口策略：
 所有同步均幂等：按 (symbol, report_date) 唯一约束跳过已存在记录。
 """
 from __future__ import annotations
+
+import functools
 import json
 import logging
 import time
-import functools
+from collections.abc import Iterable
 from datetime import datetime
-from typing import Iterable
+from typing import Any
 
 import pandas as pd
 
-from backend.data.database import FinancialMetric, Stock, SessionLocal
+from backend.data.database import FinancialMetric, Stock
 
 logger = logging.getLogger(__name__)
 
@@ -70,7 +72,7 @@ def _safe_float(v) -> float | None:
         return None
 
 
-def _pick(row: pd.Series, *keys: str) -> any:
+def _pick(row: pd.Series, *keys: str) -> Any:
     """从 row 中取第一个存在的列（兼容 akshare 字段重命名）"""
     for k in keys:
         if k in row.index:
@@ -107,7 +109,7 @@ def sync_industry(db) -> int:
         logger.error("akshare 未安装")
         return 0
 
-    stocks = db.query(Stock).filter(Stock.active == True, Stock.market == "CN").all()
+    stocks = db.query(Stock).filter(Stock.active, Stock.market == "CN").all()
     updated = 0
     for s in stocks:
         if s.industry:
@@ -143,7 +145,6 @@ def _fetch_abstract(ak, symbol: str) -> pd.DataFrame:
 @_akshare_retry(max_attempts=3, delay=1.5)
 def _fetch_indicator(ak, symbol: str, years: int = 5) -> pd.DataFrame:
     """财务指标（含 ROE、资产周转率等衍生指标）。必须传 start_year 否则返回空。"""
-    from datetime import datetime
     start_year = str(datetime.now().year - years)
     return ak.stock_financial_analysis_indicator(symbol=symbol, start_year=start_year)
 
@@ -291,7 +292,7 @@ def sync_financial_metrics(symbol: str, db, years: int = 5) -> int:
             r["asset_turnover"] = compute_asset_turnover(r.get("revenue"), r.get("total_assets"))
 
     # 写库（幂等）
-    for d, r in rows_by_date.items():
+    for r in rows_by_date.values():
         exists = db.query(FinancialMetric.id).filter(
             FinancialMetric.symbol == symbol,
             FinancialMetric.report_date == r["report_date"],
@@ -462,11 +463,17 @@ def compute_jingqi_deltas(symbol: str, db, peers: Iterable[str] | None = None) -
         transitions["revenue_negative_to_positive"] = (prev_delta < 0 and cur_delta > 0)
 
     # 同行业分位
-    industry_pctile = {"delta_net_profit_yoy": None,
-                       "delta_revenue_yoy": None,
-                       "delta_roe": None}
+    industry_pctile: dict[str, float | None] = {
+        "delta_net_profit_yoy": None,
+        "delta_revenue_yoy": None,
+        "delta_roe": None,
+    }
     if peers:
-        peer_deltas = {"delta_net_profit_yoy": [], "delta_revenue_yoy": [], "delta_roe": []}
+        peer_deltas: dict[str, list[float]] = {
+            "delta_net_profit_yoy": [],
+            "delta_revenue_yoy": [],
+            "delta_roe": [],
+        }
         for psym in peers:
             if psym == symbol:
                 continue
@@ -547,7 +554,6 @@ def sync_disclosure_dates(db, years: int = 3) -> int:
         logger.error("akshare 未安装")
         return 0
 
-    from datetime import datetime
     current_year = datetime.now().year
     updated = 0
 
@@ -608,5 +614,5 @@ def list_peers(symbol: str, db, industry: str | None = None) -> list[str]:
             return []
         industry = s.industry
     return [r.symbol for r in db.query(Stock).filter(
-        Stock.active == True, Stock.industry == industry
+        Stock.active, Stock.industry == industry
     ).all() if r.symbol != symbol]

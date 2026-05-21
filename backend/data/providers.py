@@ -1,12 +1,11 @@
 """Market/news data provider registry with fallback and short cooldowns."""
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from time import time
-from typing import Callable
 
 import pandas as pd
-
 
 DailyFetcher = Callable[[str, int], pd.DataFrame]
 IndexFetcher = Callable[[str, int], pd.DataFrame]

@@ -1,9 +1,14 @@
-from datetime import datetime
 
 
 def test_positions_crud_and_summary(test_db):
     from backend.api.routes.dashboard import dashboard_summary
-    from backend.api.routes.positions import close_position, create_position, delete_closed_position, list_positions, update_position
+    from backend.api.routes.positions import (
+        close_position,
+        create_position,
+        delete_closed_position,
+        list_positions,
+        update_position,
+    )
     from backend.api.schemas import PositionCreate, PositionUpdate
     from backend.data.database import Price, Stock
 
@@ -136,7 +141,14 @@ def test_runtime_config_updates_weights_positions_data_and_review_times():
 
 
 def test_ai_chat_creates_pending_action_and_confirm_adds_stock(test_db, monkeypatch):
-    from backend.api.routes.ai import archive_chat_session, chat, confirm_action, create_chat_session, list_chat_messages, list_chat_sessions
+    from backend.api.routes.ai import (
+        archive_chat_session,
+        chat,
+        confirm_action,
+        create_chat_session,
+        list_chat_messages,
+        list_chat_sessions,
+    )
     from backend.api.schemas import AIChatRequest
     from backend.data.database import Stock
 
@@ -150,7 +162,7 @@ def test_ai_chat_creates_pending_action_and_confirm_adds_stock(test_db, monkeypa
 
     result = confirm_action(response.pending_action["id"], db=test_db)
     assert result["status"] == "executed"
-    assert test_db.query(Stock).filter(Stock.symbol == "600519", Stock.active == True).count() == 1
+    assert test_db.query(Stock).filter(Stock.symbol == "600519", Stock.active).count() == 1
 
     session = create_chat_session({"title": "测试窗口"}, db=test_db)
     chat(

@@ -22,7 +22,6 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
-import os
 import sqlite3
 from dataclasses import dataclass
 from pathlib import Path
@@ -222,7 +221,7 @@ def quant_score_correlation(signals: list[Signal], prices: dict, fwd_days: int =
             ranks[i] = float(r + 1)
         return ranks
 
-    xs, ys = zip(*pairs)
+    xs, ys = zip(*pairs, strict=False)
     rx, ry = rank(xs), rank(ys)
     n = len(rx)
     mx = sum(rx) / n

@@ -11,8 +11,9 @@ M4.6 历史信号回填器。
 不写 Signal 表：避免污染生产数据；输出仅用于 M4.6 回测。
 """
 from __future__ import annotations
+
 import logging
-from typing import Iterator
+from collections.abc import Iterator
 
 import pandas as pd
 
@@ -64,8 +65,8 @@ def generate_input(
     market: str = "CN",
 ) -> SignalInput | None:
     """单点回填：(symbol, date) → SignalInput（无足够数据时返回 None）"""
-    from backend.analysis.technical import technical_score
     from backend.analysis.qlib_engine import qlib_score
+    from backend.analysis.technical import technical_score
 
     df = _load_price_pit(db, symbol, date, days_back=200)
     if len(df) < 60:
@@ -115,12 +116,12 @@ def iter_window(
 
     every_n_days=5 时每 5 个交易日采样一次（控制信号密度）。
     """
-    from backend.data.database import SessionLocal, Stock, Price
+    from backend.data.database import Price, SessionLocal, Stock
 
     db = SessionLocal()
     try:
         if symbols is None:
-            symbols = [s.symbol for s in db.query(Stock).filter(Stock.active == True).all()]
+            symbols = [s.symbol for s in db.query(Stock).filter(Stock.active).all()]
 
         for sym in symbols:
             dates = [
@@ -156,7 +157,9 @@ def backfill_window(
 
 def main(argv: list[str] | None = None) -> int:
     """CLI: 回填 [start, end] 历史信号 → 跑 compare_paths → 输出对比报告"""
-    import argparse, json
+    import argparse
+    import json
+
     from backend.backtest.compare_paths import compare_paths
 
     ap = argparse.ArgumentParser(description="M4.6 历史信号回填 + 双路径对比")

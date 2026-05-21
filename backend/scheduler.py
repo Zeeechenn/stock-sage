@@ -1,10 +1,12 @@
 """定时任务：盘前更新数据，盘后生成信号"""
 import logging
 from copy import deepcopy
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from functools import wraps
+
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
+
 from backend.config import settings
 
 logger = logging.getLogger(__name__)
@@ -47,7 +49,7 @@ def get_scheduler_state() -> dict:
 def run_tracked_job(job_name: str, fn):
     """Run a job and record start/end/error metadata."""
     state = _state_for(job_name)
-    started = datetime.now(timezone.utc)
+    started = datetime.now(UTC)
     state.update({
         "running": True,
         "last_status": "running",
@@ -58,7 +60,7 @@ def run_tracked_job(job_name: str, fn):
     })
     try:
         result = fn()
-        finished = datetime.now(timezone.utc)
+        finished = datetime.now(UTC)
         state.update({
             "running": False,
             "last_status": "success",
@@ -69,7 +71,7 @@ def run_tracked_job(job_name: str, fn):
         })
         return result
     except Exception as exc:
-        finished = datetime.now(timezone.utc)
+        finished = datetime.now(UTC)
         state.update({
             "running": False,
             "last_status": "error",
@@ -112,7 +114,7 @@ def _kill_switch_guard(job_name: str) -> bool:
 
 def _recent_signal_returns(db, limit: int = 20) -> list[float]:
     """最近正向信号的次日收益，用于 kill switch 连亏检测。"""
-    from backend.data.database import Signal, Price
+    from backend.data.database import Price, Signal
     from backend.decision.signal_policy import entry_recommendations
 
     recent_signals = (
@@ -168,7 +170,7 @@ def job_premarket() -> None:
 
     db = SessionLocal()
     try:
-        stocks = db.query(Stock).filter(Stock.active == True).all()
+        stocks = db.query(Stock).filter(Stock.active).all()
         price_rows, news_rows = 0, 0
 
         for stock in stocks:
@@ -197,11 +199,12 @@ def job_premarket() -> None:
         db.close()
 
 
-def _build_regime(db, stocks) -> dict:
+def _build_regime(db, stocks):
     """阶段A: 一次性构建大盘+板块 regime（盘后所有股票共用）"""
-    from backend.data.database import IndexPrice, Price
-    from backend.analysis.timing.regime import market_regime
     import pandas as pd
+
+    from backend.analysis.timing.regime import market_regime
+    from backend.data.database import IndexPrice, Price
 
     # HS300 OHLC — index_prices 只存 close，high/low 用 ±0.5% 估算
     rows = (db.query(IndexPrice.date, IndexPrice.close)
@@ -257,7 +260,11 @@ def _load_postmarket_context(db, stocks) -> dict:
 def _postmarket_news_sentiment(stock, db) -> dict:
     from backend.analysis.sentiment import analyze_news
     from backend.config import settings
-    from backend.data.news import fetch_stock_news_anspire, fetch_titles_tavily, get_recent_news_items
+    from backend.data.news import (
+        fetch_stock_news_anspire,
+        fetch_titles_tavily,
+        get_recent_news_items,
+    )
     from backend.data.news_audit import audited_titles
 
     news_items = get_recent_news_items(stock.symbol, db, hours=24)
@@ -392,7 +399,7 @@ def run_postmarket_batch(db) -> dict:
     """Run post-market analysis for active stocks and return batch stats."""
     from backend.data.database import Stock
 
-    stocks = db.query(Stock).filter(Stock.active == True).all()
+    stocks = db.query(Stock).filter(Stock.active).all()
     context = _load_postmarket_context(db, stocks)
     stats = {"stocks": len(stocks), "processed": 0, "saved": 0, "skipped": 0, "errors": 0, "alerts": 0}
     for stock in stocks:
@@ -448,13 +455,13 @@ def job_stoploss_check() -> None:
     """
     if _kill_switch_guard("stoploss_check"):
         return
-    from backend.data.database import SessionLocal, Stock, Signal, Price
-    from backend.notification.bark import send_stoploss_alert
+    from backend.data.database import Price, SessionLocal, Signal, Stock
     from backend.decision.signal_policy import entry_recommendations
+    from backend.notification.bark import send_stoploss_alert
 
     db = SessionLocal()
     try:
-        stocks = db.query(Stock).filter(Stock.active == True).all()
+        stocks = db.query(Stock).filter(Stock.active).all()
         for stock in stocks:
             try:
                 sig = (
@@ -480,7 +487,7 @@ def job_stoploss_check() -> None:
                     continue
 
                 current = float(latest_price[0])
-                if current <= sig.stop_loss:
+                if sig.stop_loss is not None and current <= sig.stop_loss:
                     logger.warning("止损触发: %s 当前%.2f ≤ 止损%.2f (信号%s)",
                                    stock.symbol, current, sig.stop_loss, sig.date)
                     send_stoploss_alert(
@@ -499,8 +506,8 @@ def job_stoploss_check() -> None:
 @tracked_job("train_model")
 def job_train_model() -> None:
     """每周六重训 LightGBM Alpha 模型（数据不足时自动跳过）"""
-    from backend.data.database import SessionLocal
     from backend.analysis.qlib_engine import train
+    from backend.data.database import SessionLocal
 
     db = SessionLocal()
     try:
@@ -521,10 +528,14 @@ def job_weekly_longterm() -> None:
     长期分析师团 first batch：每周日 11:00
     同步 industry + 5 年财报 → 跑 LongTermTeam → save_label
     """
-    from backend.data.database import SessionLocal, Stock
-    from backend.data.fundamentals import sync_industry, sync_financial_metrics, sync_disclosure_dates
-    from backend.agents.long_term.team import LongTermTeam
     from backend.agents.long_term.storage import save_label
+    from backend.agents.long_term.team import LongTermTeam
+    from backend.data.database import SessionLocal, Stock
+    from backend.data.fundamentals import (
+        sync_disclosure_dates,
+        sync_financial_metrics,
+        sync_industry,
+    )
 
     if not settings.long_term_team_enabled:
         logger.info("long_term team disabled, skipping weekly job")
@@ -539,7 +550,7 @@ def job_weekly_longterm() -> None:
         except Exception as e:
             logger.warning("sync_industry failed: %s", e)
 
-        stocks = db.query(Stock).filter(Stock.active == True, Stock.market == "CN").all()
+        stocks = db.query(Stock).filter(Stock.active, Stock.market == "CN").all()
         for s in stocks:
             try:
                 inserted = sync_financial_metrics(s.symbol, db, years=settings.financial_backfill_years)

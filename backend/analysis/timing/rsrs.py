@@ -8,6 +8,7 @@ RSRS（阻力支撑相对强度）大盘择时
 仅需沪深300指数 OHLC 数据。
 """
 from __future__ import annotations
+
 import numpy as np
 import pandas as pd
 

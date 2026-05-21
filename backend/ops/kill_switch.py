@@ -16,12 +16,13 @@ Kill Switch（Tier 4）
 reset() 显式清除状态（需要用户主动操作）。
 """
 from __future__ import annotations
+
 import json
 import logging
-from dataclasses import dataclass, asdict
-from datetime import datetime, timedelta
+from collections.abc import Iterable
+from dataclasses import asdict, dataclass
+from datetime import datetime
 from pathlib import Path
-from typing import Iterable
 
 logger = logging.getLogger(__name__)
 

@@ -11,16 +11,17 @@
   • score < -20 → 规避
 """
 from __future__ import annotations
+
 import logging
 from datetime import datetime, timedelta
 
-from backend.agents.long_term.base import LongTermReport, LongTermLabel
 from backend.agents.long_term import (
-    piotroski_analyst,
-    jingqi_analyst,
     a_teacher_analyst,
+    jingqi_analyst,
+    piotroski_analyst,
     qfii_flow_analyst,
 )
+from backend.agents.long_term.base import LongTermLabel, LongTermReport, VoteLabel
 from backend.config import settings
 
 logger = logging.getLogger(__name__)
@@ -51,8 +52,8 @@ def _aggregate_score(reports: dict[str, LongTermReport]) -> float:
     return round(total / total_w, 1)
 
 
-def _resolve_label(score: float, votes: dict[str, str],
-                   a_teacher_layer5: str | None = None) -> str:
+def _resolve_label(score: float, votes: dict[str, VoteLabel],
+                   a_teacher_layer5: str | None = None) -> VoteLabel:
     """根据综合分 + 一票否决 + a_teacher 高位 决定最终 label"""
     # 一票否决：任一分析师投"规避"
     if "规避" in votes.values():

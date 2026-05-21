@@ -8,16 +8,15 @@
   • _recommend 选 Sharpe 最高且 trades>=5
 """
 from __future__ import annotations
-from unittest.mock import MagicMock, patch
 
 from backend.backtest.compare_paths import SignalInput
 from backend.backtest.exit_sweep import (
-    _PriceRow,
+    ExitStrategyMetrics,
     _build_strategy_runners,
     _metrics,
+    _PriceRow,
     _recommend,
     run_exit_sweep,
-    ExitStrategyMetrics,
 )
 
 
@@ -45,8 +44,8 @@ def _make_rows(closes: list[float], atr: float = 2.5,
     highs = highs or closes
     lows = lows or closes
     return [
-        _PriceRow(date=f"d{i}", close=c, high=h, low=l, atr14=atr)
-        for i, (c, h, l) in enumerate(zip(closes, highs, lows))
+        _PriceRow(date=f"d{i}", close=c, high=h, low=low, atr14=atr)
+        for i, (c, h, low) in enumerate(zip(closes, highs, lows, strict=False))
     ]
 
 

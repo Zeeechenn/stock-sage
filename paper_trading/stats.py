@@ -92,7 +92,7 @@ def parse_positions_table(path: str | Path) -> list[PaperPosition]:
         if in_table and all(set(cell) <= {"-", ":"} for cell in cells if cell):
             continue
         if in_table and len(cells) >= len(headers):
-            row = dict(zip(headers, cells))
+            row = dict(zip(headers, cells, strict=False))
             symbol, name = _symbol_name(row.get("股票", ""))
             status = row.get("状态", "")
             exit_date = None if row.get("平仓日") in {"—", "-", ""} else row.get("平仓日")

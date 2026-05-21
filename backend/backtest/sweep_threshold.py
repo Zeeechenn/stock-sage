@@ -11,14 +11,15 @@ M4.8 entry_threshold 扫描器。
 输出：每档阈值的 trades/win_rate/Sharpe/max_drawdown/total_return 表 + 推荐档位。
 """
 from __future__ import annotations
+
 import json
 import logging
 import math
 import statistics
-from dataclasses import dataclass, asdict
-from typing import Sequence
+from collections.abc import Sequence
+from dataclasses import asdict, dataclass
 
-from backend.backtest.compare_paths import SignalInput, _no_llm_settings, _path_a, _max_drawdown
+from backend.backtest.compare_paths import SignalInput, _max_drawdown, _no_llm_settings, _path_a
 
 logger = logging.getLogger(__name__)
 
@@ -161,6 +162,7 @@ def _recommend(rows: list[ThresholdMetrics]) -> dict:
 def main(argv: list[str] | None = None) -> int:
     """CLI: 跑回填 → 扫阈值 → 打印 markdown 表 + JSON"""
     import argparse
+
     from backend.backtest.backfill_signals import iter_window
 
     ap = argparse.ArgumentParser(description="M4.8 entry_threshold 扫描")

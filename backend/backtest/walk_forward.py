@@ -15,11 +15,13 @@ Holdout 约定：
     所有参数决策只能在此之前做出，holdout 仅做一次裁判。
 """
 from __future__ import annotations
+
 import logging
 import statistics
-from dataclasses import dataclass, asdict
+from collections.abc import Callable, Sequence
+from dataclasses import asdict, dataclass
 from datetime import date, datetime, timedelta
-from typing import Callable, Sequence
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -178,6 +180,7 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
 
     end = args.end or _fmt(date.today())
+    data: Any
     if args.mode == "windows":
         data = [
             w.to_dict()

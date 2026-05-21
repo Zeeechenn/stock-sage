@@ -18,9 +18,10 @@ Score → Vote 映射（settings 可调）：
   • 中间                              → 观望（可触发 LLM 解释 key_findings）
 """
 from __future__ import annotations
+
 import logging
 
-from backend.agents.long_term.base import LongTermReport
+from backend.agents.long_term.base import LongTermReport, VoteLabel
 from backend.config import settings
 from backend.data.fundamentals import compute_piotroski_factors
 from backend.memory.bias_override import lookup_caveat
@@ -41,7 +42,7 @@ _FACTOR_LABELS = {
 }
 
 
-def _score_to_label_vote(score: int) -> str:
+def _score_to_label_vote(score: int) -> VoteLabel:
     """Map F-score integer to a label vote string."""
     if score >= settings.piotroski_strong_threshold:
         return "值得持有"

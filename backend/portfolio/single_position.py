@@ -5,7 +5,8 @@
 当前实现为线性映射，可在测试1/2 后根据实测胜率分段调参。
 """
 from __future__ import annotations
-from backend.config import settings, active_signal_weights
+
+from backend.config import active_signal_weights, settings
 
 
 def suggest_position_pct(

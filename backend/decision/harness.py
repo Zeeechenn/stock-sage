@@ -198,6 +198,8 @@ def review_latest_signal(db, symbol: str) -> dict | None:
             break
     if sig is None:
         return None
+    assert sig_price is not None
+    assert next_price is not None
 
     ret = (next_price[0] - sig_price[0]) / sig_price[0] * 100
     expected_up = is_entry_signal(sig.recommendation, include_legacy=True)

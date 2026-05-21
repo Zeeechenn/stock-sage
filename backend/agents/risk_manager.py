@@ -15,12 +15,13 @@
   • risk_notes            — 风险提示
 """
 from __future__ import annotations
+
 from dataclasses import dataclass
 
 from backend.agents.trader import TraderProposal
 from backend.analysis.timing.regime import RegimeReport
 from backend.config import settings
-from backend.decision.signal_policy import ENTRY_RECS, LEGACY_ENTRY_RECS, EXIT_RECS
+from backend.decision.signal_policy import ENTRY_RECS, EXIT_RECS, LEGACY_ENTRY_RECS
 
 LONG_RECS = ENTRY_RECS | LEGACY_ENTRY_RECS
 STRONG_LONG_RECS = {"可小仓试错", "强买"}

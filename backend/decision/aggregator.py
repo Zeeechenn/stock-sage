@@ -5,11 +5,12 @@
   • multi_agent_enabled=False（旧版）：原 aggregate() 三路加权
   • multi_agent_enabled=True（默认）：aggregate_v2() 调用 agents.pipeline
 """
+import logging
 import math
 import statistics
-import logging
-from backend.config import settings, active_signal_weights
+
 from backend.analysis.factors import calc_stop_take
+from backend.config import active_signal_weights, settings
 from backend.decision.signal_policy import score_to_recommendation
 from backend.llm import get_provider, has_runtime_llm_provider
 
@@ -254,13 +255,16 @@ def aggregate_v2(
     """
     from backend.agents import run_pipeline
     from backend.agents.analyst import (
-        technical_analyst, quant_analyst, sentiment_analyst, news_analyst,
+        news_analyst,
+        quant_analyst,
+        sentiment_analyst,
+        technical_analyst,
     )
     from backend.agents.director import assess as director_assess
     from backend.agents.researcher import (
+        conclusion_to_arbitration_dict,
         has_divergence,
         multi_round_debate,
-        conclusion_to_arbitration_dict,
     )
 
     # 与旧版一致的 quant 层混合（Kronos 等可选模块仍可参与）
@@ -335,6 +339,7 @@ def save_signal(symbol: str, date: str, result: dict, db) -> None:
     将 aggregate() 结果写入 Signal 表（upsert：同一 symbol+date 存在则覆盖更新）。
     """
     import json
+
     from backend.config import settings
     from backend.data.database import Signal
 

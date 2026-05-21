@@ -1,7 +1,6 @@
 """Hermes-style lightweight memory decision heuristic."""
 from __future__ import annotations
 
-
 POSITIVE_HINTS = (
     "记住", "remember", "已买入", "买入了", "持仓", "仓位",
     "风险预警", "预警", "测试规则", "规则切换", "偏好",

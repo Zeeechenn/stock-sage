@@ -16,8 +16,6 @@ Editing raw `value` text is **not exposed** by design: it would break
 """
 from __future__ import annotations
 
-from typing import Optional
-
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy import text
@@ -27,11 +25,10 @@ from backend.data.database import get_db
 from backend.memory.ai_memory import list_active
 from backend.memory.audit_log import audit_search, audit_write
 
-
 router = APIRouter(prefix="/memory", tags=["memory"])
 
 
-def _iso(value) -> Optional[str]:
+def _iso(value) -> str | None:
     if value is None:
         return None
     return str(value)
@@ -43,7 +40,7 @@ def memory_overview(db: Session = Depends(get_db)) -> dict:
     rows = list_active(db)
     by_scope: dict[str, int] = {}
     by_category: dict[str, int] = {}
-    last_updated: Optional[str] = None
+    last_updated: str | None = None
     for r in rows:
         by_scope[r["scope"]] = by_scope.get(r["scope"], 0) + 1
         cat = r["category"] or "(none)"
@@ -65,9 +62,9 @@ def memory_overview(db: Session = Depends(get_db)) -> dict:
 
 @router.get("/list")
 def memory_list(
-    scope: Optional[str] = None,
-    category: Optional[str] = None,
-    q: Optional[str] = None,
+    scope: str | None = None,
+    category: str | None = None,
+    q: str | None = None,
     limit: int = Query(default=100, ge=1, le=500),
     db: Session = Depends(get_db),
 ) -> dict:
@@ -118,8 +115,8 @@ def memory_layered(db: Session = Depends(get_db)) -> dict:
 
 
 class PatchPayload(BaseModel):
-    ttl_days: Optional[int] = None
-    category: Optional[str] = None
+    ttl_days: int | None = None
+    category: str | None = None
     clear_ttl: bool = False
 
 

@@ -16,11 +16,11 @@ M4.3 Portfolio Manager Agent —— 组合层仓位统筹。
   • max_total_equity_pct       (默认 80%)
 """
 from __future__ import annotations
+
 from dataclasses import dataclass, field
 
 from backend.config import settings
-from backend.decision.signal_policy import ENTRY_RECS, LEGACY_ENTRY_RECS, EXIT_RECS
-
+from backend.decision.signal_policy import ENTRY_RECS, EXIT_RECS, LEGACY_ENTRY_RECS
 
 ENTRY_SET = ENTRY_RECS | LEGACY_ENTRY_RECS
 

@@ -5,7 +5,6 @@ from datetime import datetime, timedelta
 
 from sqlalchemy import text
 
-
 # ── 1) Window summarizer ─────────────────────────────────────────────────
 
 class _StubProvider:
@@ -117,7 +116,7 @@ def test_summarizer_skips_when_provider_returns_empty(test_db):
 # ── 2) Expire stale memories ─────────────────────────────────────────────
 
 def test_expire_removes_stale_and_audits(test_db):
-    from backend.memory.ai_memory import remember, expire_stale_memories
+    from backend.memory.ai_memory import expire_stale_memories, remember
 
     remember(test_db, "fresh:1", "新风险", category="risk", ttl_days=7)
     remember(test_db, "stale:1", "过期风险", category="risk", ttl_days=1)
@@ -143,7 +142,7 @@ def test_expire_removes_stale_and_audits(test_db):
 
 def test_expire_skips_pinned_and_fresh(test_db):
     """Rows with ttl_days=NULL (pinned) and rows still within TTL are kept."""
-    from backend.memory.ai_memory import remember, expire_stale_memories
+    from backend.memory.ai_memory import expire_stale_memories, remember
 
     remember(test_db, "pin:1", "永久规则", category="rule")  # ttl_days=None
     remember(test_db, "fresh:1", "新风险", category="risk", ttl_days=7)
@@ -154,7 +153,7 @@ def test_expire_skips_pinned_and_fresh(test_db):
 
 def test_expire_preserves_value_in_audit_for_recovery(test_db):
     """The deleted value is captured in audit content for forensic recovery."""
-    from backend.memory.ai_memory import remember, expire_stale_memories
+    from backend.memory.ai_memory import expire_stale_memories, remember
 
     remember(test_db, "stale:1", "重要的风险记忆 X23 文本", category="risk", ttl_days=1)
     old = (datetime.utcnow() - timedelta(days=2)).isoformat(timespec="seconds")
@@ -176,8 +175,9 @@ def test_deep_research_recall_returns_pointer_not_full_report(test_db, tmp_path)
     """research_memory only stores indexed JSON {topic, summary, symbols, report_path}.
     Recall must NOT include any raw report markdown body."""
     import json
-    from backend.memory.research_memory import remember_deep_research
+
     from backend.memory.ai_memory import recall
+    from backend.memory.research_memory import remember_deep_research
 
     report = tmp_path / "deep.md"
     report.write_text(

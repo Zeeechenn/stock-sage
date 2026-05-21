@@ -10,9 +10,10 @@
   3. 调 sync_industry 回填现有 active CN 股的 industry
 """
 import logging
+
 from sqlalchemy import text
 
-from backend.data.database import engine, init_db, SessionLocal
+from backend.data.database import SessionLocal, engine, init_db
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)

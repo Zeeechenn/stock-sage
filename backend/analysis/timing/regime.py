@@ -3,12 +3,14 @@
 被 aggregator 在算综合分之前调用，对"逆风信号"做衰减。
 """
 from __future__ import annotations
+
 import logging
 from dataclasses import dataclass
+
 import pandas as pd
 
-from backend.analysis.timing.rsrs import latest_rsrs_z
 from backend.analysis.timing.diffusion import sector_diffusion
+from backend.analysis.timing.rsrs import latest_rsrs_z
 from backend.config import settings
 
 logger = logging.getLogger(__name__)

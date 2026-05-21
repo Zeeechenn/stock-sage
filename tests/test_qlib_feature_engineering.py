@@ -37,8 +37,9 @@ def test_neutralize_by_date_industry():
 
 def test_build_training_data_does_not_auto_neutralize(test_db):
     import importlib
-    from backend.data.database import Price, Stock
+
     import backend.data.qlib_data as qlib_data
+    from backend.data.database import Price, Stock
 
     qlib_data = importlib.reload(qlib_data)
 
@@ -65,8 +66,9 @@ def test_build_training_data_does_not_auto_neutralize(test_db):
 
 def test_build_training_data_adds_point_in_time_fundamental_features(test_db):
     import importlib
-    from backend.data.database import FinancialMetric, Price, Stock
+
     import backend.data.qlib_data as qlib_data
+    from backend.data.database import FinancialMetric, Price, Stock
 
     qlib_data = importlib.reload(qlib_data)
 
@@ -115,8 +117,9 @@ def test_build_training_data_adds_point_in_time_fundamental_features(test_db):
 
 def test_build_inference_features_can_attach_latest_fundamentals(test_db):
     import importlib
-    from backend.data.database import FinancialMetric
+
     import backend.data.qlib_data as qlib_data
+    from backend.data.database import FinancialMetric
 
     qlib_data = importlib.reload(qlib_data)
     test_db.add(FinancialMetric(
@@ -146,8 +149,9 @@ def test_build_inference_features_can_attach_latest_fundamentals(test_db):
 
 def test_training_data_uses_disclosure_date_when_available(test_db):
     import importlib
-    from backend.data.database import FinancialMetric, Price, Stock
+
     import backend.data.qlib_data as qlib_data
+    from backend.data.database import FinancialMetric, Price, Stock
 
     qlib_data = importlib.reload(qlib_data)
     test_db.add(Stock(symbol="600519", name="贵州茅台", market="CN", industry="食品饮料", active=True))

@@ -19,7 +19,6 @@ from __future__ import annotations
 
 from backend.memory.ai_memory import recall, remember
 
-
 BIAS_SCOPE = "bias_override"
 
 

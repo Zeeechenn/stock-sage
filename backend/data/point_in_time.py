@@ -18,10 +18,12 @@ Point-in-Time (PIT) 数据访问拦截层（Tier 3）
         signals = db.query(Signal).all()   # 自动 filter Signal.date <= "2024-10-01"
 """
 from __future__ import annotations
+
 import logging
+from collections.abc import Iterator
 from contextlib import contextmanager
 from datetime import datetime
-from typing import Any, Iterator
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +78,7 @@ class PITSession:
 
 
 @contextmanager
-def pit_session(db, as_of: str) -> Iterator["PITSession"]:
+def pit_session(db, as_of: str) -> Iterator[PITSession]:
     """上下文管理器版本。"""
     yield PITSession(db, as_of)
 
@@ -89,7 +91,11 @@ def assert_pit_clean(db, as_of: str, model, field: str | None = None) -> int:
     cls_name = getattr(model, "__name__", None)
     if cls_name not in _PIT_DATE_FIELDS and not field:
         raise ValueError(f"未知 PIT 字段：{cls_name}")
-    fld, kind = _PIT_DATE_FIELDS.get(cls_name, (field, "string"))
+    if cls_name in _PIT_DATE_FIELDS:
+        fld, kind = _PIT_DATE_FIELDS[cls_name]
+    else:
+        assert field is not None
+        fld, kind = field, "string"
     col = getattr(model, fld)
     if kind == "datetime":
         cutoff = datetime.fromisoformat(as_of)

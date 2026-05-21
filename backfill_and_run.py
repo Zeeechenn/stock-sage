@@ -6,23 +6,22 @@
 - AI半导体：北方华创/寒武纪/海光信息/紫光国微/科大讯飞/海康威视
 """
 from __future__ import annotations
-import sys
-import time
+
 import logging
+import time
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(name)s: %(message)s')
-logger = logging.getLogger(__name__)
-
-from backend.data.database import SessionLocal, Stock
-from backend.data.market import backfill_if_needed
-from backend.data.fundamentals import (
-    sync_industry,
-    sync_financial_metrics,
-    sync_disclosure_dates,
-)
-from backend.agents.long_term.team import LongTermTeam
 from backend.agents.long_term.storage import save_label
+from backend.agents.long_term.team import LongTermTeam
+from backend.data.database import SessionLocal, Stock
+from backend.data.fundamentals import (
+    sync_disclosure_dates,
+    sync_financial_metrics,
+    sync_industry,
+)
+from backend.data.market import backfill_if_needed
 
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+logger = logging.getLogger(__name__)
 
 # (symbol, name, market)
 TARGETS = [
@@ -97,7 +96,7 @@ def main() -> None:
         # 4) Run LongTermTeam
         team = LongTermTeam()
         results = []
-        for sym, name, mkt in TARGETS:
+        for sym, name, _mkt in TARGETS:
             try:
                 label = team.run(sym, name, db)
                 save_label(label, db)

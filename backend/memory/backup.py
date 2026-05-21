@@ -15,9 +15,9 @@ from __future__ import annotations
 import json
 from datetime import datetime, timedelta
 from pathlib import Path
+from typing import Any
 
 from sqlalchemy import text
-
 
 DEFAULT_BACKUP_DIR = Path.home() / ".stock-sage" / "memory" / "backups"
 DEFAULT_KEEP_DAYS = 30
@@ -46,7 +46,7 @@ def dump_ai_memory(db, out_path: Path) -> int:
         FROM ai_memory
         ORDER BY id ASC
     """)).all()
-    payload = {
+    payload: dict[str, Any] = {
         "version": SCHEMA_VERSION,
         "exported_at": datetime.utcnow().isoformat(timespec="seconds"),
         "rows": [

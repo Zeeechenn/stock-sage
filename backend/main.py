@@ -1,13 +1,16 @@
-from contextlib import asynccontextmanager
 import logging
 import os
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import AsyncIterator
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
 from backend.api.routes import router
 from backend.data.database import init_db
-from backend.scheduler import start as scheduler_start, stop as scheduler_stop
+from backend.scheduler import start as scheduler_start
+from backend.scheduler import stop as scheduler_stop
 
 logger = logging.getLogger(__name__)
 

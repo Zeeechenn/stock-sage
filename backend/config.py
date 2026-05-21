@@ -1,6 +1,7 @@
-from pathlib import Path
 from dataclasses import dataclass
 from datetime import date
+from pathlib import Path
+
 from pydantic_settings import BaseSettings
 
 BASE_DIR = Path(__file__).parent.parent

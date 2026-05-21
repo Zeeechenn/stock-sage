@@ -17,6 +17,7 @@ Backtrader 严肃回测 — 阶段A 地基交付物 #1（阶段B 升级版）
 A股手续费：买入 0.05% 佣金；卖出 0.05% 佣金 + 0.10% 印花税。
 """
 from __future__ import annotations
+
 import argparse
 import logging
 import warnings
@@ -24,14 +25,13 @@ import warnings
 import backtrader as bt
 import pandas as pd
 
+from backend.analysis.factors import add_all_factors
+from backend.analysis.technical import score_macd, score_rsi, score_trend, score_volume
+from backend.config import settings
+from backend.data.database import Price, SessionLocal, Stock
+
 warnings.filterwarnings("ignore")
 logging.basicConfig(level=logging.WARNING, format="%(message)s")
-
-from backend.data.database import SessionLocal, Stock, Price
-from backend.analysis.factors import add_all_factors
-from backend.analysis.technical import score_trend, score_rsi, score_macd, score_volume
-from backend.config import settings
-
 
 # ── A股手续费 ─────────────────────────────────────────────────────────
 
@@ -94,11 +94,11 @@ class TechSignalStrategy(bt.Strategy):
         """Initialize strategy indicators and state variables."""
         self.score = self.datas[0].tech_score
         self.atr = self.datas[0].atr14
-        self.entry_bar = None
-        self.stop_price = None
-        self.take_price = None
-        self.entry_atr = None
-        self.highest_close = None
+        self.entry_bar: int | None = None
+        self.stop_price: float | None = None
+        self.take_price: float | None = None
+        self.entry_atr: float | None = None
+        self.highest_close: float | None = None
 
     def next(self) -> None:
         """Execute strategy logic on each bar: manage open positions or scan for entry."""
@@ -107,6 +107,11 @@ class TechSignalStrategy(bt.Strategy):
         high = self.data.high[0]
 
         if self.position.size > 0:
+            assert self.entry_bar is not None
+            assert self.stop_price is not None
+            assert self.take_price is not None
+            assert self.entry_atr is not None
+            assert self.highest_close is not None
             held = len(self) - self.entry_bar
             # trailing stop 提升
             if self.p.trailing_enabled and price > self.highest_close:
@@ -262,7 +267,7 @@ def run_one(symbol: str, name: str, df_raw: pd.DataFrame, start: str, end: str,
 
 # ── 主循环 ────────────────────────────────────────────────────────────
 
-def run_suite(stocks, db, start, end, cfg, label, mock_labels: dict | None = None) -> None:
+def run_suite(stocks, db, start, end, cfg, label, mock_labels: dict | None = None) -> dict | None:
     """Run backtest across all stocks and print a comparison table with aggregates."""
     print()
     print("=" * 94)
@@ -321,7 +326,7 @@ def run_suite(stocks, db, start, end, cfg, label, mock_labels: dict | None = Non
     # 把单股 Sharpe 当成 "试验"。
     if len(sharpes) >= 2:
         try:
-            from backend.backtest.statistics import expected_max_sharpe, ic_significance
+            from backend.backtest.statistics import expected_max_sharpe
             sr0 = expected_max_sharpe(sharpes, n_trials=len(sharpes))
             summary["sr_threshold_multi_trial"] = round(sr0, 3)
             summary["sr_passes_multi_trial"] = avg_sharpe > sr0
@@ -375,7 +380,7 @@ def main() -> None:
 
     db = SessionLocal()
     try:
-        q = db.query(Stock).filter(Stock.active == True, Stock.market == "CN")
+        q = db.query(Stock).filter(Stock.active, Stock.market == "CN")
         if args.symbols:
             q = q.filter(Stock.symbol.in_(args.symbols))
         stocks = q.all()

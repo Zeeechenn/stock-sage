@@ -14,8 +14,8 @@ QFII Outflow 反向规避分析师
   • 满足 → label_vote="规避"，score=-70；不满足 → confidence=0（不影响聚合）
 """
 from __future__ import annotations
+
 import logging
-from collections import defaultdict
 
 from backend.agents.long_term.base import LongTermReport
 from backend.config import settings
@@ -43,8 +43,8 @@ def _holder_timelines(history: dict[str, list[dict]]) -> dict[str, list[tuple[st
         seen_any = False
         line: list[tuple[str, int]] = []
         for q in quarters_sorted:
-            row = next((r for r in history[q] if r["holder"] == holder), None)
-            if row is not None:
+            row = next((r for r in history[q] if r["holder"] == holder), {})
+            if row:
                 seen_any = True
                 line.append((q, int(row.get("shares") or 0)))
             elif seen_any:

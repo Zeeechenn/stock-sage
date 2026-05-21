@@ -1,7 +1,7 @@
 """Watchlist event scanner for price, volume, and risk conditions."""
 from __future__ import annotations
 
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 
 from backend.data.database import Price, Signal, Stock
 
@@ -46,7 +46,7 @@ def scan_watch_events(
     trigger trades; notification routing can consume the returned events later.
     """
     events: list[WatchEvent] = []
-    stocks = db.query(Stock).filter(Stock.active == True).all()
+    stocks = db.query(Stock).filter(Stock.active).all()
 
     for stock in stocks:
         rows = _latest_prices(db, stock.symbol, as_of)

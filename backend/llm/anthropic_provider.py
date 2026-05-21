@@ -1,7 +1,10 @@
+import functools
 import logging
 import time
-import functools
+from typing import cast
+
 import anthropic
+
 from backend.llm.base import LLMProvider
 
 logger = logging.getLogger(__name__)
@@ -57,9 +60,9 @@ class AnthropicProvider(LLMProvider):
             if system:
                 kwargs["system"] = system
 
-            msg = self._client.messages.create(**kwargs)
+            msg = self._client.messages.create(**kwargs)  # type: ignore[call-overload]
             tool_block = next(b for b in msg.content if b.type == "tool_use")
-            return tool_block.input
+            return cast(dict, tool_block.input)
         except Exception as e:
             logger.warning("AnthropicProvider.complete_structured failed: %s", e)
             return {}

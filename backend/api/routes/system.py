@@ -279,7 +279,7 @@ def _run_initialize() -> None:
 
     from backend.data.database import Stock
 
-    db = SessionLocal()
+    db: Session | None = SessionLocal()
     try:
         _init_state.update({
             "running": True, "step": "prices",
@@ -289,7 +289,8 @@ def _run_initialize() -> None:
         })
 
         from backend.data.market import backfill_if_needed
-        stocks = db.query(Stock).filter(Stock.active == True).all()
+        assert db is not None
+        stocks = db.query(Stock).filter(Stock.active).all()
         _init_log(f"价格回填：共 {len(stocks)} 只股票")
         price_rows = 0
         for s in stocks:

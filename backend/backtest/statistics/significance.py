@@ -9,6 +9,7 @@ IC 显著性 / t-stat / 标准误（替代裸 IC 阈值判定）
   • 简单阈值 0.03 没有统计意义
 """
 from __future__ import annotations
+
 import math
 from dataclasses import dataclass
 

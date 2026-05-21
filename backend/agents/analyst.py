@@ -3,8 +3,8 @@
 每个分析师输出 (score, confidence, key_findings, raw)，让 Trader 能引用。
 """
 from __future__ import annotations
-from dataclasses import dataclass, asdict
-import pandas as pd
+
+from dataclasses import asdict, dataclass
 
 
 @dataclass

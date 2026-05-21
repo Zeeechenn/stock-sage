@@ -3,12 +3,12 @@
 """
 import logging
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(name)s: %(message)s')
-logger = logging.getLogger(__name__)
-
-from backend.data.database import SessionLocal
-from backend.agents.long_term.team import LongTermTeam
 from backend.agents.long_term.storage import save_label
+from backend.agents.long_term.team import LongTermTeam
+from backend.data.database import SessionLocal
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+logger = logging.getLogger(__name__)
 
 TARGETS = [
     ("002371", "北方华创"),

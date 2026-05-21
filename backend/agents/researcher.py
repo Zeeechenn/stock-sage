@@ -9,8 +9,9 @@
     - 失败回退：任一轮失败则降级为单轮 llm_arbitration 或 quick_consensus
 """
 from __future__ import annotations
-from dataclasses import dataclass, field
+
 import statistics
+from dataclasses import dataclass, field
 
 from backend.agents.analyst import AnalystReport
 from backend.config import settings
@@ -249,7 +250,7 @@ def multi_round_debate(
     bear_prompt = (
         f"四路分析师报告：\n{brief}\n"
         f"看多方刚陈述：\n" + "\n".join(f"  {i+1}. {p}" for i, p in enumerate(bull_points)) + "\n"
-        f"你是看空研究员，请逐条反驳并补充独立看空理由。"
+        "你是看空研究员，请逐条反驳并补充独立看空理由。"
     )
     bear_data = provider.complete_structured(
         prompt=bear_prompt, tool=_BEAR_REBUTTAL_TOOL,

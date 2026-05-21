@@ -19,15 +19,14 @@ LLM 调用：
   • 失败兜底 score=0, vote="观望", confidence=0
 """
 from __future__ import annotations
-import logging
-from datetime import datetime, timedelta
-from pathlib import Path
 
-import pandas as pd
+import logging
+from datetime import datetime
+from pathlib import Path
 
 from backend.agents.long_term.base import LongTermReport
 from backend.config import settings
-from backend.data.database import Stock, Price
+from backend.data.database import Price, Stock
 from backend.llm import get_provider
 
 logger = logging.getLogger(__name__)

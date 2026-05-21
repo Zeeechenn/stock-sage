@@ -3,12 +3,13 @@
 通过 `claude -p` 子进程调用当前 CLI 会话，无需任何 API key。
 生产环境切换回 openai/anthropic provider 即可。
 """
+import functools
 import json
 import logging
 import re
 import subprocess
 import time
-import functools
+
 from backend.llm.base import LLMProvider
 
 logger = logging.getLogger(__name__)

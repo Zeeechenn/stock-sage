@@ -6,12 +6,14 @@ LongTermLabel 持久化
   • bulk_get_labels(symbols, db)    — 批量取（盘后 job 用）
 """
 from __future__ import annotations
+
 import json
 import logging
 from datetime import datetime
 from pathlib import Path
+from typing import cast
 
-from backend.agents.long_term.base import LongTermLabel
+from backend.agents.long_term.base import LongTermLabel, VoteLabel
 from backend.data.database import LongTermLabel as LongTermLabelORM
 
 logger = logging.getLogger(__name__)
@@ -103,7 +105,7 @@ def bulk_get_labels(symbols: list[str], db) -> dict[str, LongTermLabel]:
         sym: LongTermLabel(
             symbol=r.symbol,
             date=r.date,
-            label=r.label,
+            label=cast(VoteLabel, r.label),
             score=r.score,
             votes=json.loads(r.votes_json) if r.votes_json else {},
             key_findings=json.loads(r.key_findings_json) if r.key_findings_json else [],

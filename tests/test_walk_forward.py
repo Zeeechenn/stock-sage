@@ -1,9 +1,8 @@
 """Walk-forward harness 单元测试 — 不依赖 DB"""
-from datetime import date
 
 
 def test_generate_windows_respects_holdout():
-    from backend.backtest.walk_forward import generate_windows, HOLDOUT_START
+    from backend.backtest.walk_forward import HOLDOUT_START, generate_windows
 
     windows = generate_windows("2024-01-01", "2026-05-15",
                                train_days=365, test_days=60, step_days=60)
@@ -71,7 +70,7 @@ def test_run_walk_forward_handles_evaluator_exception():
 
 
 def test_holdout_window_default_uses_today():
-    from backend.backtest.walk_forward import holdout_window, HOLDOUT_START
+    from backend.backtest.walk_forward import HOLDOUT_START, holdout_window
 
     w = holdout_window()
     assert w.test_start == HOLDOUT_START

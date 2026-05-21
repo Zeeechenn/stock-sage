@@ -9,9 +9,11 @@ LightGBM Alpha 量化引擎（Qlib-style，不依赖 Qlib 数据基础设施）
 import logging
 import pickle
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pandas as pd
+
 from backend.analysis.factors import add_all_factors
 from backend.data.qlib_data import FEATURE_COLS, build_inference_features
 
@@ -61,7 +63,7 @@ def _time_split(df: pd.DataFrame, split_ratio: float = 0.8) -> tuple[pd.DataFram
 _MODEL_CACHE: dict = {"path_mtime": None, "model": None, "disabled_reason": None}
 
 
-def _load_model() -> object | None:
+def _load_model() -> Any | None:
     """Load LightGBM model from disk, returning None if missing/corrupt/dim-mismatch.
 
     Caches result (keyed by mtime) and only warns once per model version so a
@@ -245,8 +247,8 @@ def train(
 
 
 if __name__ == "__main__":
-    import sys
     import logging as _logging
+    import sys
     _logging.basicConfig(level=_logging.INFO, format="%(levelname)s %(message)s")
 
     if "--train" in sys.argv:

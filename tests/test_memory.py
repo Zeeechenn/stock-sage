@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 
 
 def test_remember_recall_forget(test_db):
-    from backend.memory.ai_memory import remember, recall, forget
+    from backend.memory.ai_memory import forget, recall, remember
 
     remember(test_db, "position:300308", "已买入 5%", category="position", scope="test1")
 
@@ -13,7 +13,8 @@ def test_remember_recall_forget(test_db):
 
 def test_ttl_expired_memory_is_hidden(test_db):
     from sqlalchemy import text
-    from backend.memory.ai_memory import remember, recall
+
+    from backend.memory.ai_memory import recall, remember
 
     remember(test_db, "risk", "过期风险", category="risk", ttl_days=1)
     old = (datetime.utcnow() - timedelta(days=2)).isoformat(timespec="seconds")
@@ -24,7 +25,7 @@ def test_ttl_expired_memory_is_hidden(test_db):
 
 
 def test_scope_isolation_and_list_active(test_db):
-    from backend.memory.ai_memory import remember, recall, list_active
+    from backend.memory.ai_memory import list_active, recall, remember
 
     remember(test_db, "rule", "测试1规则", category="rule", scope="test1")
     remember(test_db, "rule", "测试2规则", category="rule", scope="test2")

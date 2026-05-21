@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta
 from pathlib import Path
+
 from backend.decision.signal_policy import is_entry_signal
 
 MEMORY_DIR = Path.home() / ".stock-sage" / "memory"
@@ -33,7 +34,7 @@ def get_reflection_context(symbol: str, db, lookback_days: int = 30) -> str:
     注入到多空辩论 prompt，帮助 LLM 从历史复盘中修正偏差。
     无历史数据时返回空字符串。
     """
-    from backend.data.database import Signal, Price  # 延迟导入避免循环依赖
+    from backend.data.database import Price, Signal  # 延迟导入避免循环依赖
 
     cutoff = (datetime.utcnow() - timedelta(days=lookback_days)).strftime("%Y-%m-%d")
     past_signals = (

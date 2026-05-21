@@ -15,19 +15,25 @@ M4.9 exit 逻辑实验。
 复用 backend/backtest/exit_logic_experiment 里的退出函数。
 """
 from __future__ import annotations
+
 import json
 import logging
 import math
 import statistics
 from collections import Counter
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
-from typing import Callable, Sequence
 
 from backend.backtest.compare_paths import (
-    SignalInput, _no_llm_settings, _path_a, _max_drawdown,
+    SignalInput,
+    _max_drawdown,
+    _no_llm_settings,
+    _path_a,
 )
 from backend.backtest.exit_logic_experiment import (
-    _exit_fixed, _exit_atr_bracket, _exit_trailing,
+    _exit_atr_bracket,
+    _exit_fixed,
+    _exit_trailing,
 )
 
 logger = logging.getLogger(__name__)
@@ -248,6 +254,7 @@ def _recommend(rows: list[ExitStrategyMetrics]) -> dict:
 def main(argv: list[str] | None = None) -> int:
     """CLI：回填 → entries 过滤 → 多策略 exit → 输出对比表 + 推荐"""
     import argparse
+
     from backend.backtest.backfill_signals import iter_window
 
     ap = argparse.ArgumentParser(description="M4.9 exit 逻辑实验")

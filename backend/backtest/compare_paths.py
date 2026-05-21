@@ -13,11 +13,12 @@ M4.6 双路径并排回测：aggregator（旧）vs multi_agent pipeline（新）
   • LLM 关闭后辩论降级为 quick_consensus，仍能验证结构性差异
 """
 from __future__ import annotations
+
 import math
 import statistics
+from collections.abc import Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass, field
-from typing import Sequence
 
 
 @dataclass
@@ -273,7 +274,8 @@ def main(argv: list[str] | None = None) -> int:
     所以 CLI 跑出来的两路结果会一致（输入相同 → 输出相同）。
     实际验证需要离线回填 input snapshots（见 docs/M4_BACKTEST.md）。
     """
-    import argparse, json
+    import argparse
+    import json
     ap = argparse.ArgumentParser(description="M4.6 多Agent 双路径并排回测")
     ap.add_argument("--start", default="2025-01-01")
     ap.add_argument("--end", default="2026-05-15")
@@ -322,7 +324,7 @@ def _load_inputs_from_db(
     backfill_llm=True 时 cache miss 触发 analyze_news() LLM 调用并写回。
     """
     from backend.backtest.news_cache import get_or_backfill
-    from backend.data.database import SessionLocal, Signal, Price
+    from backend.data.database import Price, SessionLocal, Signal
     db = SessionLocal()
     try:
         signals = (

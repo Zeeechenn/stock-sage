@@ -1,6 +1,7 @@
 """pytest 配置：用 in-memory SQLite，每个 test session 独立 schema"""
 import os
 import sys
+
 import pytest
 
 # 确保 PYTHONPATH 包含项目根目录
@@ -14,6 +15,7 @@ def test_db():
     """每个测试用全新的内存 SQLite + 全部表"""
     from sqlalchemy import create_engine
     from sqlalchemy.orm import sessionmaker
+
     from backend.data.database import Base
 
     engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
