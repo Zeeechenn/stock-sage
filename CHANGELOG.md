@@ -5,6 +5,13 @@
 
 ---
 
+## [Repository Hygiene] GitHub 发布边界收敛（2026-05-21）
+
+### Changed
+- 将本地 AI/agent 工作约定、一次性审查报告、内部规划草稿和运行生成的复盘/研究报告移出 Git 追踪范围。
+- `.gitignore` 增加本地 agent notes、`REVIEW-*.md`、`docs/reviews/*.md`、`docs/research/*.md` 和内部规划草稿规则，降低误提交风险。
+- `docs/ROADMAP.md` 不再引用即将本地化的过程规划文件，M9 背景改为自包含说明。
+
 ## [M6.3] 前端操作台与复盘/AI 助手增强 ✅（2026-05-19）
 
 ### Added

@@ -14,6 +14,18 @@ dist/
 .DS_Store
 .signal_news_cache.json
 
+# Local AI / agent workspace notes, not public project docs
+CLAUDE.md
+REVIEW-*.md
+
+# Generated research and review reports
+docs/reviews/*.md
+docs/research/*.md
+
+# Internal planning drafts already summarized in ROADMAP / CHANGELOG
+docs/MEMORY_SYSTEM_PLAN.md
+docs/FINANCIAL_SKILLS_ADAPTATION_PLAN.md
+
 # paper_trading 归因脚本按日生成的报告（脚本本身需要 track）
 paper_trading/quant_attribution_*.md
 

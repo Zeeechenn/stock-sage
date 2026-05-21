@@ -30,8 +30,7 @@
 
 ## M9 记忆系统接入与治理 ⏳
 
-> 详细规划与背景：`docs/MEMORY_SYSTEM_PLAN.md`。
-> 现状一句话：盘后分层记忆 + 深度研究索引 + 聊天窗口三条干道在跑；`should_remember` / `ai_memory.remember()` 业务写入 / `audit_log` 三块是装好的骨架，长期没人调用。
+> 规划背景已收敛到本节：目标是把盘后分层记忆、深度研究索引、聊天窗口、`should_remember`、`ai_memory.remember()` 和 `audit_log` 串成可审计、可治理、可回滚的统一记忆链路。
 
 ### M9.0 死代码接电（无 UI，最高优先级）✅（2026-05-19）
 - [x] `audit_write` 全链路埋点：`memory_layered.{save_decision_layered,get_layered_context}`、`research_memory.remember_deep_research`（自动）、`ai_memory.{remember,recall,forget}`。
@@ -266,7 +265,7 @@ QMT/miniQMT 券商对接；盘中实时止损；半自动→全自动渐进。
 - [x] 配置页：综合分权重、仓位上限、数据补充参数、复盘触发日期与时间可运行时调整。
 - [x] AI 对话：左侧会话窗口、新建/归档、窗口内记忆隔离、项目内资源问答、长期研究团队模式。
 - [x] 前端显示修复：综合评分双向条、情感进度条、toggle 圆点、顶部导航按钮化。
-- [ ] 记忆管理可视化入口：拆入 **M9 记忆系统接入与治理**，详见 `docs/MEMORY_SYSTEM_PLAN.md`。
+- [x] 记忆管理可视化入口：已拆入 **M9 记忆系统接入与治理**，见 M9.2。
 
 ---
 
