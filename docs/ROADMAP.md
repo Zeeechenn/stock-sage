@@ -140,6 +140,33 @@
 
 ---
 
+## M11 Agent-Ready 本地/远程双模式接口 ✅（2026-05-21）
+
+### M11.0 Agent 文档契约 ✅
+- [x] `AGENTS.md` 升级为本地 agent 操作手册：本地 Codex / Claude Code 默认信任，可直接跑测试、查 DB、运行纸上交易统计、调用已配置的项目 API。
+- [x] `CLAUDE.md` 通过 `@AGENTS.md` 复用共享规则，只保留 Claude Code 特有说明。
+- [x] 明确 Codex/Claude 自身 LLM 调用与 StockSage `.env` 中项目运行时 LLM/API key 分离。
+
+### M11.1 项目记忆入口 ✅
+- [x] 新增 `backend/agent/context.py`：`stock_sage_context` / `stock_sage_memory_snapshot` / `stock_sage_stock_context`。
+- [x] 启动上下文汇总 `ai_memory`、`decision_memory_layered`、`audit_log_fts`、ChatPage 使用情况、`~/.stock-sage/memory` 文件记忆、持仓与自选状态。
+- [x] Agent 规则要求交易、测试、研究、复盘前优先读取项目内记忆，而不是只依赖 Codex/Claude 自己的会话记忆。
+
+### M11.2 本地/远程模式保护 ✅
+- [x] 新增 `backend/agent/security.py`：本地模式默认放行；远程模式必须显式 `STOCKSAGE_AGENT_MODE=remote`。
+- [x] 远程模式要求 `STOCKSAGE_AGENT_API_KEY`；远程写操作默认禁止，只有 `STOCKSAGE_AGENT_REMOTE_WRITE_ENABLED=true` 才可放行。
+- [x] `.env.example` 只提供远程 agent 变量占位，不提交真实 key。
+
+### M11.3 MCP 本地工具桥 ✅
+- [x] 新增 `backend/agent/mcp_server.py`，通过 MCP 暴露 `stock_sage_project_context`、`stock_sage_memory_snapshot`、`stock_sage_stock_context`、`stock_sage_health`。
+- [x] `pyproject.toml` 新增可选依赖组 `agent`，本地可用 `pip install -e ".[agent]"` 后启动 `PYTHONPATH=. python -m backend.agent.mcp_server`。
+
+### M11 后续可选
+- [ ] 如果需要公网或局域网远程 agent 服务，再单独增加 HTTP/SSE transport、限流、审计与只读 allowlist。
+- [ ] 将更多项目动作封装为明确命名的 MCP 写工具，但保持本地默认信任、远程默认只读。
+
+---
+
 ## M2 纸上交易验证 ⏳（旧 Phase 6.5 + 执行计划 D）
 
 详细规则与持仓作为本地验证材料维护，不进入 GitHub。

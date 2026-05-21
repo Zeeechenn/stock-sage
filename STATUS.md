@@ -19,6 +19,7 @@
 | M8 | 深度研究与来源审计层 | ✅ 完成，手动触发，不进入日常信号 |
 | M9 | 记忆系统接入与治理 | ✅ 大部分完成 |
 | M10 | 运行可靠性与产品化优化 | ✅ M10.0-M10.4 完成，M10.5 后置 |
+| M11 | Agent-Ready 本地/远程双模式接口 | ✅ 初版完成，本地 agent 默认信任，远程模式显式启用 |
 
 ---
 
@@ -104,7 +105,14 @@ cd frontend && npm run dev                        # 前端（另开终端）
 PYTHONPATH=. python3 -m backend.analysis.qlib_engine --train
 PYTHONPATH=. python3 -m backend.analysis.qlib_engine --train --ranker
 PYTHONPATH=. python3 -m backend.backtest.walk_forward --start 2024-01-01 --end 2026-05-15
+PYTHONPATH=. python3 -m backend.agent.mcp_server
 curl http://localhost:8000/api/system/health
 curl -X POST http://localhost:8000/api/system/kill-switch/reset
 curl http://localhost:8000/api/signals/eval/600519?days=60
 ```
+
+## Agent-Ready Snapshot
+
+- 本地 Codex / Claude Code 使用 StockSage 时默认信任，可直接跑测试、查 DB、运行纸上交易统计和项目研究流程。
+- 远程 agent 暴露必须显式设置 `STOCKSAGE_AGENT_MODE=remote`，并配置 `STOCKSAGE_AGENT_API_KEY`；远程写操作默认关闭。
+- 项目记忆入口在 `backend/agent/context.py`，MCP 启动入口为 `PYTHONPATH=. python3 -m backend.agent.mcp_server`。

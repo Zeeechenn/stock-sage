@@ -51,6 +51,9 @@ dev = [
     "mypy>=1.10.0",
     "pre-commit>=3.7.0",
 ]
+agent = [
+    "mcp>=1.0.0",
+]
 
 [tool.setuptools]
 include-package-data = false

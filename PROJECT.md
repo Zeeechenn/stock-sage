@@ -22,7 +22,7 @@ the linked documents.
 | [CHANGELOG.md](CHANGELOG.md) | 已完成里程碑详情（M0 / M1 / M3 / M7 / M8） |
 | [docs/ROADMAP.md](docs/ROADMAP.md) | 进行中与待做（M2 / M4 / M5 / M6 / M8） |
 | [README.md](README.md) | 项目门面（Quick Start / 架构图） |
-| [AGENTS.md](AGENTS.md) | Agent 使用说明占位，后续补充 |
+| [AGENTS.md](AGENTS.md) | Codex / Claude Code / MCP 本地 agent 使用说明 |
 
 ---
 
@@ -49,6 +49,7 @@ runtime databases and personal trading records stay outside Git tracking.
 | **M8** | 深度研究与来源审计层 | ✅ 完成（新闻审计 + 手动专题研究 + 研究记忆） |
 | **M9** | 记忆系统接入与治理 | ✅ 大部分完成（M9.0–M9.4 + 横向备份/反偏差） |
 | **M10** | 运行可靠性与产品化优化 | ✅ M10.0-M10.4 完成 |
+| **M11** | Agent-Ready 本地/远程双模式接口 | ✅ 初版完成（AGENTS/CLAUDE 契约 + 本地 MCP 只读上下文工具） |
 
 ---
 
@@ -81,6 +82,7 @@ backend/memory/                              ai_memory + audit_log_fts 记忆接
 backend/notification/bark.py                 Bark iOS 推送
 backend/api/routes/                          REST API 路由（含 health / kill-switch）
 backend/api/schemas.py                       Pydantic response schemas
+backend/agent/                               Codex / Claude Code 本地 agent 上下文与 MCP 工具桥
 backend/main.py                              FastAPI 应用入口
 backend/scheduler.py                         定时任务（盘前/盘中/盘后/周训练 + M3.4 guard）
 backend/agents/long_term/                    长期分析师团（M1.3）

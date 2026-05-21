@@ -200,7 +200,7 @@ cd frontend && npm install && npm run dev
 | [CHANGELOG.md](CHANGELOG.md) | 已完成里程碑和重要变更 |
 | [docs/ROADMAP.md](docs/ROADMAP.md) | 进行中任务、未来规划和后置事项 |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | 开发环境、测试要求和贡献流程 |
-| [AGENTS.md](AGENTS.md) | Agent 使用说明占位，后续补充 |
+| [AGENTS.md](AGENTS.md) | Codex / Claude Code / MCP 本地 agent 使用说明 |
 
 ### 项目结构
 
@@ -214,6 +214,7 @@ stock-sage/
 ├── docs/assets/architecture.svg   README 架构图
 ├── paper_trading/                 纸上交易测试记录与统计
 ├── backend/
+│   ├── agent/                     本地 agent 上下文与 MCP 工具桥
 │   ├── api/                       FastAPI 路由与 schemas
 │   ├── data/                      行情、新闻、财报、QFII、质量、PIT 数据层
 │   ├── analysis/                  技术因子、情感、Qlib、timing/regime
