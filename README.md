@@ -199,7 +199,6 @@ cd frontend && npm install && npm run dev
 | [STATUS.md](STATUS.md) | 当前快照、信号权重、调度、测试和启动命令 |
 | [CHANGELOG.md](CHANGELOG.md) | 已完成里程碑和重要变更 |
 | [docs/ROADMAP.md](docs/ROADMAP.md) | 进行中任务、未来规划和后置事项 |
-| [PAPER_TRADING.md](PAPER_TRADING.md) | 纸上交易测试规则和记录索引 |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | 开发环境、测试要求和贡献流程 |
 
 ### 项目结构
@@ -211,7 +210,6 @@ stock-sage/
 ├── CHANGELOG.md                   已完成里程碑
 ├── docs/ROADMAP.md                进行中与未来规划
 ├── docs/assets/architecture.svg   README 架构图
-├── PAPER_TRADING.md               纸上交易索引
 ├── paper_trading/                 纸上交易测试记录与统计
 ├── backend/
 │   ├── api/                       FastAPI 路由与 schemas

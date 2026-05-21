@@ -16,3 +16,8 @@ dist/
 
 # paper_trading 归因脚本按日生成的报告（脚本本身需要 track）
 paper_trading/quant_attribution_*.md
+
+# 本地纸上交易测试材料，不上传到 GitHub
+PAPER_TRADING*.md
+paper_trading/test1*
+paper_trading/test2*

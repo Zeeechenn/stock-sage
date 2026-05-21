@@ -145,7 +145,6 @@ Open http://localhost:5173 for the dashboard. API docs are available at http://l
 | [STATUS.md](STATUS.md) | Current snapshot, signal weights, schedules, tests and startup commands |
 | [CHANGELOG.md](CHANGELOG.md) | Completed milestones and major changes |
 | [docs/ROADMAP.md](docs/ROADMAP.md) | In-progress work, roadmap and deferred items |
-| [PAPER_TRADING.md](PAPER_TRADING.md) | Paper trading rules and record index |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Development setup, test expectations and contribution flow |
 
 ## Roadmap

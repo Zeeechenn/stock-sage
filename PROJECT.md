@@ -19,7 +19,6 @@
 | [STATUS.md](STATUS.md) | 当前快照（信号权重 / 调度 / 验证结果 / 启动命令） |
 | [CHANGELOG.md](CHANGELOG.md) | 已完成里程碑详情（M0 / M1 / M3 / M7 / M8） |
 | [docs/ROADMAP.md](docs/ROADMAP.md) | 进行中与待做（M2 / M4 / M5 / M6 / M8） |
-| [PAPER_TRADING.md](PAPER_TRADING.md) | 纸上交易索引（测试 1/2 规则与持仓） |
 | [README.md](README.md) | 项目门面（Quick Start / 架构图） |
 
 ---

@@ -271,7 +271,7 @@ legacy 归档 / position_sizer → combo_weights / position_sizing → single_po
 
 新信号语言：`可小仓试错 / 可关注 / 观望 / 规避` / 仓位约束：单股 15%、单板块 30%
 
-### M1.7 测试1/测试2 双 profile 切换系统
+### M1.7 双 profile 切换系统
 
 `SignalWeights` dataclass + `active_signal_weights(as_of)` / `paper_trading_profile` auto 模式 / `signal_policy.py` / `trailing_stop.py`
 
