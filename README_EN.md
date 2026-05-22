@@ -76,7 +76,7 @@ Summarize test-2 paper-trading performance and identify whether risk rules need 
 Check current data coverage and scheduler health.
 ```
 
-**Option B: start locally by hand**
+**Option B: start the Web console**
 
 ```bash
 git clone <repo-url> && cd stock-sage
@@ -89,12 +89,23 @@ cd frontend && npm install && npm run dev
 
 Open http://localhost:5173 for the Web console. API docs are available at http://localhost:8000/docs.
 
-**Option C: start only the Agent MCP server**
+**Option C: start with Docker / compose**
+
+```bash
+cp .env.example .env
+make docker-up
+```
+
+Docker starts the backend and frontend. Open http://localhost for the local UI and http://localhost:8000/docs for API docs.
+
+**Option D: connect MCP tools**
 
 ```bash
 pip install -e ".[agent]"
 PYTHONPATH=. python3 -m backend.agent.mcp_server
 ```
+
+Connect this MCP server to Claude Desktop, Claude Code, Cursor or any MCP-capable client so the outer agent can call StockSage project context, memory snapshot, stock context and health tools.
 
 ## Cautions
 
