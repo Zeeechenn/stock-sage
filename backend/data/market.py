@@ -10,6 +10,7 @@ import akshare as ak
 import pandas as pd
 import yfinance as yf
 
+from backend.config import settings
 from backend.data.providers import (
     fetch_daily_with_fallback,
     fetch_index_with_fallback,
@@ -64,6 +65,17 @@ def cn_yfinance_ticker(symbol: str) -> str:
     return f"{symbol}.{suffix}"
 
 
+def cn_tushare_ts_code(symbol: str) -> str:
+    """Map an A-share symbol to Tushare ts_code format."""
+    if symbol.startswith(("60", "68", "11", "51", "52", "56", "58")):
+        suffix = "SH"
+    elif symbol.startswith(("43", "81", "82", "83", "87", "88", "92")):
+        suffix = "BJ"
+    else:
+        suffix = "SZ"
+    return f"{symbol}.{suffix}"
+
+
 def _normalize_ohlcv(df: pd.DataFrame) -> pd.DataFrame:
     """Normalize common Chinese/English OHLCV columns to index=date str."""
     if df is None or df.empty:
@@ -81,6 +93,8 @@ def _normalize_ohlcv(df: pd.DataFrame) -> pd.DataFrame:
         "Low": "low",
         "Close": "close",
         "Volume": "volume",
+        "trade_date": "date",
+        "vol": "volume",
     })
     if "date" not in out.columns:
         out = out.reset_index().rename(columns={"index": "date"})
@@ -190,6 +204,28 @@ def fetch_cn_daily_akshare_tx(symbol: str, days: int = 365) -> pd.DataFrame:
 
 
 @_retry(max_attempts=3, delay=1.0)
+def fetch_cn_daily_tushare(symbol: str, days: int = 365) -> pd.DataFrame:
+    """A-share unadjusted daily data via Tushare Pro when TUSHARE_TOKEN is configured."""
+    if not settings.tushare_token:
+        raise ValueError("TUSHARE_TOKEN is not configured")
+    try:
+        import tushare as ts
+    except ImportError:
+        raise RuntimeError("tushare 包未安装，运行：pip install tushare") from None
+
+    start = (date.today() - timedelta(days=days)).strftime("%Y%m%d")
+    end = date.today().strftime("%Y%m%d")
+    pro = ts.pro_api(settings.tushare_token)
+    df = pro.daily(
+        ts_code=cn_tushare_ts_code(symbol),
+        start_date=start,
+        end_date=end,
+        fields="trade_date,open,high,low,close,vol",
+    )
+    return _normalize_ohlcv(df)
+
+
+@_retry(max_attempts=3, delay=1.0)
 def fetch_cn_daily_yfinance(symbol: str, days: int = 365) -> pd.DataFrame:
     """Fallback A-share daily data via Yahoo Finance suffixes."""
     ticker = yf.Ticker(cn_yfinance_ticker(symbol))
@@ -218,6 +254,8 @@ def fetch_daily(symbol: str, market: str, days: int = 365) -> pd.DataFrame:
     register_daily_provider("akshare_em_cn", {"CN"}, fetch_cn_daily_akshare_em, priority=20, cooldown_seconds=60)
     register_daily_provider("akshare_sina_cn", {"CN"}, fetch_cn_daily_akshare_sina, priority=30, cooldown_seconds=30)
     register_daily_provider("akshare_tx_cn", {"CN"}, fetch_cn_daily_akshare_tx, priority=40, cooldown_seconds=30)
+    if settings.tushare_token:
+        register_daily_provider("tushare_cn", {"CN"}, fetch_cn_daily_tushare, priority=80, cooldown_seconds=120)
     register_daily_provider("yfinance_cn", {"CN"}, fetch_cn_daily_yfinance, priority=90, cooldown_seconds=120)
     register_daily_provider("yfinance_us", {"US"}, fetch_us_daily, priority=90, cooldown_seconds=120)
     df, provider = fetch_daily_with_fallback(symbol, market, days)

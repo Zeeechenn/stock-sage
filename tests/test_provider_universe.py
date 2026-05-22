@@ -1,3 +1,6 @@
+import sys
+import types
+
 import pandas as pd
 
 
@@ -80,6 +83,63 @@ def test_fetch_daily_registers_cn_multi_source_chain(monkeypatch):
         "akshare_tx_cn",
         "yfinance_cn",
     ]
+
+
+def test_fetch_daily_registers_tushare_when_token_configured(monkeypatch):
+    from backend.config import settings
+    from backend.data import market
+    from backend.data.providers import list_daily_providers, reset_provider_registry
+
+    reset_provider_registry()
+    monkeypatch.setattr(settings, "tushare_token", "unit-token")
+
+    def fake_fetch(symbol, market_name, days):
+        return pd.DataFrame([{"open": 1, "high": 1, "low": 1, "close": 1, "volume": 1}]), "tushare_cn"
+
+    monkeypatch.setattr(market, "fetch_daily_with_fallback", fake_fetch)
+
+    df = market.fetch_daily("600519", "CN", days=30)
+
+    assert not df.empty
+    assert "tushare_cn" in list_daily_providers("CN")
+
+
+def test_fetch_cn_daily_tushare_normalizes_daily_bars(monkeypatch):
+    from backend.config import settings
+    from backend.data import market
+
+    calls = {}
+
+    class FakePro:
+        def daily(self, **kwargs):
+            calls.update(kwargs)
+            return pd.DataFrame([
+                {
+                    "trade_date": "20260522",
+                    "open": 10,
+                    "high": 12,
+                    "low": 9,
+                    "close": 11,
+                    "vol": 1234,
+                }
+            ])
+
+    def fake_pro_api(token):
+        calls["token"] = token
+        return FakePro()
+
+    fake_tushare = types.SimpleNamespace(pro_api=fake_pro_api)
+    monkeypatch.setitem(sys.modules, "tushare", fake_tushare)
+    monkeypatch.setattr(settings, "tushare_token", "unit-token")
+
+    df = market.fetch_cn_daily_tushare("600519", days=10)
+
+    assert calls["token"] == "unit-token"
+    assert calls["ts_code"] == "600519.SH"
+    assert calls["fields"] == "trade_date,open,high,low,close,vol"
+    assert list(df.columns) == ["open", "high", "low", "close", "volume"]
+    assert df.index.tolist() == ["2026-05-22"]
+    assert float(df.loc["2026-05-22", "volume"]) == 1234.0
 
 
 def test_fetch_cn_index_uses_index_provider_fallback(monkeypatch):

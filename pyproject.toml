@@ -27,6 +27,7 @@ dependencies = [
     "requests>=2.31.0",
     "akshare>=1.12.0",
     "efinance>=0.5.5",
+    "tushare>=1.2.26",
     "yfinance>=0.2.38",
     "anthropic>=0.25.0",
     "apscheduler>=3.10.0",
