@@ -3,7 +3,7 @@
 
 阶段C 后此模块有两条路径：
   • multi_agent_enabled=False（旧版）：原 aggregate() 三路加权
-  • multi_agent_enabled=True（默认）：aggregate_v2() 调用 agents.pipeline
+  • multi_agent_enabled=True（显式研究/实验模式）：aggregate_v2() 调用 agents.pipeline
 """
 import logging
 import math

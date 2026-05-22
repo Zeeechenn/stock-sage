@@ -29,7 +29,7 @@ The current default production profile is `new_framework`: 60% technical signal,
 1. Data sources: AkShare, fundamentals/QFII, market-cap and flow snapshots, news feeds, manual positions and runtime config.
 2. Storage: SQLite keeps prices, news, signals, positions, reviews, chat history and memory. Point-in-time access reduces look-ahead bias.
 3. Analysis: technical indicators, news source audit, LLM sentiment, offline Qlib validation, long-term analyst team and manual deep research.
-4. Decision: `backend/decision/aggregator.py` merges signals; the multi-agent pipeline adds research, trading, risk and portfolio constraints.
+4. Decision: `backend/decision/aggregator.py` uses lightweight aggregation for daily signals by default; the multi-agent pipeline is reserved for explicit single-stock research, long-term research and experiment reviews.
 5. Delivery: FastAPI and React expose the dashboard; Bark sends buy-signal and 14:30 stop-loss alerts.
 6. Governance: ai_memory, layered decision memory, audit_log_fts, chat summaries, TTL cleanup and daily backups.
 
@@ -69,6 +69,8 @@ The current default production profile is `new_framework`: 60% technical signal,
 
 **Multi-Agent Decision Making**
 
+- Daily and batch signals keep multi-agent off by default to avoid linear runtime LLM token spend across 25+ stock pools.
+- Explicit research mode can enable the multi-agent pipeline for single-stock research, long-term research or experiment reviews.
 - Long-term analyst team: sector thesis, Piotroski quality, prosperity indicators and QFII outflow veto.
 - Researcher: bull/bear multi-round debate with graceful fallback.
 - Research Director: quality review and debate-topic selection.

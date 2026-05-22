@@ -93,8 +93,9 @@ class Settings(BaseSettings):
     max_total_equity_pct: float = 0.80        # 股票总仓位上限
     new_signal_trial_pct: float = 0.05        # 新信号试错仓
 
-    # 阶段C 多 Agent 决策（默认开启 SHAPE，LLM 仅在分歧时调用）
-    multi_agent_enabled: bool = True
+    # 阶段C 多 Agent 决策。
+    # 日常/批量产信号默认关闭以控制 token；单股研究、长期团、深度研究等手动研究入口可显式开启。
+    multi_agent_enabled: bool = False
     risk_manager_enabled: bool = True         # 风险经理对最终建议有否决权
     layered_memory_enabled: bool = True       # FinMem 风格分层记忆
 

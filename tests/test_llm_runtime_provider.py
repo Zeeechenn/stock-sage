@@ -51,6 +51,33 @@ def test_cloud_runtime_provider_requires_matching_key():
         assert has_runtime_llm_provider() is False
 
 
+def test_disabled_runtime_provider_is_not_available():
+    from backend.llm.factory import has_runtime_llm_provider
+
+    with patch("backend.llm.factory.settings") as mock_settings:
+        mock_settings.ai_provider = "disabled"
+        mock_settings.anthropic_api_key = ""
+        mock_settings.openai_api_key = ""
+
+        assert has_runtime_llm_provider() is False
+
+
+@patch("backend.analysis.sentiment.get_provider")
+def test_analyze_news_skips_provider_when_runtime_disabled(mock_get_provider):
+    from backend.analysis import sentiment
+
+    with patch("backend.analysis.sentiment.settings") as mock_settings:
+        mock_settings.ai_provider = "disabled"
+        mock_settings.anthropic_api_key = ""
+        mock_settings.openai_api_key = ""
+
+        result = sentiment.analyze_news(["订单改善"], symbol="600519")
+
+    assert result["sentiment"] == 0.0
+    assert result["summary"] == "LLM已禁用"
+    mock_get_provider.assert_not_called()
+
+
 @patch("backend.agents.researcher.get_provider")
 def test_multi_round_debate_uses_local_cli_without_cloud_keys(mock_get_provider):
     mock_get_provider.return_value = _mock_provider([

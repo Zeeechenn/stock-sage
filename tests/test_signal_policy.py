@@ -34,10 +34,10 @@ def test_test1_uses_legacy_qlib_weights_and_test2_uses_new_weights():
     assert test2_weights.sentiment == 0.4
     assert test2_weights.entry_threshold == 25.0
     assert test2_weights.profile == "new_framework"
-    assert test2_weights.use_multi_agent is True
+    assert test2_weights.use_multi_agent is False
 
 
-def test_scheduler_uses_simple_aggregate_for_test1_and_multi_agent_for_test2(monkeypatch):
+def test_scheduler_uses_simple_aggregate_for_daily_profiles(monkeypatch):
     from backend.config import settings
     from backend.scheduler import _use_multi_agent_decision
 
@@ -45,6 +45,17 @@ def test_scheduler_uses_simple_aggregate_for_test1_and_multi_agent_for_test2(mon
     assert _use_multi_agent_decision() is False
 
     monkeypatch.setattr(settings, "paper_trading_profile", "new_framework")
+    monkeypatch.setattr(settings, "multi_agent_enabled", False)
+    assert _use_multi_agent_decision() is False
+
+
+def test_multi_agent_can_still_be_enabled_explicitly_for_research(monkeypatch):
+    from backend.config import settings
+    from backend.scheduler import _use_multi_agent_decision
+
+    monkeypatch.setattr(settings, "paper_trading_profile", "new_framework")
+    monkeypatch.setattr(settings, "multi_agent_enabled", True)
+
     assert _use_multi_agent_decision() is True
 
 

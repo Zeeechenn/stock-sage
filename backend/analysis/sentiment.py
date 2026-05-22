@@ -1,7 +1,8 @@
 """LLM 新闻情感分析"""
 import hashlib
 
-from backend.llm import get_provider
+from backend.config import settings
+from backend.llm import get_provider, has_runtime_llm_provider
 
 _cache: dict[str, dict] = {}  # 进程内缓存，避免相同新闻重复调用 API
 
@@ -34,6 +35,12 @@ _SENTIMENT_TOOL = {
 }
 
 _FALLBACK = {"sentiment": 0.0, "summary": "无相关新闻", "impact": "short", "key_events": []}
+_DISABLED_FALLBACK = {
+    "sentiment": 0.0,
+    "summary": "LLM已禁用",
+    "impact": "short",
+    "key_events": [],
+}
 
 
 def _titles_hash(titles: list[str]) -> str:
@@ -49,6 +56,8 @@ def analyze_news(titles: list[str], symbol: str | None = None) -> dict:
     """
     if not titles:
         return _FALLBACK.copy()
+    if not has_runtime_llm_provider(settings):
+        return _DISABLED_FALLBACK.copy()
 
     cache_key = _titles_hash(titles)
     if cache_key in _cache:
