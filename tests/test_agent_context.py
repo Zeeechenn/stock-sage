@@ -228,8 +228,8 @@ asyncio.run(main())
     assert data["tools"] == [
         "stock_sage_project_context",
         "stock_sage_memory_snapshot",
-        "stock_sage_stock_context",
         "stock_sage_memory_context",
+        "stock_sage_stock_context",
         "stock_sage_health",
     ]
     assert '"ok": true' in data["content"][0]
