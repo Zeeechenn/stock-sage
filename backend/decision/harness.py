@@ -95,12 +95,12 @@ def _build_decision_trace(result: dict) -> list[dict]:
         _trace_step(
             "researcher",
             used_llm=bool(llm.get("used_llm")),
-            fallback_reason=None if llm.get("used_llm") else "no_llm_or_no_divergence",
+            fallback_reason=llm.get("fallback_reason"),
             input_summary="analyst disagreement and debate topic",
             output_summary=llm.get("rationale") or "no arbitration",
             provider=provider,
             model_tier="fast",
-            structured_output_valid=bool(llm) if llm.get("used_llm") else None,
+            structured_output_valid=llm.get("structured_output_valid"),
         ),
         _trace_step(
             "trader",

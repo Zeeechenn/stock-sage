@@ -29,6 +29,7 @@ class DeepResearchReport:
     path: Path | None
     source_count: int
     risk_flags: list[str]
+    retrieval_iterations: tuple[dict, ...] = ()  # evaluator/planner 闭环轨迹
 
 
 def default_output_dir() -> Path:
@@ -99,14 +100,21 @@ def _latest_financial_context(db, symbol: str) -> dict:
     }
 
 
-def _collect_news(db, symbols: list[str], as_of_dt: datetime) -> tuple[list[RawNews], list[NewsAudit]]:
+def _collect_news(
+    db,
+    symbols: list[str],
+    as_of_dt: datetime,
+    *,
+    window_days: int = 14,
+    limit: int = 80,
+) -> tuple[list[RawNews], list[NewsAudit]]:
     """Collect recent stored news and audit the source trail."""
-    cutoff = as_of_dt - timedelta(days=14)
+    cutoff = as_of_dt - timedelta(days=window_days)
     rows = (
         db.query(NewsItem)
         .filter(NewsItem.symbol.in_(symbols), NewsItem.published_at >= cutoff)
         .order_by(NewsItem.published_at.desc())
-        .limit(80)
+        .limit(limit)
         .all()
     ) if symbols else []
     items = [
@@ -120,6 +128,65 @@ def _collect_news(db, symbols: list[str], as_of_dt: datetime) -> tuple[list[RawN
         for row in rows
     ]
     return items, audit_news_items(items, now=as_of_dt)
+
+
+@dataclass(frozen=True)
+class EvidenceEvaluation:
+    """Evaluator 输出：判断当前证据是否够，并给出下一步检索建议。"""
+
+    quality: str            # ok / weak / insufficient
+    usable_count: int
+    weak_count: int
+    missing_financial_symbols: list[str]
+    next_plan: dict | None  # 若 quality != ok，提示下一轮检索的 action / 参数
+
+
+def _evaluate_evidence(
+    *,
+    audits: list[NewsAudit],
+    financials: list[dict],
+    window_days: int,
+    min_usable: int = 3,
+    max_window: int = 60,
+) -> EvidenceEvaluation:
+    """评估当前证据质量；不足时生成下一步检索计划（Agentic RAG 闭环的 evaluator + planner）。"""
+    usable_count = sum(1 for a in audits if a.usable)
+    weak_count = len(audits) - usable_count
+    missing_financials = [
+        item["symbol"] for item in financials if not item.get("available")
+    ]
+
+    if usable_count >= min_usable and not missing_financials:
+        return EvidenceEvaluation(
+            quality="ok",
+            usable_count=usable_count,
+            weak_count=weak_count,
+            missing_financial_symbols=missing_financials,
+            next_plan=None,
+        )
+
+    if usable_count < min_usable and window_days < max_window:
+        next_window = min(max_window, window_days * 2)
+        return EvidenceEvaluation(
+            quality="insufficient",
+            usable_count=usable_count,
+            weak_count=weak_count,
+            missing_financial_symbols=missing_financials,
+            next_plan={
+                "action": "expand_news_window",
+                "from_days": window_days,
+                "to_days": next_window,
+                "reason": f"可用来源 {usable_count} 条 < 阈值 {min_usable}，扩大时间窗回补",
+            },
+        )
+
+    return EvidenceEvaluation(
+        quality="weak",
+        usable_count=usable_count,
+        weak_count=weak_count,
+        missing_financial_symbols=missing_financials,
+        next_plan=None,
+    )
 
 
 def _build_summary(topic: str, symbols: list[str], source_count: int, weak_count: int) -> str:
@@ -143,6 +210,7 @@ def _render_report(
     audits: list[NewsAudit],
     risk_flags: list[str],
     sections: list[ResearchSection],
+    iterations: list[dict] | None = None,
 ) -> str:
     """Render the deep research report as Markdown."""
     usable = [audit for audit in audits if audit.usable]
@@ -213,6 +281,21 @@ def _render_report(
     else:
         lines.append("- 本地数据库暂无近 14 日新闻；本报告只保留结构化研究框架。")
 
+    if iterations:
+        lines.extend(["", "## 检索闭环（evaluator + planner）"])
+        for idx, it in enumerate(iterations, 1):
+            plan = it.get("next_plan") or {}
+            plan_text = (
+                f"下一步：{plan.get('action')} → {plan.get('to_days')} 天 "
+                f"（{plan.get('reason')}）"
+                if plan else "结论：当前证据满足阈值，停止补证"
+            )
+            lines.append(
+                f"- 第 {idx} 轮 (window={it['window_days']}d)："
+                f"usable={it['usable_count']} weak={it['weak_count']} "
+                f"质量={it['quality']}；{plan_text}"
+            )
+
     lines.extend([
         "",
         "## 待验证问题",
@@ -235,17 +318,55 @@ def run_deep_research(
     output_dir: Path | str | None = None,
     as_of: str | None = None,
     persist: bool = True,
+    min_usable_sources: int = 3,
+    max_iterations: int = 3,
 ) -> DeepResearchReport:
-    """Run a deterministic manual deep research workflow and optionally persist it."""
+    """Run a deep research workflow with an evaluator/planner re-query loop.
+
+    Each iteration:
+      1. collect news at current window
+      2. evaluate evidence quality
+      3. if insufficient and a plan exists, follow it (expand window) and retry
+    """
     clean_symbols = [s.strip() for s in symbols if s.strip()]
     day = as_of or datetime.utcnow().strftime("%Y-%m-%d")
     as_of_dt = datetime.strptime(day, "%Y-%m-%d")
     names = _symbol_names(db, clean_symbols)
     prices = [_latest_price_context(db, symbol) for symbol in clean_symbols]
     financials = [_latest_financial_context(db, symbol) for symbol in clean_symbols]
-    _, audits = _collect_news(db, clean_symbols, as_of_dt)
-    usable_count = sum(1 for audit in audits if audit.usable)
-    weak_count = len(audits) - usable_count
+
+    window_days = 14
+    audits: list[NewsAudit] = []
+    iterations: list[dict] = []
+    evaluation: EvidenceEvaluation | None = None
+    for _ in range(max_iterations):
+        _, audits = _collect_news(
+            db, clean_symbols, as_of_dt, window_days=window_days,
+        )
+        evaluation = _evaluate_evidence(
+            audits=audits,
+            financials=financials,
+            window_days=window_days,
+            min_usable=min_usable_sources,
+        )
+        iterations.append({
+            "window_days": window_days,
+            "usable_count": evaluation.usable_count,
+            "weak_count": evaluation.weak_count,
+            "quality": evaluation.quality,
+            "next_plan": evaluation.next_plan,
+        })
+        if evaluation.quality == "ok" or evaluation.next_plan is None:
+            break
+        plan = evaluation.next_plan
+        if plan.get("action") == "expand_news_window":
+            window_days = int(plan.get("to_days", window_days))
+        else:
+            break
+
+    assert evaluation is not None  # max_iterations >= 1 保证至少一轮
+    usable_count = evaluation.usable_count
+    weak_count = evaluation.weak_count
     risk_flags = sorted({flag for audit in audits for flag in audit.risk_flags})
     summary = _build_summary(topic, clean_symbols, usable_count, weak_count)
     sections = build_research_sections(
@@ -272,6 +393,7 @@ def run_deep_research(
         financials=financials,
         audits=audits,
         risk_flags=risk_flags,
+        iterations=iterations,
         sections=sections,
     )
     path.write_text(text, encoding="utf-8")
@@ -284,6 +406,7 @@ def run_deep_research(
         path=path,
         source_count=usable_count,
         risk_flags=risk_flags,
+        retrieval_iterations=tuple(iterations),
     )
     if persist:
         _persist_report(db, report, audits)
@@ -311,6 +434,7 @@ def _persist_report(db, report: DeepResearchReport, audits: list[NewsAudit]) -> 
         "symbols": report.symbols,
         "report_path": str(report.path) if report.path else None,
         "source_count": report.source_count,
+        "retrieval_iterations": list(report.retrieval_iterations),
         "source_audit": [
             {
                 "title": audit.title,

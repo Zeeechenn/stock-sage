@@ -13,6 +13,8 @@ from __future__ import annotations
 import statistics
 from dataclasses import dataclass, field
 
+from jsonschema import ValidationError, validate
+
 from backend.agents.analyst import AnalystReport
 from backend.config import settings
 from backend.llm import get_provider, has_runtime_llm_provider
@@ -35,9 +37,15 @@ class ResearcherConclusion:
     rationale: str
     used_llm: bool
     rounds: list[DebateRound] = field(default_factory=list)   # M4.1 多轮记录
+    fallback_reason: str | None = None        # 走 quick_consensus / 中途降级的原因
+    structured_output_valid: bool | None = None  # LLM 路径下 JSON Schema 校验结果
 
 
-def quick_consensus(reports: list[AnalystReport]) -> ResearcherConclusion:
+def quick_consensus(
+    reports: list[AnalystReport],
+    *,
+    fallback_reason: str | None = None,
+) -> ResearcherConclusion:
     """无分歧时的快速结论生成"""
     scores = [r.score for r in reports]
     avg = sum(scores) / len(scores) if scores else 0
@@ -55,6 +63,7 @@ def quick_consensus(reports: list[AnalystReport]) -> ResearcherConclusion:
         action_bias=bias,
         rationale=f"四路均值 {avg:+.1f}，方向一致，跳过辩论。",
         used_llm=False,
+        fallback_reason=fallback_reason,
     )
 
 
@@ -73,7 +82,7 @@ def debate(reports: list[AnalystReport], llm_arbitration: dict | None = None) ->
     llm_arbitration 为 None 时退回 quick_consensus。
     """
     if not llm_arbitration:
-        return quick_consensus(reports)
+        return quick_consensus(reports, fallback_reason="no_arbitration_input")
 
     # M4.1 兼容：若 llm_arbitration 自带 rounds，直接透传
     rounds_raw = llm_arbitration.get("rounds") or []
@@ -94,6 +103,8 @@ def debate(reports: list[AnalystReport], llm_arbitration: dict | None = None) ->
         rationale=llm_arbitration.get("rationale", ""),
         used_llm=True,
         rounds=rounds,
+        fallback_reason=llm_arbitration.get("fallback_reason"),
+        structured_output_valid=llm_arbitration.get("structured_output_valid"),
     )
 
 
@@ -186,6 +197,19 @@ def _build_analyst_brief(reports: list[AnalystReport]) -> str:
     return "\n".join(lines)
 
 
+def _validate_tool_output(data: dict | None, tool: dict) -> tuple[bool, str | None]:
+    """对 complete_structured 返回值跑一次 jsonschema 校验。
+    返回 (是否合法, 错误描述)。"""
+    if not isinstance(data, dict):
+        return False, "missing_or_non_dict_output"
+    try:
+        validate(instance=data, schema=tool["input_schema"])
+    except ValidationError as exc:
+        path = ".".join(str(item) for item in exc.path) or "<root>"
+        return False, f"schema:{tool.get('name', '?')}:{path}:{exc.message}"
+    return True, None
+
+
 def multi_round_debate(
     reports: list[AnalystReport],
     *,
@@ -207,17 +231,17 @@ def multi_round_debate(
     debate_topic: 由 Research Director（M4.2）下达的议题，为空时让 bull 自由开场
     """
     if not settings.multi_round_debate_enabled:
-        return quick_consensus(reports)
+        return quick_consensus(reports, fallback_reason="multi_round_debate_disabled")
 
     if not has_runtime_llm_provider(settings):
-        return quick_consensus(reports)
+        return quick_consensus(reports, fallback_reason="no_llm_provider")
 
     if len(reports) < 2:
-        return quick_consensus(reports)
+        return quick_consensus(reports, fallback_reason="too_few_reports")
 
     stdev = statistics.stdev([r.score for r in reports])
     if stdev < settings.multi_round_debate_min_divergence:
-        return quick_consensus(reports)
+        return quick_consensus(reports, fallback_reason="no_divergence")
 
     provider = get_provider()
     brief = _build_analyst_brief(reports)
@@ -236,8 +260,11 @@ def multi_round_debate(
         prompt=bull_prompt, tool=_BULL_OPENING_TOOL,
         max_tokens=300, model_tier="fast",
     )
-    if not bull_data or not bull_data.get("points"):
-        return quick_consensus(reports)
+    bull_valid, bull_err = _validate_tool_output(bull_data, _BULL_OPENING_TOOL)
+    if not bull_valid:
+        return quick_consensus(reports, fallback_reason=f"round1_invalid:{bull_err}")
+    if not bull_data.get("points"):
+        return quick_consensus(reports, fallback_reason="round1_empty_points")
 
     bull_points = bull_data.get("points", [])[:3]
     rounds.append(DebateRound(
@@ -256,10 +283,15 @@ def multi_round_debate(
         prompt=bear_prompt, tool=_BEAR_REBUTTAL_TOOL,
         max_tokens=400, model_tier="fast",
     )
-    if not bear_data or not bear_data.get("rebuttals"):
+    bear_valid, bear_err = _validate_tool_output(bear_data, _BEAR_REBUTTAL_TOOL)
+    bear_empty = bear_valid and not bear_data.get("rebuttals")
+    if not bear_valid or bear_empty:
         # 降级：只有 bull 开场，bias 由均值决定
         avg = sum(r.score for r in reports) / len(reports)
         bias = "偏多" if avg > 10 else ("偏空" if avg < -10 else "中性")
+        reason = (
+            f"round2_invalid:{bear_err}" if not bear_valid else "round2_empty_rebuttals"
+        )
         return ResearcherConclusion(
             bull_points=bull_points,
             bear_points=[],
@@ -267,6 +299,8 @@ def multi_round_debate(
             rationale="多轮辩论第2轮失败，回退到 Bull 开场 + 均值裁定。",
             used_llm=True,
             rounds=rounds,
+            fallback_reason=reason,
+            structured_output_valid=False,
         )
 
     rebuttals = bear_data.get("rebuttals", [])[:3]
@@ -298,10 +332,15 @@ def multi_round_debate(
         prompt=final_prompt, tool=_FINAL_ADJUDICATION_TOOL,
         max_tokens=400, model_tier="capable",
     )
-    if not final_data or not final_data.get("action_bias"):
+    final_valid, final_err = _validate_tool_output(final_data, _FINAL_ADJUDICATION_TOOL)
+    final_empty = final_valid and not final_data.get("action_bias")
+    if not final_valid or final_empty:
         # 降级：用前两轮 + 均值
         avg = sum(r.score for r in reports) / len(reports)
         bias = "偏多" if avg > 10 else ("偏空" if avg < -10 else "中性")
+        reason = (
+            f"round3_invalid:{final_err}" if not final_valid else "round3_empty_bias"
+        )
         return ResearcherConclusion(
             bull_points=bull_points,
             bear_points=bear_points,
@@ -309,6 +348,8 @@ def multi_round_debate(
             rationale="多轮辩论第3轮失败，按前两轮 + 均值裁定。",
             used_llm=True,
             rounds=rounds,
+            fallback_reason=reason,
+            structured_output_valid=False,
         )
 
     bull_response = final_data.get("bull_response", [])[:3]
@@ -325,6 +366,7 @@ def multi_round_debate(
         rationale=final_data.get("rationale", ""),
         used_llm=True,
         rounds=rounds,
+        structured_output_valid=True,
     )
 
 
@@ -335,6 +377,10 @@ def conclusion_to_arbitration_dict(conclusion: ResearcherConclusion) -> dict:
         "bear_points": conclusion.bear_points,
         "action_bias": conclusion.action_bias,
         "rationale": conclusion.rationale,
+        "used_llm": conclusion.used_llm,
+        "round_count": len(conclusion.rounds),
+        "fallback_reason": conclusion.fallback_reason,
+        "structured_output_valid": conclusion.structured_output_valid,
         "rounds": [
             {
                 "round_num": r.round_num,

@@ -24,12 +24,17 @@ class ActionDefinition:
     schema_version: int = 1
 
 
-def _object_schema(required: list[str], properties: dict) -> dict:
+def _object_schema(
+    required: list[str],
+    properties: dict,
+    *,
+    additional_properties: bool = False,
+) -> dict:
     return {
         "type": "object",
         "required": required,
         "properties": properties,
-        "additionalProperties": True,
+        "additionalProperties": additional_properties,
     }
 
 
@@ -190,11 +195,11 @@ _ACTIONS: dict[str, ActionDefinition] = {
     "position.add": ActionDefinition(
         name="position.add",
         input_schema=_object_schema(["symbol", "quantity", "avg_cost"], {
-            "symbol": {"type": "string"},
+            "symbol": {"type": "string", "minLength": 1},
             "name": {"type": "string"},
-            "market": {"type": "string"},
-            "quantity": {"type": "number"},
-            "avg_cost": {"type": "number"},
+            "market": {"type": "string", "enum": ["CN", "US"]},
+            "quantity": {"type": "number", "exclusiveMinimum": 0},
+            "avg_cost": {"type": "number", "exclusiveMinimum": 0},
         }),
         risk_level="high",
         requires_confirmation=True,
