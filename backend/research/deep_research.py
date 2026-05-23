@@ -148,23 +148,29 @@ def _evaluate_evidence(
     window_days: int,
     min_usable: int = 3,
     max_window: int = 60,
+    exhausted_providers: set[str] | None = None,
+    attempted_financials: set[str] | None = None,
 ) -> EvidenceEvaluation:
-    """评估当前证据质量；不足时生成下一步检索计划（Agentic RAG 闭环的 evaluator + planner）。"""
+    """Agentic RAG 闭环的 evaluator + planner。
+
+    优先级：
+      1. 新闻不足且窗口未到上限 → expand_news_window
+      2. 新闻不足且本地穷尽 → fetch_external_news (anspire 优先，否则 tavily)
+      3. 财务缺失 → backfill_financials
+      4. 否则 → quality=ok / weak（无可执行计划）
+    """
+    exhausted_providers = exhausted_providers or set()
+    attempted_financials = attempted_financials or set()
+
     usable_count = sum(1 for a in audits if a.usable)
     weak_count = len(audits) - usable_count
     missing_financials = [
-        item["symbol"] for item in financials if not item.get("available")
+        item["symbol"]
+        for item in financials
+        if not item.get("available") and item["symbol"] not in attempted_financials
     ]
 
-    if usable_count >= min_usable and not missing_financials:
-        return EvidenceEvaluation(
-            quality="ok",
-            usable_count=usable_count,
-            weak_count=weak_count,
-            missing_financial_symbols=missing_financials,
-            next_plan=None,
-        )
-
+    # 1) 扩窗
     if usable_count < min_usable and window_days < max_window:
         next_window = min(max_window, window_days * 2)
         return EvidenceEvaluation(
@@ -180,6 +186,54 @@ def _evaluate_evidence(
             },
         )
 
+    # 2) 外部检索
+    if usable_count < min_usable:
+        from backend.config import settings as _settings
+        provider: str | None = None
+        if "anspire" not in exhausted_providers and getattr(_settings, "anspire_api_key", ""):
+            provider = "anspire"
+        elif "tavily" not in exhausted_providers and getattr(_settings, "tavily_api_key", ""):
+            provider = "tavily"
+        if provider is not None:
+            return EvidenceEvaluation(
+                quality="insufficient",
+                usable_count=usable_count,
+                weak_count=weak_count,
+                missing_financial_symbols=missing_financials,
+                next_plan={
+                    "action": "fetch_external_news",
+                    "provider": provider,
+                    "days": window_days,
+                    "reason": (
+                        f"本地窗口已扩到 {window_days} 天仍 {usable_count}/{min_usable}，"
+                        f"调用 {provider} 外部检索补证"
+                    ),
+                },
+            )
+
+    # 3) 财务回补
+    if missing_financials:
+        return EvidenceEvaluation(
+            quality="insufficient",
+            usable_count=usable_count,
+            weak_count=weak_count,
+            missing_financial_symbols=missing_financials,
+            next_plan={
+                "action": "backfill_financials",
+                "symbols": list(missing_financials),
+                "reason": f"{len(missing_financials)} 个标的缺财务指标，触发回补",
+            },
+        )
+
+    # 4) 终态
+    if usable_count >= min_usable:
+        return EvidenceEvaluation(
+            quality="ok",
+            usable_count=usable_count,
+            weak_count=weak_count,
+            missing_financial_symbols=missing_financials,
+            next_plan=None,
+        )
     return EvidenceEvaluation(
         quality="weak",
         usable_count=usable_count,
@@ -187,6 +241,79 @@ def _evaluate_evidence(
         missing_financial_symbols=missing_financials,
         next_plan=None,
     )
+
+
+def _execute_plan(
+    plan: dict,
+    db,
+    symbols: list[str],
+) -> dict:
+    """执行 evaluator/planner 给出的下一步动作；返回执行摘要供 trace。"""
+    action = plan.get("action")
+    if action == "expand_news_window":
+        return {"action": action, "window_days_next": int(plan["to_days"])}
+    if action == "fetch_external_news":
+        return _fetch_external_news(db, symbols, plan["provider"], days=int(plan["days"]))
+    if action == "backfill_financials":
+        return _backfill_financials(db, plan["symbols"])
+    return {"action": action, "skipped": True}
+
+
+def _fetch_external_news(
+    db,
+    symbols: list[str],
+    provider: str,
+    *,
+    days: int,
+) -> dict:
+    """按 provider 调用外部新闻检索并落库，返回执行摘要。"""
+    from backend.data.database import Stock
+    from backend.data.news import fetch_stock_news_anspire, save_news_to_db
+
+    inserted = 0
+    errors: list[str] = []
+    for sym in symbols:
+        stock = db.query(Stock).filter(Stock.symbol == sym).first()
+        name = stock.name if stock else sym
+        try:
+            if provider == "anspire":
+                items = fetch_stock_news_anspire(sym, name, days=days)
+            elif provider == "tavily":
+                if stock is None:
+                    items = []
+                else:
+                    from backend.tools.backfill_coverage import _fetch_tavily_news
+                    items = _fetch_tavily_news(stock, limit=5)
+            else:
+                items = []
+            inserted += save_news_to_db(items, db)
+        except Exception as exc:  # pragma: no cover - 网络层异常兜底
+            errors.append(f"{sym}:{exc}")
+    return {
+        "action": "fetch_external_news",
+        "provider": provider,
+        "fetched": inserted,
+        "errors": errors,
+    }
+
+
+def _backfill_financials(db, symbols: list[str]) -> dict:
+    """触发缺失财务的 per-symbol 回补，返回执行摘要。"""
+    from backend.data.fundamentals import sync_financial_metrics
+
+    synced = 0
+    errors: list[str] = []
+    for sym in symbols:
+        try:
+            synced += sync_financial_metrics(sym, db)
+        except Exception as exc:  # pragma: no cover - 数据源异常兜底
+            errors.append(f"{sym}:{exc}")
+    return {
+        "action": "backfill_financials",
+        "symbols": list(symbols),
+        "synced": synced,
+        "errors": errors,
+    }
 
 
 def _build_summary(topic: str, symbols: list[str], source_count: int, weak_count: int) -> str:
@@ -285,11 +412,29 @@ def _render_report(
         lines.extend(["", "## 检索闭环（evaluator + planner）"])
         for idx, it in enumerate(iterations, 1):
             plan = it.get("next_plan") or {}
-            plan_text = (
-                f"下一步：{plan.get('action')} → {plan.get('to_days')} 天 "
-                f"（{plan.get('reason')}）"
-                if plan else "结论：当前证据满足阈值，停止补证"
-            )
+            result = it.get("plan_result") or {}
+            if plan:
+                action = plan.get("action")
+                if action == "expand_news_window":
+                    plan_text = (
+                        f"扩大新闻窗口 → {plan.get('to_days')} 天（{plan.get('reason')}）"
+                    )
+                elif action == "fetch_external_news":
+                    fetched = result.get("fetched", "?")
+                    plan_text = (
+                        f"外部检索 {plan.get('provider')} (days={plan.get('days')}) "
+                        f"→ 新增 {fetched} 条；{plan.get('reason')}"
+                    )
+                elif action == "backfill_financials":
+                    synced = result.get("synced", "?")
+                    plan_text = (
+                        f"回补财务 {plan.get('symbols')} → 同步 {synced} 行；"
+                        f"{plan.get('reason')}"
+                    )
+                else:
+                    plan_text = f"{action}：{plan.get('reason', '')}"
+            else:
+                plan_text = "结论：当前证据满足阈值，停止补证"
             lines.append(
                 f"- 第 {idx} 轮 (window={it['window_days']}d)："
                 f"usable={it['usable_count']} weak={it['weak_count']} "
@@ -319,14 +464,16 @@ def run_deep_research(
     as_of: str | None = None,
     persist: bool = True,
     min_usable_sources: int = 3,
-    max_iterations: int = 3,
+    max_iterations: int = 5,
 ) -> DeepResearchReport:
     """Run a deep research workflow with an evaluator/planner re-query loop.
 
     Each iteration:
       1. collect news at current window
-      2. evaluate evidence quality
-      3. if insufficient and a plan exists, follow it (expand window) and retry
+      2. (re)load financial snapshots
+      3. evaluate evidence quality + emit one of:
+           expand_news_window / fetch_external_news / backfill_financials
+      4. execute the plan and re-evaluate
     """
     clean_symbols = [s.strip() for s in symbols if s.strip()]
     day = as_of or datetime.utcnow().strftime("%Y-%m-%d")
@@ -339,29 +486,42 @@ def run_deep_research(
     audits: list[NewsAudit] = []
     iterations: list[dict] = []
     evaluation: EvidenceEvaluation | None = None
+    exhausted_providers: set[str] = set()
+    attempted_financials: set[str] = set()
     for _ in range(max_iterations):
         _, audits = _collect_news(
             db, clean_symbols, as_of_dt, window_days=window_days,
         )
+        # 财务可能在上一轮 backfill 被刷新；每轮重读以反映最新状态
+        financials = [_latest_financial_context(db, symbol) for symbol in clean_symbols]
         evaluation = _evaluate_evidence(
             audits=audits,
             financials=financials,
             window_days=window_days,
             min_usable=min_usable_sources,
+            exhausted_providers=exhausted_providers,
+            attempted_financials=attempted_financials,
         )
+        plan_result: dict | None = None
+        if evaluation.next_plan is not None:
+            plan_result = _execute_plan(evaluation.next_plan, db, clean_symbols)
+            action = evaluation.next_plan.get("action")
+            if action == "expand_news_window":
+                window_days = int(plan_result.get("window_days_next", window_days))
+            elif action == "fetch_external_news":
+                # 标记 provider 已尝试，避免下一轮重复打同一个外部源
+                exhausted_providers.add(evaluation.next_plan["provider"])
+            elif action == "backfill_financials":
+                attempted_financials.update(evaluation.next_plan["symbols"])
         iterations.append({
             "window_days": window_days,
             "usable_count": evaluation.usable_count,
             "weak_count": evaluation.weak_count,
             "quality": evaluation.quality,
             "next_plan": evaluation.next_plan,
+            "plan_result": plan_result,
         })
         if evaluation.quality == "ok" or evaluation.next_plan is None:
-            break
-        plan = evaluation.next_plan
-        if plan.get("action") == "expand_news_window":
-            window_days = int(plan.get("to_days", window_days))
-        else:
             break
 
     assert evaluation is not None  # max_iterations >= 1 保证至少一轮

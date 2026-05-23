@@ -156,15 +156,19 @@ def _detect_action(message: str, db: Session) -> tuple[str, dict] | None:
         return "watchlist.remove", {"symbol": symbol}
 
     if any(word in message for word in ("添加持仓", "新增持仓", "买入了", "已买入", "持仓")):
-        stock = db.query(Stock).filter(Stock.symbol == symbol).first()
         qty_match = re.search(r"(\d+(?:\.\d+)?)\s*(?:股|shares?)", message, flags=re.I)
         cost_match = re.search(r"(?:成本|均价|avg|price)\s*[:：]?\s*(\d+(?:\.\d+)?)", message, flags=re.I)
+        # schema 现在要求 quantity/avg_cost > 0；若用户没说清数量或成本，不构造
+        # 不完整的 pending（避免弹一张报 0 的待执行卡），让 chat 层自然反问。
+        if not qty_match or not cost_match:
+            return None
+        stock = db.query(Stock).filter(Stock.symbol == symbol).first()
         return "position.add", {
             "symbol": symbol,
             "name": stock.name if stock else _name_after_symbol(message, symbol),
             "market": stock.market if stock else "CN",
-            "quantity": float(qty_match.group(1)) if qty_match else 0,
-            "avg_cost": float(cost_match.group(1)) if cost_match else 0,
+            "quantity": float(qty_match.group(1)),
+            "avg_cost": float(cost_match.group(1)),
         }
 
     if any(word in message for word in ("添加自选", "加入自选", "关注")) or "add watch" in lower:
