@@ -74,10 +74,12 @@ class PITSession:
                     fallback_cutoff = (
                         datetime.fromisoformat(self._as_of) - timedelta(days=45)
                     ).strftime("%Y-%m-%d")
-                    q = q.filter(or_(
-                        col <= self._as_of,
-                        and_(col.is_(None), getattr(ent, "report_date") <= fallback_cutoff),
-                    ))
+                    q = q.filter(
+                        or_(
+                            col <= self._as_of,
+                            and_(col.is_(None), ent.report_date <= fallback_cutoff),
+                        )
+                    )
                 else:
                     q = q.filter(col <= self._as_of)
         return q
@@ -112,8 +114,14 @@ def assert_pit_clean(db, as_of: str, model, field: str | None = None) -> int:
         return db.query(model).filter(col > cutoff).count()
     if kind == "financial_disclosure":
         fallback_cutoff = (datetime.fromisoformat(as_of) - timedelta(days=45)).strftime("%Y-%m-%d")
-        return db.query(model).filter(or_(
-            col > as_of,
-            and_(col.is_(None), getattr(model, "report_date") > fallback_cutoff),
-        )).count()
+        return (
+            db.query(model)
+            .filter(
+                or_(
+                    col > as_of,
+                    and_(col.is_(None), model.report_date > fallback_cutoff),
+                )
+            )
+            .count()
+        )
     return db.query(model).filter(col > as_of).count()

@@ -1,4 +1,5 @@
 """LightGBM Alpha model training and status routes."""
+
 from __future__ import annotations
 
 import os
@@ -7,7 +8,6 @@ from datetime import datetime
 from fastapi import APIRouter, BackgroundTasks, Depends
 
 from backend.agent.http_guard import agent_write_guard
-
 from backend.data.database import SessionLocal
 
 router = APIRouter()

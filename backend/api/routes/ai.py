@@ -262,7 +262,7 @@ def _context_answer(message: str, db: Session, session_id: str | None = None) ->
             parts.append("项目长期记忆：\n" + memory_context["text"])
             used_resources.append("stock_memory")
         copilot_section, has_copilot = _copilot_context_section(db, symbol)
-        if has_copilot:
+        if has_copilot and copilot_section:
             parts.append(copilot_section)
             used_resources.append("research_copilot")
     if stocks:

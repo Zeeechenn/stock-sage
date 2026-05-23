@@ -2,8 +2,7 @@ import pandas as pd
 
 
 def test_cn_daily_registry_excludes_unadjusted_tushare(monkeypatch):
-    from backend.data import market
-    from backend.data import providers
+    from backend.data import market, providers
 
     providers.reset_provider_registry()
     monkeypatch.setattr(market.settings, "tushare_token", "fake-token")
@@ -25,8 +24,7 @@ def test_cn_daily_registry_excludes_unadjusted_tushare(monkeypatch):
 
 
 def test_cn_daily_registry_excludes_hfq_yfinance(monkeypatch):
-    from backend.data import market
-    from backend.data import providers
+    from backend.data import market, providers
 
     providers.reset_provider_registry()
     monkeypatch.setattr(
