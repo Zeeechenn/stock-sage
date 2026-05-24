@@ -1,4 +1,6 @@
+import os
 from datetime import datetime
+from pathlib import Path
 
 from sqlalchemy import (
     Boolean,
@@ -14,10 +16,11 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
 
-from backend.config import settings
+from backend.config import BASE_DIR, settings
 
 engine = create_engine(settings.database_url, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(bind=engine)
+_DEFAULT_DB_PATH = (BASE_DIR / "stock-sage.db").resolve()
 
 
 @event.listens_for(engine, "connect")
@@ -566,9 +569,25 @@ def _seed_default_memory() -> None:
     db = SessionLocal()
     try:
         seed_default_overrides(db)
-        migrate_layered_files_to_db(db)
+        if _should_migrate_local_memory():
+            migrate_layered_files_to_db(db)
     finally:
         db.close()
+
+
+def _should_migrate_local_memory() -> bool:
+    """Only ingest home-directory layered memory for explicit or default local DB runs."""
+    flag = os.environ.get("STOCKSAGE_MIGRATE_LOCAL_MEMORY")
+    if flag is not None:
+        return flag.strip().lower() in {"1", "true", "yes"}
+    try:
+        url = settings.database_url
+        if url.startswith("sqlite:///"):
+            actual = Path(url.removeprefix("sqlite:///")).resolve()
+            return actual == _DEFAULT_DB_PATH
+    except Exception:
+        return False
+    return False
 
 
 def get_db():

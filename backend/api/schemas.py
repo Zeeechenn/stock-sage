@@ -2,8 +2,9 @@
 from __future__ import annotations
 
 import json
+from typing import Literal
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 
 
 class StockOut(BaseModel):
@@ -73,30 +74,34 @@ class WatchlistItem(BaseModel):
     long_term_label: LongTermLabelOut | None = None
 
 
+Market = Literal["CN", "US"]
+PositionStatus = Literal["open", "closed"]
+
+
 class PositionCreate(BaseModel):
-    symbol: str
+    symbol: str = Field(min_length=1)
     name: str | None = None
-    market: str = "CN"
-    quantity: float
-    avg_cost: float
+    market: Market = "CN"
+    quantity: float = Field(gt=0)
+    avg_cost: float = Field(gt=0)
     opened_at: str | None = None
-    stop_loss: float | None = None
-    take_profit: float | None = None
+    stop_loss: float | None = Field(default=None, gt=0)
+    take_profit: float | None = Field(default=None, gt=0)
     note: str | None = None
 
 
 class PositionUpdate(BaseModel):
     name: str | None = None
-    market: str | None = None
-    quantity: float | None = None
-    avg_cost: float | None = None
+    market: Market | None = None
+    quantity: float | None = Field(default=None, gt=0)
+    avg_cost: float | None = Field(default=None, gt=0)
     opened_at: str | None = None
-    stop_loss: float | None = None
-    take_profit: float | None = None
+    stop_loss: float | None = Field(default=None, gt=0)
+    take_profit: float | None = Field(default=None, gt=0)
     closed_at: str | None = None
-    close_price: float | None = None
+    close_price: float | None = Field(default=None, gt=0)
     note: str | None = None
-    status: str | None = None
+    status: PositionStatus | None = None
 
 
 class PositionOut(BaseModel):

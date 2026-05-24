@@ -124,6 +124,8 @@ def close_position(
     pos = db.query(Position).filter(Position.id == position_id).first()
     if pos is None:
         raise HTTPException(404, "position not found")
+    if pos.status == "closed":
+        raise HTTPException(409, "position already closed")
     px = _latest_price(db, pos.symbol)
     final_price = close_price
     if final_price is None and payload and payload.close_price is not None:
@@ -132,6 +134,8 @@ def close_position(
         final_price = float(px.close)
     if final_price is None:
         raise HTTPException(400, "close_price required when no latest price exists")
+    if final_price <= 0:
+        raise HTTPException(400, "close_price must be > 0")
 
     cost_value = float(pos.quantity or 0) * float(pos.avg_cost or 0)
     exit_value = float(pos.quantity or 0) * float(final_price)
@@ -197,5 +201,10 @@ def update_position(
 )
 def delete_position(position_id: int, db: Session = Depends(get_db)):
     """Close a position without deleting its history."""
+    pos = db.query(Position).filter(Position.id == position_id).first()
+    if pos is None:
+        raise HTTPException(404, "position not found")
+    if pos.status == "closed":
+        return {"status": "already_closed"}
     close_position(position_id, db=db)
     return {"status": "closed"}

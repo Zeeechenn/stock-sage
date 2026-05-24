@@ -34,6 +34,9 @@ TEST2_START = "2026-05-18"
 TEST2_END = "2026-07-18"
 
 # 25 股票池（test2.md 原始回测池 7 + 分享报告导入池 20，去重后 25）
+# Keep in sync with backend/api/routes/dashboard.py test2_universe.json when
+# that ignored local file is present; this script keeps a pinned fallback for
+# fresh-clone reproducibility.
 TEST2_UNIVERSE: tuple[str, ...] = (
     "600547", "688008", "603993", "300308", "603986", "601088", "300394",
     "002371", "600584", "600900", "601689", "300274", "600160", "600036",

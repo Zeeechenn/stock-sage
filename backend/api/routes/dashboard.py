@@ -63,24 +63,21 @@ TEST1_POSITIONS = [
 TEST2_UNIVERSE_PATH = Path(__file__).resolve().parents[3] / "paper_trading" / "test2_universe.json"
 
 
-def _load_test2_universe() -> list[dict]:
+def _load_test2_universe() -> tuple[list[dict], bool]:
     """Single source of truth for the test2 paper-trading universe.
 
-    Falls back to an empty list with a logged warning rather than crashing the
+    Falls back to an empty list with a debug log rather than crashing the
     dashboard route, since the universe is informational metadata.
     """
     try:
         data = json.loads(TEST2_UNIVERSE_PATH.read_text(encoding="utf-8"))
-        return data.get("stocks", [])
+        return data.get("stocks", []), True
     except FileNotFoundError:
-        logger.warning("test2_universe.json missing at %s", TEST2_UNIVERSE_PATH)
-        return []
+        logger.debug("test2_universe.json missing at %s", TEST2_UNIVERSE_PATH)
+        return [], False
     except Exception as e:
         logger.warning("test2_universe.json load failed: %s", e)
-        return []
-
-
-TEST2_UNIVERSE = _load_test2_universe()
+        return [], False
 
 
 def _manual_positions_summary(db: Session) -> dict:
@@ -161,6 +158,7 @@ def dashboard_summary(as_of: str | None = None, db: Session = Depends(get_db)):
         entry_count = sum(1 for row in rows if is_entry_signal(row.recommendation, include_legacy=True))
 
     db_path = settings.database_url.removeprefix("sqlite:///")
+    test2_universe, test2_universe_available = _load_test2_universe()
     return {
         "system": {
             "database_ok": True,
@@ -196,7 +194,8 @@ def dashboard_summary(as_of: str | None = None, db: Session = Depends(get_db)):
                 "position_pct": settings.max_position_per_stock,
                 "max_positions": 3,
                 "total_position_pct": 0.45,
-                "universe": _load_test2_universe(),
+                "universe": test2_universe,
+                "universe_available": test2_universe_available,
                 "trailing_stop_enabled": settings.trailing_stop_enabled,
                 "trailing_atr_mult": settings.trailing_atr_mult,
                 "take_profit_exit_enabled": settings.take_profit_exit_enabled,

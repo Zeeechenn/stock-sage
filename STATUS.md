@@ -92,6 +92,8 @@
 
 ## 测试套件
 
+- M22 数据完整性修复后，持仓写入路径已锁定正数数量/成本/价格与 CN/US 市场枚举；重复平仓返回 409，不再覆盖首次 realized PnL。
+- 非默认 SQLite 初始化默认跳过本机 `~/.stock-sage/memory` 迁移；确需导入时设置 `STOCKSAGE_MIGRATE_LOCAL_MEMORY=1`。
 - `PYTHONPATH=. pytest -q` → **379 passed**（2026-05-23 M17-M21 评审修复 + yfinance qfq 收口 + QFII 缓存 TTL 后）。`tests/test_agent_context.py` 的 2 个 MCP smoke 用例需 `pip install -e ".[agent]"` 装可选 `mcp` 包后才能跑。
 - `python3 -m compileall backend tests` → 通过
 - `cd frontend && node --test src/*.test.js src/pages/*.test.js` → **9 passed**

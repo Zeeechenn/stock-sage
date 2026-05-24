@@ -149,6 +149,8 @@ counts instead of failing when the database schema has not been initialized.
 - Mention rule/profile version for trading or paper-trading decisions.
 - Respect configured position limits. Defaults trend toward 15% per stock, 30%
   per sector, and 80% total equity exposure.
+- Position write paths are locked to positive quantities/costs/prices and reject
+  duplicate close attempts from M22 onward.
 - If long-term labels are missing, avoid stronger language than buy/watch-level
   suggestions.
 - Stop loss / take profit are ATR-derived project rules, not LLM predictions.

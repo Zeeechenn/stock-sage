@@ -96,6 +96,52 @@ def test_execute_action_validates_payload_before_handler(test_db):
     assert "symbol" in exc.value.detail
 
 
+def test_position_add_accepts_full_http_payload(test_db):
+    from backend.agent.action_registry import execute_registered_action
+    from backend.data.database import Position
+
+    result = execute_registered_action(
+        "position.add",
+        {
+            "symbol": "600519",
+            "name": "贵州茅台",
+            "market": "CN",
+            "quantity": 2,
+            "avg_cost": 100,
+            "opened_at": "2026-05-20",
+            "stop_loss": 90,
+            "take_profit": 130,
+            "note": "agent add",
+        },
+        test_db,
+    )
+
+    assert result["stop_loss"] == 90
+    stored = test_db.query(Position).filter(Position.symbol == "600519").one()
+    assert stored.opened_at == "2026-05-20"
+    assert stored.take_profit == 130
+    assert stored.note == "agent add"
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"symbol": "600519", "quantity": 1, "avg_cost": 100, "foo": "bar"},
+        {"symbol": "600519", "quantity": 0, "avg_cost": 100},
+        {"symbol": "600519", "quantity": 1, "avg_cost": -1},
+    ],
+)
+def test_position_add_rejects_invalid_or_unknown_payload(payload, test_db):
+    from fastapi import HTTPException
+
+    from backend.agent.action_registry import execute_registered_action
+
+    with pytest.raises(HTTPException) as exc:
+        execute_registered_action("position.add", payload, test_db)
+
+    assert exc.value.status_code == 400
+
+
 def test_execute_action_enforces_allowed_modes(monkeypatch, test_db):
     from fastapi import HTTPException
 

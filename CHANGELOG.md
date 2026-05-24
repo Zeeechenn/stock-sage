@@ -5,6 +5,19 @@
 
 ---
 
+## [M22] 持仓完整性与本地状态隔离（2026-05-24）
+
+### Fixed
+- M22.0：持仓创建/更新 schema 锁定 CN/US 市场枚举、正数仓位/成本/止损/止盈/平仓价，并拒绝重复平仓覆盖 realized PnL。
+- M22.1：`position.add` agent action schema 对齐 HTTP API，可确认写入 opened_at、stop_loss、take_profit 和 note，仍拒绝未知字段。
+- M22.2：初始化数据库默认不再把本机 `~/.stock-sage/memory` 吸入非默认 SQLite；需显式 `STOCKSAGE_MIGRATE_LOCAL_MEMORY=1` 或默认本地 DB 才迁移。
+- M22.3：Dashboard Test2 universe 改为请求时加载并暴露 `universe_available`，缺失 ignored 本地文件时不再以 warning 表示异常；补齐前端 `npm test` 脚本与 deep research mypy 修复。
+
+### Tests
+- 新增持仓校验、重复平仓、agent action schema、memory 迁移隔离和 Test2 universe 契约回归。
+
+---
+
 ## [M17-M21] 评审修复最小交付包（2026-05-23）
 
 ### Fixed
