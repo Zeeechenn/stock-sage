@@ -2,18 +2,26 @@
 
 from __future__ import annotations
 
+import fnmatch
 import sys
 from pathlib import Path
 
-BLOCKED_NAMES = {".env", ".env.local", ".env.production"}
+BLOCKED_NAMES = {".env", ".env.local", ".env.production", "CLAUDE.md"}
 BLOCKED_SUFFIXES = {".db", ".sqlite", ".sqlite3", ".pkl", ".pickle", ".parquet"}
+BLOCKED_DIR_PREFIXES = ("paper_trading/",)
+BLOCKED_NAME_PATTERNS = ("PAPER_TRADING*.md", "REVIEW-*.md")
 
 
 def is_blocked(path: str) -> bool:
     p = Path(path)
     if p.name in BLOCKED_NAMES:
         return True
-    return any(p.name.endswith(suffix) for suffix in BLOCKED_SUFFIXES)
+    if any(p.name.endswith(suffix) for suffix in BLOCKED_SUFFIXES):
+        return True
+    posix = p.as_posix()
+    if any(posix.startswith(prefix) for prefix in BLOCKED_DIR_PREFIXES):
+        return True
+    return any(fnmatch.fnmatch(p.name, pattern) for pattern in BLOCKED_NAME_PATTERNS)
 
 
 def main(argv: list[str] | None = None) -> int:
