@@ -21,6 +21,7 @@ htmlcov/
 node_modules/
 dist/
 .superpowers/
+.codegraph/
 *.egg-info/
 .DS_Store
 .signal_news_cache.json

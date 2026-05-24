@@ -5,8 +5,8 @@ on:
   pull_request:
 
 jobs:
-  backend:
-    name: Backend tests
+  verify:
+    name: Verify
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -17,16 +17,7 @@ jobs:
           python-version: "3.11"
 
       - name: Install dependencies
-        run: pip install ".[test,agent]"
-
-      - name: Run pytest
-        run: PYTHONPATH=. pytest -q
-
-  frontend:
-    name: Frontend build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+        run: pip install ".[dev]"
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -39,6 +30,5 @@ jobs:
         working-directory: frontend
         run: npm ci
 
-      - name: Build
-        working-directory: frontend
-        run: npm run build
+      - name: Run full verification
+        run: make verify
