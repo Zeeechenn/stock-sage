@@ -717,6 +717,7 @@ def job_daily_memory_expire() -> None:
     """Daily cleanup of expired memory rows and stock-memory outcomes."""
     from backend.data.database import SessionLocal
     from backend.memory.ai_memory import expire_stale_memories
+    from backend.memory.audit_log import cleanup_audit_log
     from backend.memory.stock_memory import update_judgment_outcomes
     db = SessionLocal()
     try:
@@ -726,6 +727,9 @@ def job_daily_memory_expire() -> None:
         outcomes = update_judgment_outcomes(db)
         if outcomes:
             logger.info("stock memory outcomes: wrote %d rows", outcomes)
+        audit_removed = cleanup_audit_log(db)
+        if audit_removed:
+            logger.info("audit log cleanup: removed %d old rows", audit_removed)
     except Exception as e:
         logger.error("memory expire failed: %s", e)
     finally:

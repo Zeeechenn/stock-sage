@@ -33,6 +33,7 @@ def test_pending_action_includes_registry_metadata(test_db):
 def test_execute_action_uses_registry_handler(test_db):
     from backend.api.routes.ai import _execute_action
     from backend.data.database import Stock
+    from backend.memory.stock_memory import list_stock_memories
 
     result = _execute_action(
         "watchlist.add",
@@ -42,6 +43,9 @@ def test_execute_action_uses_registry_handler(test_db):
 
     assert result["active"] is True
     assert test_db.query(Stock).filter(Stock.symbol == "600519", Stock.active).count() == 1
+    memories = list_stock_memories(test_db, symbol="600519", memory_type="user_preference")
+    assert len(memories) == 1
+    assert "主动关注" in memories[0]["summary"]
 
 
 def test_execute_unknown_action_is_rejected(test_db):
@@ -94,6 +98,46 @@ def test_execute_action_validates_payload_before_handler(test_db):
 
     assert exc.value.status_code == 400
     assert "symbol" in exc.value.detail
+
+
+def test_stock_memory_write_action_persists_structured_memory(test_db):
+    from backend.agent.action_registry import execute_registered_action
+    from backend.memory.stock_memory import list_stock_memories
+
+    result = execute_registered_action(
+        "stock_memory.write",
+        {
+            "symbol": "300308",
+            "memory_type": "risk",
+            "summary": "300308 风险是海外订单兑现不及预期",
+            "importance": 5,
+            "confidence": 0.8,
+            "status": "watching",
+        },
+        test_db,
+    )
+
+    rows = list_stock_memories(test_db, symbol="300308", memory_type="risk")
+    assert result["persisted"] is True
+    assert result["stock_memory_id"] == rows[0]["id"]
+    assert rows[0]["summary"] == "300308 风险是海外订单兑现不及预期"
+    assert rows[0]["status"] == "watching"
+
+
+def test_stock_memory_write_rejects_invalid_type(test_db):
+    from fastapi import HTTPException
+
+    from backend.agent.action_registry import execute_registered_action
+
+    with pytest.raises(HTTPException) as exc:
+        execute_registered_action(
+            "stock_memory.write",
+            {"symbol": "300308", "memory_type": "note", "summary": "bad"},
+            test_db,
+        )
+
+    assert exc.value.status_code == 400
+    assert "memory_type" in exc.value.detail
 
 
 def test_position_add_accepts_full_http_payload(test_db):

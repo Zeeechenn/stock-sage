@@ -30,6 +30,32 @@ def test_save_medium_term_double_writes_to_db(test_db, tmp_path, monkeypatch):
     assert "300308 中期决策记忆" in row.content
 
 
+def test_save_medium_term_keeps_recent_rows_only(test_db, tmp_path, monkeypatch):
+    from backend.decision import memory_layered
+
+    monkeypatch.setattr(memory_layered, "MEMORY_DIR", tmp_path)
+    monkeypatch.setattr(memory_layered, "LONG_TERM_PATH", tmp_path / "long_term_reflection.md")
+    monkeypatch.setattr(memory_layered, "_MAX_MEDIUM_TERM_ROWS", 3)
+
+    signal = {
+        "recommendation": "可关注",
+        "composite_score": 12,
+        "position_pct": 0.0,
+        "stop_loss": 9.5,
+        "take_profit": 11.0,
+        "risk_notes": [],
+    }
+    for day in range(1, 6):
+        memory_layered.save_medium_term("300308", f"2026-05-{day:02d}", signal, db=test_db)
+
+    content = (tmp_path / "medium_300308.md").read_text(encoding="utf-8")
+    assert "2026-05-01" not in content
+    assert "2026-05-02" not in content
+    assert "2026-05-03" in content
+    assert "2026-05-05" in content
+    assert content.count("| 2026-05-") == 3
+
+
 def test_save_medium_term_without_db_only_writes_file(test_db, tmp_path, monkeypatch):
     from backend.decision import memory_layered
 

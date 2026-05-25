@@ -279,8 +279,8 @@ def patch_stock_memory(
     row = db.execute(text("SELECT * FROM stock_memory_items WHERE id = :id"), {"id": row_id}).first()
     if row is None:
         raise KeyError(row_id)
-    sets: list[str] = ["updated_at = :now"]
-    params: dict[str, Any] = {"id": row_id, "now": _utc_now().isoformat(timespec="seconds")}
+    sets: list[str] = []
+    params: dict[str, Any] = {"id": row_id}
     if status is not None:
         sets.append("status = :status")
         params["status"] = status
@@ -292,7 +292,7 @@ def patch_stock_memory(
     elif ttl_days is not None:
         sets.append("ttl_days = :ttl_days")
         params["ttl_days"] = ttl_days
-    if len(sets) == 1:
+    if not sets:
         raise ValueError("no editable fields supplied")
     db.execute(text(f"""
         UPDATE stock_memory_items SET {', '.join(sets)} WHERE id = :id
@@ -344,6 +344,27 @@ def _score_row(row: dict, *, symbol: str | None, query: str | None) -> tuple:
     )
 
 
+def _ai_memory_relevant(row: dict, *, symbol: str | None, query: str | None) -> bool:
+    if symbol is None:
+        return True
+    category = row.get("category")
+    value = row.get("value") or ""
+    key = row.get("key") or ""
+    haystack = f"{key} {value}".lower()
+    if symbol in haystack:
+        return True
+    if query:
+        parts = [part for part in query.lower().split() if part]
+        if any(part in haystack for part in parts):
+            return True
+    if category in {"rule", "risk"}:
+        return True
+    broad_preference_hints = ("不追高", "仓位", "止损", "止盈", "回撤", "高负债")
+    if category == "preference" and any(hint in value for hint in broad_preference_hints):
+        return True
+    return False
+
+
 def _ai_memory_context(db, *, symbol: str | None, query: str | None, limit: int) -> tuple[list[str], list[str]]:
     from backend.memory.ai_memory import list_active
 
@@ -355,6 +376,8 @@ def _ai_memory_context(db, *, symbol: str | None, query: str | None, limit: int)
         value = row.get("value") or ""
         key = row.get("key") or ""
         if category in {"preference", "rule", "risk"}:
+            if not _ai_memory_relevant(row, symbol=symbol, query=query):
+                continue
             lines.append(f"- [{category}|{scope}] {value}")
             keys.append(key)
         elif scope == "research" and category == "deep_research":
@@ -373,6 +396,7 @@ def build_memory_context(
     query: str | None = None,
     task_type: str = "research",
     limit: int = 8,
+    record_usage: bool = True,
 ) -> dict:
     """Build a compact prompt-ready memory context across project entry points."""
     try:
@@ -405,19 +429,20 @@ def build_memory_context(
 
     text_value = "\n\n".join(parts)
     used_ids = [int(r["id"]) for r in stock_rows]
-    if used_ids:
+    if record_usage and used_ids:
         now = _utc_now().isoformat(timespec="seconds")
         db.execute(text(
             f"UPDATE stock_memory_items SET last_used_at = :now WHERE id IN ({','.join(str(i) for i in used_ids)})"
         ), {"now": now})
         db.commit()
-    audit_write(
-        db,
-        "stock_memory.recall",
-        f"symbol={symbol} task_type={task_type} empty={not bool(text_value)} "
-        f"stock_ids={used_ids} ai_keys={ai_keys}",
-        related_symbol=symbol,
-    )
+    if record_usage:
+        audit_write(
+            db,
+            "stock_memory.recall",
+            f"symbol={symbol} task_type={task_type} empty={not bool(text_value)} "
+            f"stock_ids={used_ids} ai_keys={ai_keys}",
+            related_symbol=symbol,
+        )
     return {
         "symbol": symbol,
         "task_type": task_type,

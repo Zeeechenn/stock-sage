@@ -26,6 +26,7 @@ LONG_TERM_PATH = MEMORY_DIR / "long_term_reflection.md"
 
 _SHORT_TERM: dict[str, list[dict]] = {}  # symbol → list of recent decisions
 _MAX_SHORT_TERM = 7
+_MAX_MEDIUM_TERM_ROWS = 30
 
 
 def _ensure_dir() -> None:
@@ -36,6 +37,23 @@ def _ensure_dir() -> None:
 def _medium_path(symbol: str) -> Path:
     """Return the path to the medium-term memory file for a symbol."""
     return MEMORY_DIR / f"medium_{symbol}.md"
+
+
+def _trim_medium_content(content: str, *, max_rows: int | None = None) -> str:
+    """Keep only the newest medium-term table rows to cap prompt growth."""
+    max_rows = max_rows or _MAX_MEDIUM_TERM_ROWS
+    lines = content.splitlines()
+    rows = [
+        line for line in lines
+        if line.startswith("| ") and not line.startswith("| 日期 ") and not line.startswith("|------")
+    ]
+    if len(rows) <= max_rows:
+        return content if content.endswith("\n") else content + "\n"
+    kept_rows = rows[-max_rows:]
+    header = ("| 日期 | 建议 | 综合分 | 仓位 | 止损 | 止盈 | 风控备注 |\n"
+              "|------|------|--------|------|------|------|----------|\n")
+    title = lines[0] if lines else "# 中期决策记忆"
+    return f"{title}\n\n{header}{''.join(row + chr(10) for row in kept_rows)}"
 
 
 def save_short_term(symbol: str, signal: dict) -> None:
@@ -82,10 +100,12 @@ def save_medium_term(symbol: str, date: str, signal: dict, db=None) -> None:
         path.write_text(f"# {symbol} 中期决策记忆\n\n{header}", encoding="utf-8")
     with path.open("a", encoding="utf-8") as f:
         f.write(row)
+    trimmed = _trim_medium_content(path.read_text(encoding="utf-8"))
+    path.write_text(trimmed, encoding="utf-8")
 
     if db is not None:
         _upsert_layered_row(db, symbol=symbol, layer="medium",
-                            content=path.read_text(encoding="utf-8"))
+                            content=trimmed)
 
 
 def save_decision_layered(symbol: str, date: str, signal: dict, db=None) -> None:

@@ -323,12 +323,21 @@ def stock_sage_memory_context(
     limit: int = 8,
 ) -> dict:
     """Return prompt-ready project memory for one stock or research task."""
-    from backend.memory.stock_memory import build_memory_context
+    try:
+        from backend.memory.stock_memory import build_memory_context
 
-    return build_memory_context(
-        db,
-        symbol=symbol,
-        query=query,
-        task_type=task_type,
-        limit=limit,
-    )
+        return build_memory_context(
+            db,
+            symbol=symbol,
+            query=query,
+            task_type=task_type,
+            limit=limit,
+        )
+    except Exception:
+        return {
+            "symbol": symbol,
+            "task_type": task_type,
+            "text": "",
+            "used_stock_memory_ids": [],
+            "ai_memory_keys": [],
+        }

@@ -44,6 +44,35 @@ def test_detect_action_returns_none_for_unrelated_message(test_db):
     assert _detect_action("帮我看一下 300308", db=test_db) is None
 
 
+def test_detect_action_extracts_stock_research_memory(test_db):
+    """User research statements become confirmed stock-memory candidates."""
+    from backend.api.routes.ai import _detect_action
+
+    action = _detect_action("我调研过 300308，重点是海外订单兑现", db=test_db)
+
+    assert action is not None
+    name, payload = action
+    assert name == "stock_memory.write"
+    assert payload["symbol"] == "300308"
+    assert payload["memory_type"] == "research_pointer"
+    assert "海外订单兑现" in payload["summary"]
+
+
+def test_detect_action_extracts_stock_thesis_risk_and_event(test_db):
+    from backend.api.routes.ai import _detect_action
+
+    thesis = _detect_action("300308 的投资逻辑是光模块升级", db=test_db)
+    risk = _detect_action("300308 的风险是估值和订单兑现", db=test_db)
+    event = _detect_action("300308 有订单催化，需要跟踪", db=test_db)
+
+    assert thesis[0] == "stock_memory.write"
+    assert thesis[1]["memory_type"] == "thesis"
+    assert risk[0] == "stock_memory.write"
+    assert risk[1]["memory_type"] == "risk"
+    assert event[0] == "stock_memory.write"
+    assert event[1]["memory_type"] == "event"
+
+
 def test_memory_write_does_not_persist_until_confirmation(test_db):
     """The detect step must not write directly — only the confirm path writes."""
     from backend.api.routes.ai import _detect_action, _pending

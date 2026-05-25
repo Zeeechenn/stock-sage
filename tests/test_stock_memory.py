@@ -87,6 +87,26 @@ def test_build_memory_context_prioritizes_user_rules_stock_items_and_research(te
     assert ctx["used_stock_memory_ids"]
 
 
+def test_build_memory_context_keeps_unrelated_global_preference_out_of_symbol_context(test_db):
+    from backend.memory.ai_memory import remember
+    from backend.memory.stock_memory import build_memory_context, create_stock_memory
+
+    remember(test_db, "pref:unrelated", "用户偏好：只关注白酒龙头", category="preference")
+    create_stock_memory(
+        test_db,
+        symbol="300308",
+        memory_type="risk",
+        summary="300308 需要跟踪海外客户资本开支变化",
+        source_type="test",
+        importance=5,
+    )
+
+    ctx = build_memory_context(test_db, symbol="300308", query="光模块 订单", limit=8)
+
+    assert "300308 需要跟踪海外客户资本开支变化" in ctx["text"]
+    assert "只关注白酒龙头" not in ctx["text"]
+
+
 def test_build_memory_context_audits_and_marks_used(test_db):
     from backend.memory.stock_memory import build_memory_context, create_stock_memory
 
@@ -146,6 +166,57 @@ def test_stock_memory_api_context_list_archive_and_patch(test_db):
     assert after["count"] == 0
 
 
+def test_stock_memory_context_route_does_not_update_usage_or_audit(test_db):
+    from backend.api.routes.memory import stock_memory_context
+    from backend.memory.stock_memory import create_stock_memory
+
+    row = create_stock_memory(
+        test_db,
+        symbol="300308",
+        memory_type="risk",
+        summary="供应链风险需要复核",
+        source_type="test",
+        importance=5,
+    )
+
+    ctx = stock_memory_context("300308", db=test_db)
+
+    used = test_db.execute(
+        text("SELECT last_used_at FROM stock_memory_items WHERE id = :id"),
+        {"id": row["id"]},
+    ).scalar()
+    audits = test_db.execute(text(
+        "SELECT count(*) FROM audit_log_fts WHERE event_type='stock_memory.recall'"
+    )).scalar()
+    assert "供应链风险需要复核" in ctx["text"]
+    assert used is None
+    assert audits == 0
+
+
+def test_stock_memory_patch_importance_does_not_refresh_updated_at(test_db):
+    from backend.memory.stock_memory import create_stock_memory, patch_stock_memory
+
+    row = create_stock_memory(
+        test_db,
+        symbol="300308",
+        memory_type="risk",
+        summary="供应链风险需要复核",
+        source_type="test",
+        ttl_days=7,
+    )
+    old = "2026-05-01T00:00:00"
+    test_db.execute(
+        text("UPDATE stock_memory_items SET updated_at = :old WHERE id = :id"),
+        {"old": old, "id": row["id"]},
+    )
+    test_db.commit()
+
+    patched = patch_stock_memory(test_db, row["id"], importance=5)
+
+    assert patched["importance"] == 5
+    assert patched["updated_at"] == old
+
+
 def test_chat_answer_uses_cross_session_stock_memory(test_db, sample_stocks):
     from backend.api.routes.ai import _context_answer
     from backend.memory.stock_memory import create_stock_memory
@@ -179,11 +250,30 @@ def test_deep_research_memory_writes_stock_research_pointer(test_db):
 
     rows = list_stock_memories(test_db, symbol="300308", memory_type="research_pointer")
     assert len(rows) == 1
-    assert rows[0]["summary"] == "报告摘要，不包含原始长文正文"
-    assert rows[0]["source_ref"] == "/tmp/report.md"
+    assert rows[0]["summary"] == "300308 研究索引：报告摘要，不包含原始长文正文"
+    assert rows[0]["source_ref"] == "/tmp/report.md#research:300308"
     thesis_rows = list_stock_memories(test_db, symbol="300308", memory_type="thesis")
     assert len(thesis_rows) == 1
     assert thesis_rows[0]["source_type"] == "deep_research_candidate"
+
+
+def test_deep_research_memory_keeps_per_symbol_pointers(test_db):
+    from backend.memory.research_memory import remember_deep_research
+    from backend.memory.stock_memory import list_stock_memories
+
+    remember_deep_research(
+        test_db,
+        topic="AI算力产业链",
+        summary="报告摘要，不包含原始长文正文",
+        symbols=["300308", "603986"],
+        report_path="/tmp/report.md",
+    )
+
+    first = list_stock_memories(test_db, symbol="300308", memory_type="research_pointer")
+    second = list_stock_memories(test_db, symbol="603986", memory_type="research_pointer")
+    assert len(first) == 1
+    assert len(second) == 1
+    assert first[0]["source_ref"] != second[0]["source_ref"]
 
 
 def test_update_judgment_outcomes_writes_outcome_and_lesson(test_db):

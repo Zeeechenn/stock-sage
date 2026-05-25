@@ -111,6 +111,29 @@ def test_stock_sage_context_handles_uninitialized_database(tmp_path):
     assert context["symbol_context"]["latest_signal"] is None
 
 
+def test_stock_sage_memory_context_handles_uninitialized_database(tmp_path):
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+
+    from backend.agent.context import stock_sage_memory_context
+
+    engine = create_engine(f"sqlite:///{tmp_path / 'blank-memory.db'}", connect_args={"check_same_thread": False})
+    Session = sessionmaker(bind=engine)
+    db = Session()
+    try:
+        context = stock_sage_memory_context(db, symbol="300308")
+    finally:
+        db.close()
+
+    assert context == {
+        "symbol": "300308",
+        "task_type": "research",
+        "text": "",
+        "used_stock_memory_ids": [],
+        "ai_memory_keys": [],
+    }
+
+
 def test_stock_sage_context_includes_rules_memory_and_positions(test_db, sample_stocks):
     from backend.data.database import Position, Signal
     from backend.memory.ai_memory import remember

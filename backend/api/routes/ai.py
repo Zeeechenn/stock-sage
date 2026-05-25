@@ -68,6 +68,15 @@ def _name_after_symbol(text: str, symbol: str) -> str | None:
     return tail or None
 
 
+def _summary_after_marker(message: str, markers: tuple[str, ...], *, fallback: str) -> str:
+    for marker in markers:
+        if marker in message:
+            tail = message.split(marker, 1)[-1].strip(" ：:，,。；;")
+            if tail:
+                return tail
+    return fallback
+
+
 def _pending(action: str, payload: dict, user_message: str, db: Session) -> dict:
     from backend.agent.action_registry import action_metadata
 
@@ -152,6 +161,51 @@ def _detect_action(message: str, db: Session) -> tuple[str, dict] | None:
     if not symbol:
         return None
 
+    if any(word in message for word in ("调研过", "研究过", "做过调研", "做了调研", "调研了")):
+        return "stock_memory.write", {
+            "symbol": symbol,
+            "memory_type": "research_pointer",
+            "summary": message.strip(),
+            "status": "watching",
+            "importance": 4,
+            "confidence": 0.75,
+        }
+
+    thesis_markers = ("投资逻辑是", "逻辑是", "结论是", "thesis is", "thesis 是")
+    if any(marker in lower for marker in ("thesis is",)) or any(marker in message for marker in thesis_markers):
+        summary = _summary_after_marker(message, thesis_markers, fallback=message.strip())
+        return "stock_memory.write", {
+            "symbol": symbol,
+            "memory_type": "thesis",
+            "summary": f"{symbol} thesis：{summary}",
+            "status": "watching",
+            "importance": 4,
+            "confidence": 0.75,
+        }
+
+    risk_markers = ("风险是", "风险点是", "担心点是", "预警是")
+    if any(marker in message for marker in risk_markers) or any(word in message for word in ("风险", "预警", "担心")):
+        summary = _summary_after_marker(message, risk_markers, fallback=message.strip())
+        return "stock_memory.write", {
+            "symbol": symbol,
+            "memory_type": "risk",
+            "summary": f"{symbol} 风险：{summary}",
+            "status": "watching",
+            "importance": 4,
+            "confidence": 0.75,
+        }
+
+    if any(word in message for word in ("催化", "公告", "订单", "事件")) and any(word in message for word in ("有", "出现", "发生", "发布", "披露")):
+        summary = _summary_after_marker(message, ("有", "出现", "发生", "发布", "披露"), fallback=message.strip())
+        return "stock_memory.write", {
+            "symbol": symbol,
+            "memory_type": "event",
+            "summary": f"{symbol} 事件：{summary}",
+            "status": "watching",
+            "importance": 3,
+            "confidence": 0.7,
+        }
+
     if any(word in message for word in ("删除自选", "移除自选", "取消关注")):
         return "watchlist.remove", {"symbol": symbol}
 
@@ -171,7 +225,7 @@ def _detect_action(message: str, db: Session) -> tuple[str, dict] | None:
             "avg_cost": float(cost_match.group(1)),
         }
 
-    if any(word in message for word in ("添加自选", "加入自选", "关注")) or "add watch" in lower:
+    if any(word in message for word in ("添加自选", "加入自选", "关注", "重点跟踪")) or "add watch" in lower:
         stock = db.query(Stock).filter(Stock.symbol == symbol).first()
         return "watchlist.add", {
             "symbol": symbol,

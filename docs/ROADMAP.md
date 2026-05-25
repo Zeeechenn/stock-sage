@@ -235,6 +235,12 @@
 - [x] 后端新增 `/api/memory/stock/{symbol}/context` 与 `/api/memory/stock-items` 读接口，以及归档 / 删除 / 元数据 patch 写接口。
 - [x] Admin 记忆管理新增股票长期记忆视图，支持 symbol、type、status、关键词过滤和受控元数据编辑。
 
+### M14.2 自然语言记忆激活 ✅（2026-05-25）
+- [x] 新增 `stock_memory.write` confirmed action，支持从聊天确认写入 thesis / risk / event / research_pointer / user_preference。
+- [x] ChatPage 识别“调研过 / 研究过 / 结论是 / 投资逻辑是 / 风险是 / 有事件或催化”等句式，普通问句不写记忆。
+- [x] `watchlist.add` 同步写入“用户主动关注”股票记忆，后续研究能区分系统自选与用户主动兴趣。
+- [x] 单股召回收敛无关全局偏好，减少项目规则污染个股上下文。
+
 ### M14 后续可选
 - [ ] 记忆规模足够后，再评估 embedding / reranker；v1 继续保持 SQLite + 结构化筛选。
 - [ ] 为高重要度用户偏好增加更细的二次确认 UI，而不是使用浏览器 prompt。
@@ -275,11 +281,11 @@
       本地信任模式放行。
 
 ### M15.2 读写副作用与增长治理（建议 / P2）
-- [ ] **读操作带写副作用**：`build_memory_context` 召回时 `UPDATE last_used_at` + `audit_write`
+- [x] **读操作带写副作用**：`build_memory_context` 召回时 `UPDATE last_used_at` + `audit_write`
       各 commit 一次，且挂在 `GET /api/memory/stock/{symbol}/context`；postmarket 88 股一次
       ≈ 176 commit + 88 audit 行。把召回 audit 降级为采样 / 可选，`last_used_at` 改批量或
       异步更新，GET 路由不带写副作用 —— 与 `ai_memory.recall`“miss 不审计”的既定原则对齐。
-- [ ] **audit_log_fts 无清理**：全仓库无 audit 保留 / 滚动任务，FTS5 表无限增长
+- [x] **audit_log_fts 无清理**：全仓库无 audit 保留 / 滚动任务，FTS5 表无限增长
       （`expire_stale_memories` 注释假设的“audit 保留窗口”并不存在）。新增按时间或行数的
       audit 滚动清理（建议并入 `daily_memory_expire` 或独立 cron），并明确保留窗口。
 - [ ] **copilot official / signal 日期错配**：`generate_symbol_copilot` 中 `_latest_decision`
@@ -287,7 +293,7 @@
       `risk_notes` / `veto_reason` 来自别的日期。回退时明确标注 decision 实际日期，或不混用。
 
 ### M15.3 记忆质量与健壮性（排期 / P3）
-- [ ] **medium-term 记忆无上限**：`save_medium_term` 保留全部历史，每次 postmarket 把不断
+- [x] **medium-term 记忆无上限**：`save_medium_term` 保留全部历史，每次 postmarket 把不断
       增长的 markdown 整体 read + upsert 进 `decision_memory_layered.content`。改为只留最近 N 笔。
 - [ ] **outcome 用裸收益判成败**：`update_judgment_outcomes` / `weekly_long_term_reflect`
       用 `pct<0` 判失败，A 股高 beta 下大盘下跌日会系统性“全失败”，长期反思偏空。
@@ -295,10 +301,11 @@
 - [ ] **deep research 候选记忆质量低**：`remember_deep_research` 对每个 symbol 用同一段
       `clipped_summary` 写 research_pointer + thesis + risk + event，最多 4×N 行近乎重复；
       “risk” 条目并不含真实风险点，`_RISK_HINTS` 仅靠“摘要含‘风险’二字”触发。改为让 LLM
-      结构化产出独立的 thesis / risk / event 字段。
-- [ ] **audit_search FTS 注入**：`GET /api/memory/audit?q=` 直接把 q 传给 `MATCH`，FTS5
+      结构化产出独立的 thesis / risk / event 字段。2026-05-25 已先修 per-symbol source_ref
+      互相覆盖与 summary/evidence 缺少 symbol 的问题，独立字段生成仍待后续接 LLM 结构化输出。
+- [x] **audit_search FTS 注入**：`GET /api/memory/audit?q=` 直接把 q 传给 `MATCH`，FTS5
       语法字符（`"` `*` `:` `NEAR`）会抛 500。对 q 做短语转义或捕获异常返回 400。
-- [ ] 收尾 nits：`stock_sage_memory_context`（`agent/context.py`）补 try/except，对齐 M11.4
+- [x] 收尾 nits：`stock_sage_memory_context`（`agent/context.py`）补 try/except，对齐 M11.4
       “未初始化返回空状态”；`patch_stock_memory` 改 importance 不应顺带刷新 `updated_at`
       （TTL 按 `updated_at` 算，会意外给快过期记忆续命）；`build_memory_context` 的
       `_ai_memory_context` 对 symbol 召回时仍全量塞 preference/rule/risk，考虑按相关性收敛。
@@ -306,7 +313,7 @@
 ### M15 最小交付包
 - [x] M15.0 judgment 去重 + outcome horizon 修正。
 - [x] M15.1 vetter 接到 copilot + 三个写路由挂 guard。
-- [ ] M15.2 召回写副作用降级 + audit 滚动清理。
+- [x] M15.2 召回写副作用降级 + audit 滚动清理。
 
 ---
 

@@ -133,7 +133,16 @@ def stock_memory_context(
     db: Session = Depends(get_db),
 ) -> dict:
     """Prompt-ready structured memory context for one stock."""
-    return build_memory_context(db, symbol=symbol, query=q, task_type=task_type, limit=limit)
+    if not isinstance(limit, int):
+        limit = 8
+    return build_memory_context(
+        db,
+        symbol=symbol,
+        query=q,
+        task_type=task_type,
+        limit=limit,
+        record_usage=False,
+    )
 
 
 @router.get("/stock-items")

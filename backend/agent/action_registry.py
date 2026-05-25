@@ -4,11 +4,13 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from hashlib import sha1
 
 from fastapi import HTTPException
 from jsonschema import ValidationError, validate
 
 from backend.agent.security import agent_mode
+from backend.memory.stock_memory import MEMORY_TYPES, STATUSES
 
 Handler = Callable[[dict, object], dict]
 
@@ -78,21 +80,35 @@ RUNTIME_CONFIG_SCHEMA = {
 
 def _watchlist_add(payload: dict, db) -> dict:
     from backend.data.database import Stock
+    from backend.memory.stock_memory import create_stock_memory
 
     symbol = payload["symbol"]
     stock = db.query(Stock).filter(Stock.symbol == symbol).first()
+    name = payload.get("name") or (stock.name if stock else symbol)
     if stock:
         stock.active = True
-        stock.name = payload.get("name") or stock.name
+        stock.name = name
         stock.market = payload.get("market") or stock.market
     else:
         db.add(Stock(
             symbol=symbol,
-            name=payload.get("name") or symbol,
+            name=name,
             market=payload.get("market") or "CN",
             active=True,
         ))
     db.commit()
+    create_stock_memory(
+        db,
+        symbol=symbol,
+        memory_type="user_preference",
+        summary=f"用户主动关注 {name}({symbol})。",
+        evidence={"action": "watchlist.add", "market": payload.get("market") or "CN"},
+        source_type="watchlist_action",
+        source_ref=f"watchlist:{symbol}:user_interest",
+        importance=4,
+        confidence=0.8,
+        status="watching",
+    )
     return {"symbol": symbol, "active": True}
 
 
@@ -169,6 +185,37 @@ def _memory_write(payload: dict, db) -> dict:
         "key": payload["key"],
         "scope": payload.get("scope", "global"),
         "stock_memory_id": stock_memory_id,
+    }
+
+
+def _stock_memory_write(payload: dict, db) -> dict:
+    from backend.memory.stock_memory import create_stock_memory
+
+    symbol = payload["symbol"]
+    memory_type = payload["memory_type"]
+    summary = payload["summary"].strip()
+    source_ref = payload.get("source_ref")
+    if not source_ref:
+        digest = sha1(f"{symbol}:{memory_type}:{summary}".encode()).hexdigest()[:12]
+        source_ref = f"chat:{symbol}:{memory_type}:{digest}"
+    stock_memory = create_stock_memory(
+        db,
+        symbol=symbol,
+        memory_type=memory_type,
+        summary=summary,
+        evidence=payload.get("evidence") or {"source": "chat_confirmed"},
+        source_type=payload.get("source_type") or "chat_confirmed",
+        source_ref=source_ref,
+        importance=payload.get("importance", 4),
+        confidence=payload.get("confidence", 0.75),
+        status=payload.get("status", "active"),
+        ttl_days=payload.get("ttl_days"),
+    )
+    return {
+        "persisted": True,
+        "symbol": symbol,
+        "memory_type": memory_type,
+        "stock_memory_id": stock_memory["id"],
     }
 
 
@@ -249,6 +296,25 @@ _ACTIONS: dict[str, ActionDefinition] = {
         requires_confirmation=True,
         allowed_modes=("local", "remote"),
         handler=_memory_write,
+    ),
+    "stock_memory.write": ActionDefinition(
+        name="stock_memory.write",
+        input_schema=_object_schema(["symbol", "memory_type", "summary"], {
+            "symbol": {"type": "string", "minLength": 1},
+            "memory_type": {"type": "string", "enum": sorted(MEMORY_TYPES)},
+            "summary": {"type": "string", "minLength": 1},
+            "status": {"type": "string", "enum": sorted(STATUSES)},
+            "importance": {"type": "integer", "minimum": 1, "maximum": 5},
+            "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+            "ttl_days": {"type": ["integer", "null"]},
+            "source_type": {"type": "string"},
+            "source_ref": {"type": "string"},
+            "evidence": {"type": ["object", "array", "null"]},
+        }),
+        risk_level="high",
+        requires_confirmation=True,
+        allowed_modes=("local", "remote"),
+        handler=_stock_memory_write,
     ),
 }
 

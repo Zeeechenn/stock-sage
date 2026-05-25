@@ -169,6 +169,37 @@ def test_expire_preserves_value_in_audit_for_recovery(test_db):
     assert "重要的风险记忆 X23 文本" in content
 
 
+def test_audit_search_treats_fts_syntax_as_plain_text(test_db):
+    from backend.memory.audit_log import audit_search, audit_write
+
+    audit_write(test_db, "memory.write", 'literal quote " and star * syntax')
+
+    rows = audit_search(test_db, 'quote " and star *')
+
+    assert len(rows) == 1
+    assert rows[0]["event_type"] == "memory.write"
+
+
+def test_cleanup_audit_log_keeps_newest_rows(test_db):
+    from backend.memory.audit_log import audit_write, cleanup_audit_log
+
+    for idx in range(5):
+        audit_write(
+            test_db,
+            "memory.write",
+            f"row {idx}",
+            timestamp=f"2026-05-0{idx + 1}T00:00:00",
+        )
+
+    removed = cleanup_audit_log(test_db, keep_rows=2)
+
+    rows = test_db.execute(text(
+        "SELECT content FROM audit_log_fts ORDER BY timestamp ASC"
+    )).all()
+    assert removed == 3
+    assert [row.content for row in rows] == ["row 3", "row 4"]
+
+
 # ── 3) Deep research recall is already compressed (pointer-only) ──────────
 
 def test_deep_research_recall_returns_pointer_not_full_report(test_db, tmp_path):
