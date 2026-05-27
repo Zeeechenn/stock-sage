@@ -98,16 +98,14 @@ def review(
         notes.append(f"仓位 {adjusted_pos:.2%} 太小，归零")
         adjusted_pos = 0.0
 
-    # 6. 长期分析师团硬约束（first batch）
-    if long_term_label is None and settings.long_term_team_enabled:
-        if proposal.recommendation in STRONG_LONG_RECS:
-            notes.append("长期标签缺失，禁可小仓试错，降级为可关注")
-            final_rec = "可关注"
-
+    # 6. 长期分析师团约束：只有通过质量门的标签能改动作/仓位。
     if long_term_label and settings.long_term_team_enabled:
         lbl = long_term_label.label
         kf = (long_term_label.key_findings or [""])[0]
-        if lbl == "规避" and proposal.recommendation in LONG_RECS \
+        eligible = bool(getattr(long_term_label, "constraint_eligible", False))
+        if not eligible:
+            notes.append(f"长期标签未通过质量门，仅展示不约束: {kf}")
+        elif lbl == "规避" and proposal.recommendation in LONG_RECS \
                 and settings.long_term_avoid_blocks_buy:
             veto = f"长期团判定'规避'：{kf}"
             final_rec = "观望"

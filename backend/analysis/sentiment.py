@@ -1,6 +1,8 @@
 """LLM 新闻情感分析"""
 import hashlib
+import json
 from collections import OrderedDict
+from datetime import datetime
 
 from backend.config import settings
 from backend.llm import get_provider, has_runtime_llm_provider
@@ -50,6 +52,11 @@ def _titles_hash(titles: list[str]) -> str:
     return hashlib.md5("|".join(sorted(titles[:15])).encode()).hexdigest()
 
 
+def _cache_key(titles: list[str], symbol: str | None = None) -> tuple[str, str]:
+    titles_hash = _titles_hash(titles)
+    return f"{symbol or '*'}:{titles_hash}", titles_hash
+
+
 def _cache_get(key: str) -> dict | None:
     """Return a copy of cached data and refresh LRU order."""
     if key not in _cache:
@@ -66,20 +73,95 @@ def _cache_set(key: str, value: dict) -> None:
         _cache.popitem(last=False)
 
 
+def _ensure_persistent_cache_schema() -> None:
+    from sqlalchemy import text
+
+    from backend.data.database import engine
+
+    with engine.begin() as conn:
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS sentiment_cache (
+                cache_key TEXT PRIMARY KEY,
+                symbol TEXT,
+                titles_hash TEXT,
+                result_json TEXT,
+                created_at DATETIME,
+                updated_at DATETIME
+            )
+        """))
+        conn.execute(text("""
+            CREATE INDEX IF NOT EXISTS idx_sentiment_cache_symbol_hash
+            ON sentiment_cache(symbol, titles_hash)
+        """))
+
+
+def _persistent_cache_get(key: str) -> dict | None:
+    try:
+        _ensure_persistent_cache_schema()
+        from backend.data.database import SentimentCache, SessionLocal
+
+        db = SessionLocal()
+        try:
+            row = db.query(SentimentCache).filter(SentimentCache.cache_key == key).first()
+            if not row:
+                return None
+            data = json.loads(row.result_json)
+            if isinstance(data, dict):
+                return data
+            return None
+        finally:
+            db.close()
+    except Exception:
+        return None
+
+
+def _persistent_cache_set(key: str, titles_hash: str, symbol: str | None, value: dict) -> None:
+    try:
+        _ensure_persistent_cache_schema()
+        from backend.data.database import SentimentCache, SessionLocal
+
+        db = SessionLocal()
+        try:
+            now = datetime.utcnow()
+            payload = json.dumps(value, ensure_ascii=False)
+            row = db.query(SentimentCache).filter(SentimentCache.cache_key == key).first()
+            if row:
+                row.result_json = payload
+                row.updated_at = now
+            else:
+                db.add(SentimentCache(
+                    cache_key=key,
+                    symbol=symbol,
+                    titles_hash=titles_hash,
+                    result_json=payload,
+                    created_at=now,
+                    updated_at=now,
+                ))
+            db.commit()
+        finally:
+            db.close()
+    except Exception:
+        return
+
+
 def analyze_news(titles: list[str], symbol: str | None = None) -> dict:
     """
     输入新闻标题列表，返回情感分析结果。
     {sentiment: float, summary: str, impact: str, key_events: list}
-    相同标题集合在进程生命周期内只调用一次 API。
+    相同股票+标题集合优先命中进程内和 SQLite 缓存，避免重复消耗 LLM 配额。
     """
     if not titles:
         return _FALLBACK.copy()
     if not has_runtime_llm_provider(settings):
         return _DISABLED_FALLBACK.copy()
 
-    cache_key = _titles_hash(titles)
+    cache_key, titles_hash = _cache_key(titles, symbol)
     cached = _cache_get(cache_key)
     if cached is not None:
+        return cached
+    cached = _persistent_cache_get(cache_key)
+    if cached is not None:
+        _cache_set(cache_key, cached)
         return cached
 
     context = f"股票代码：{symbol}\n" if symbol else ""
@@ -99,4 +181,5 @@ def analyze_news(titles: list[str], symbol: str | None = None) -> dict:
     data["sentiment"] = max(-1.0, min(1.0, float(data.get("sentiment", 0))))
     data["key_events"] = data.get("key_events", [])[:3]
     _cache_set(cache_key, data)
+    _persistent_cache_set(cache_key, titles_hash, symbol, data)
     return dict(data)

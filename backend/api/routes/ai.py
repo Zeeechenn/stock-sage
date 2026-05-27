@@ -430,8 +430,12 @@ def _long_term_answer(message: str, db: Session) -> AIChatResponse:
     except Exception:
         memory_context = {"text": ""}
     memory_text = f"\n项目长期记忆：\n{memory_context['text']}" if memory_context.get("text") else ""
+    quality_note = "可约束官方动作" if label.constraint_eligible else "仅展示，不约束官方动作"
     return AIChatResponse(
-        answer=f"{stock.name}({stock.symbol}) 长期研究团队结论：{label.label}，评分 {label.score:.1f}。{findings}{memory_text}",
+        answer=(
+            f"{stock.name}({stock.symbol}) 长期研究团队结论：{label.label}，评分 {label.score:.1f}。"
+            f"质量：{label.quality}（{quality_note}）。{findings}{memory_text}"
+        ),
         citations=[f"long_term:{stock.symbol}:{label.date}"],
         used_resources=["long_term_team"] + (["stock_memory"] if memory_context.get("text") else []),
     )

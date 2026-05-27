@@ -35,6 +35,9 @@ def _label_to_dict(label) -> dict | None:
         "votes": label.votes,
         "key_findings": label.key_findings,
         "expires_at": label.expires_at,
+        "quality": label.quality,
+        "constraint_eligible": label.constraint_eligible,
+        "quality_notes": label.quality_notes,
     }
 
 
@@ -98,6 +101,7 @@ def _conflicts(signal, label: dict | None, memory_rows: list[dict], evidence: li
     if evidence:
         out.extend(evidence[0].get("agent_outputs", {}).get("research_conflicts") or [])
     if signal is not None and label and label.get("label") == "规避" \
+            and label.get("constraint_eligible") \
             and is_entry_signal(signal.recommendation, include_legacy=True):
         out.append({
             "type": "short_long_conflict",

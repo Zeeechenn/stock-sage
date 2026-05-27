@@ -37,6 +37,14 @@ def _label_finding(long_term_label: Any) -> str:
     return str((findings or [""])[0])
 
 
+def _label_constraint_eligible(long_term_label: Any) -> bool:
+    if long_term_label is None:
+        return False
+    if isinstance(long_term_label, dict):
+        return bool(long_term_label.get("constraint_eligible", False))
+    return bool(getattr(long_term_label, "constraint_eligible", False))
+
+
 def _memory_lines(memory_context: dict | None) -> list[str]:
     text_value = (memory_context or {}).get("text") or ""
     return [line.strip("- ").strip() for line in text_value.splitlines() if line.strip().startswith("- [")]
@@ -88,24 +96,18 @@ def apply_research_constraints(
     finding = _label_finding(long_term_label)
     is_entry = final_rec in ENTRY_SET
 
-    if settings.long_term_team_enabled and long_term_checked and label is None and is_entry:
-        final_rec = "可关注"
-        final_pos = 0.0
-        notes.append("长期标签缺失，禁可小仓试错，降级为可关注")
-        constraints.append({
-            "type": "long_term_missing",
-            "source": "long_term",
-            "summary": "长期标签缺失，强入场降级为观察",
-        })
-
     if settings.long_term_team_enabled and label:
+        eligible = _label_constraint_eligible(long_term_label)
         constraints.append({
             "type": "long_term_label",
             "source": "long_term",
             "label": label,
+            "constraint_eligible": eligible,
             "summary": finding or f"长期标签：{label}",
         })
-        if label == "规避" and is_entry and settings.long_term_avoid_blocks_buy:
+        if not eligible:
+            notes.append(f"长期团标签未通过质量门，仅展示不约束: {finding}")
+        elif label == "规避" and is_entry and settings.long_term_avoid_blocks_buy:
             final_rec = "观望"
             final_pos = 0.0
             notes.append(f"长期团'规避'阻断入场: {finding}")

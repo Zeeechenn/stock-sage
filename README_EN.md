@@ -47,7 +47,7 @@ make agent-setup        # Check Python, install deps, create .env, init the DB
 make agent              # Enter the terminal shell and start asking in natural language
 ```
 
-The minimum local setup only needs `AI_PROVIDER=local_cli` (uses the local Claude CLI) — **no cloud LLM key required**.
+The default local setup uses `AI_PROVIDER=local_cli` (your logged-in Claude / Codex CLI) — **no cloud LLM key required**. If no local CLI is available, health checks report the runtime readiness reason directly.
 
 If you prefer to use your own Anthropic / OpenAI or OpenAI-compatible key, copy and edit `.env` first:
 
@@ -102,7 +102,7 @@ Add 300394 to my watchlist.
 <details>
 <summary><b>Option A2 — terminal Agent</b></summary>
 
-`make agent-setup` checks Python, installs StockSage agent dependencies, creates `.env`, initializes the database, and prompts for pi installation if needed. V1 defaults to reusing one Anthropic/OpenAI key for both the outer pi chat model and the StockSage internal LLM runtime. If you pick `AI_PROVIDER=local_cli`, the internal LLM workflows use the local Claude CLI instead.
+`make agent-setup` checks Python, installs StockSage agent dependencies, creates `.env`, initializes the database, and prompts for pi installation if needed. The default is `AI_PROVIDER=local_cli`, so internal LLM workflows use your local Claude / Codex CLI; switch to `anthropic` or `openai` only when you want cloud runtime keys.
 
 </details>
 
@@ -132,6 +132,7 @@ StockSage already agent-ifies research, memory, reviews and health checks. The p
 | User goal | Task to delegate | Typical output |
 |---|---|---|
 | **Single-stock research** | Read one stock's signals, news, positions, long-term labels, historical reviews and project memory. | Research summary, evidence trail, risks, follow-up questions. |
+| **Prepare a stock** | Add/reactivate a symbol, best-effort backfill prices and financials, then return the dossier and missing items. | Research readiness, missing data list, next steps. |
 | **Topic research** | Investigate an industry, theme, value chain or group of stocks. | Theme conclusion, related symbols, source audit, questions to verify. |
 | **Long-term research** | Run the long-term analyst team across sector thesis, financial quality, prosperity indicators and QFII flow. | Long-term label, score, key findings, hold / avoid rationale. |
 | **Deep research** | Coordinate industry researcher, company researcher, risk reviewer, source auditor and report writer. | Markdown report, core conclusion, risk review, cited sources. |
@@ -145,6 +146,8 @@ StockSage already agent-ifies research, memory, reviews and health checks. The p
 Read project memory, then research whether 300308 is still worth following.
 Run an AI computing value-chain topic research report covering 300308 and 300394.
 Run the long-term analyst team and refresh long-term labels for my watchlist.
+Prepare a single-stock research dossier for 300308.
+Run the long-term expert team once for 300308.
 Check current data coverage and scheduler health.
 ```
 
@@ -163,7 +166,7 @@ Check current data coverage and scheduler health.
 
 ### API Keys
 
-StockSage reads all external keys from `.env` in the project root. **Never commit `.env`, real keys, the database or personal trading records to Git.** The minimum local setup needs only `AI_PROVIDER=local_cli`; enable news enrichment, push notifications and remote-agent exposure on demand.
+StockSage reads all external keys from `.env` in the project root. **Never commit `.env`, real keys, the database or personal trading records to Git.** The default local setup uses `AI_PROVIDER=local_cli`; enable news enrichment, push notifications and remote-agent exposure on demand. Empty keys and `your_*` placeholders are treated as unconfigured.
 
 | Variable | Purpose | Required? | How to obtain |
 |---|---|---|---|
@@ -188,6 +191,17 @@ ANSPIRE_API_KEY=your_anspire_api_key_here
 BARK_KEY=your_bark_device_key_here
 BARK_SERVER=https://api.day.app
 ```
+
+### Public Research Entry Points
+
+| Capability | HTTP entry | Notes |
+|---|---|---|
+| Single-stock dossier | `GET /api/research/{symbol}/dossier` | Reads signal, long-term label, copilot, memory, deep-research pointers and missing items. |
+| Prepare a stock | `POST /api/research/{symbol}/prepare` | Write action; adds/reactivates a stock, best-effort backfills data, then returns the dossier. |
+| Single-symbol expert team | `POST /api/long-term/{symbol}/run` | Write action; synchronously runs the long-term team and saves the label. |
+| Deep research | `POST /api/research/deep/run` | Write action; manually generates a local research report and never creates daily trading signals. |
+
+Long-term labels include `quality`, `constraint_eligible` and `quality_notes`. Only trusted labels with `constraint_eligible=true` may block entries, reduce position size or cap scores; failed, stale, low-confidence or evidence-poor labels are display-only.
 
 **For remote deployment / exposing MCP / HTTP to other machines, also add**:
 

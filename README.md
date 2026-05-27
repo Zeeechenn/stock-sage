@@ -47,7 +47,7 @@ make agent-setup        # 检查 Python、安装依赖、创建 .env、初始化
 make agent              # 进入终端 shell，开始用自然语言对话
 ```
 
-最小本地配置只需 `AI_PROVIDER=local_cli`（走本地 Claude CLI），**不需要任何云 LLM key**。
+默认本地配置是 `AI_PROVIDER=local_cli`（走已登录的 Claude / Codex CLI），**不需要任何云 LLM key**。如果本机没有可用 CLI，健康检查会直接显示 runtime 不可用原因。
 
 如果想使用自己的 Anthropic / OpenAI 或兼容接口 key，先复制并编辑 `.env`：
 
@@ -102,7 +102,7 @@ python3 -m backend.agent.cli health --pretty
 <details>
 <summary><b>方式 A2 — 终端 Agent</b></summary>
 
-`make agent-setup` 会检查 Python、安装 StockSage agent 依赖、创建 `.env`、初始化数据库，并提示安装 pi。V1 默认把同一把 Anthropic/OpenAI key 用于 pi 外层对话和 StockSage 内部 LLM runtime；如果选 `AI_PROVIDER=local_cli`，StockSage 内部 LLM 会走本地 Claude CLI。
+`make agent-setup` 会检查 Python、安装 StockSage agent 依赖、创建 `.env`、初始化数据库，并提示安装 pi。默认 `AI_PROVIDER=local_cli`，StockSage 内部 LLM 会走本地 Claude / Codex CLI；切到 `anthropic` 或 `openai` 时才需要对应云 key。
 
 </details>
 
@@ -132,6 +132,7 @@ StockSage 已经把研究、记忆、复盘、健康检查全部 agent 化。重
 | 你想做的事 | 交给 Agent 的任务 | 典型输出 |
 |---|---|---|
 | **个股研究** | 读取单股信号、新闻、持仓、长期标签、历史复盘和项目记忆。 | 研究摘要、证据链、风险点、可继续观察的问题。 |
+| **单股准备** | 添加/激活标的，尽力回填行情和财务，再返回 dossier 与缺失项。 | 可研究状态、缺失数据清单、下一步入口。 |
 | **专题研究** | 围绕行业、主题、产业链或一组股票做结构化研究。 | 主题结论、涉及标的、来源审计、待验证问题。 |
 | **长期研究** | 调用长期分析师团，检查赛道、财务质量、景气度、QFII 流向。 | 长期标签、评分、关键发现、规避或持有理由。 |
 | **深度调研** | 组织行业研究员、公司研究员、风险复核员、来源审计员、写作员生成报告。 | Markdown 报告、核心结论、风险复核、引用来源。 |
@@ -145,6 +146,8 @@ StockSage 已经把研究、记忆、复盘、健康检查全部 agent 化。重
 读取项目记忆后，研究 300308 当前是否值得继续关注。
 跑一个 AI 算力产业链专题研究，覆盖 300308、300394。
 调用长期分析师团，更新我自选股里的长期标签。
+准备 300308 的单股研究 dossier。
+对 300308 跑一次长期专家团。
 检查当前数据覆盖和 scheduler 健康状态。
 ```
 
@@ -163,7 +166,7 @@ StockSage 已经把研究、记忆、复盘、健康检查全部 agent 化。重
 
 ### API Key
 
-所有外部 key 都从项目根目录 `.env` 读取；**`.env`、真实 key、数据库、个人交易记录都不应进入 Git**。最小本地配置只需 `AI_PROVIDER=local_cli`；新闻补充、推送、远程 agent 暴露按需启用。
+所有外部 key 都从项目根目录 `.env` 读取；**`.env`、真实 key、数据库、个人交易记录都不应进入 Git**。默认本地配置是 `AI_PROVIDER=local_cli`；新闻补充、推送、远程 agent 暴露按需启用。空 key 和 `your_*` 占位值会被视为未配置。
 
 | 配置项 | 用途 | 是否必需 | 获取方式 |
 |---|---|---|---|
@@ -188,6 +191,17 @@ ANSPIRE_API_KEY=your_anspire_api_key_here
 BARK_KEY=your_bark_device_key_here
 BARK_SERVER=https://api.day.app
 ```
+
+### 公开研究入口
+
+| 能力 | HTTP 入口 | 说明 |
+|---|---|---|
+| 单股 dossier | `GET /api/research/{symbol}/dossier` | 读取单股信号、长期标签、copilot、记忆、专题调研索引和缺失项。 |
+| 准备单股研究 | `POST /api/research/{symbol}/prepare` | 写操作；添加/激活股票，尽力回填数据，然后返回 dossier。 |
+| 单股专家团 | `POST /api/long-term/{symbol}/run` | 写操作；同步跑一次长期专家团并保存标签。 |
+| 专题调研 | `POST /api/research/deep/run` | 写操作；手动生成本地专题研究报告，不创建日常交易信号。 |
+
+长期专家团标签带有 `quality`、`constraint_eligible` 和 `quality_notes`。只有 `constraint_eligible=true` 的可信标签才会阻断入场、降低仓位或限制分数；LLM 失败、证据不足、过期或低置信标签只展示给用户复核。
 
 **远程部署 / 把 MCP / HTTP 暴露给其他机器时再加**：
 

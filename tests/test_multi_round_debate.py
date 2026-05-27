@@ -94,6 +94,7 @@ def test_multi_round_debate_three_rounds_success(mock_get_provider):
     ])
     with patch("backend.agents.researcher.settings") as mock_settings:
         mock_settings.multi_round_debate_enabled = True
+        mock_settings.ai_provider = "anthropic"
         mock_settings.anthropic_api_key = "fake"
         mock_settings.openai_api_key = None
         mock_settings.multi_round_debate_min_divergence = 20.0
@@ -117,6 +118,7 @@ def test_multi_round_debate_round1_failure_falls_back(mock_get_provider):
     mock_get_provider.return_value = _mock_provider([None])
     with patch("backend.agents.researcher.settings") as mock_settings:
         mock_settings.multi_round_debate_enabled = True
+        mock_settings.ai_provider = "anthropic"
         mock_settings.anthropic_api_key = "fake"
         mock_settings.openai_api_key = None
         mock_settings.multi_round_debate_min_divergence = 20.0
@@ -136,6 +138,7 @@ def test_multi_round_debate_round2_failure_falls_back_to_bull_only(mock_get_prov
     ])
     with patch("backend.agents.researcher.settings") as mock_settings:
         mock_settings.multi_round_debate_enabled = True
+        mock_settings.ai_provider = "anthropic"
         mock_settings.anthropic_api_key = "fake"
         mock_settings.openai_api_key = None
         mock_settings.multi_round_debate_min_divergence = 20.0
@@ -160,6 +163,7 @@ def test_multi_round_debate_round3_failure_falls_back_to_two_rounds(mock_get_pro
     ])
     with patch("backend.agents.researcher.settings") as mock_settings:
         mock_settings.multi_round_debate_enabled = True
+        mock_settings.ai_provider = "anthropic"
         mock_settings.anthropic_api_key = "fake"
         mock_settings.openai_api_key = None
         mock_settings.multi_round_debate_min_divergence = 20.0
@@ -174,9 +178,10 @@ def test_multi_round_debate_round3_failure_falls_back_to_two_rounds(mock_get_pro
 
 @patch("backend.agents.researcher.get_provider")
 def test_multi_round_debate_no_api_key_falls_back(mock_get_provider):
-    """无 API key → quick_consensus，零 LLM"""
+    """云 provider 无 API key → quick_consensus，零 LLM"""
     with patch("backend.agents.researcher.settings") as mock_settings:
         mock_settings.multi_round_debate_enabled = True
+        mock_settings.ai_provider = "anthropic"
         mock_settings.anthropic_api_key = None
         mock_settings.openai_api_key = None
         mock_settings.multi_round_debate_min_divergence = 20.0
@@ -192,6 +197,7 @@ def test_multi_round_debate_disabled_falls_back(mock_get_provider):
     """multi_round_debate_enabled=False → quick_consensus"""
     with patch("backend.agents.researcher.settings") as mock_settings:
         mock_settings.multi_round_debate_enabled = False
+        mock_settings.ai_provider = "anthropic"
         mock_settings.anthropic_api_key = "fake"
 
         conclusion = multi_round_debate(_reports([60, -30, 20, -10]))
@@ -205,6 +211,7 @@ def test_multi_round_debate_skip_when_no_divergence(mock_get_provider):
     """分歧不达阈值 → quick_consensus"""
     with patch("backend.agents.researcher.settings") as mock_settings:
         mock_settings.multi_round_debate_enabled = True
+        mock_settings.ai_provider = "anthropic"
         mock_settings.anthropic_api_key = "fake"
         mock_settings.openai_api_key = None
         mock_settings.multi_round_debate_min_divergence = 50.0   # 高阈值

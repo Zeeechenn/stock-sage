@@ -12,6 +12,7 @@ from backend.api.schemas import (
     ResearchStateOut,
 )
 from backend.data.database import get_db
+from backend.llm import runtime_readiness
 
 router = APIRouter()
 
@@ -22,6 +23,61 @@ def get_symbol_research_dossier(symbol: str, db: Session = Depends(get_db)):
     from backend.research.dossier import build_research_dossier
 
     return build_research_dossier(db, symbol)
+
+
+@router.post(
+    "/research/{symbol}/prepare",
+    dependencies=[Depends(agent_write_guard("research.prepare"))],
+)
+def prepare_symbol_research(
+    symbol: str,
+    name: str | None = None,
+    market: str = "CN",
+    db: Session = Depends(get_db),
+):
+    """Best-effort public first-run path: make one symbol researchable and return its dossier."""
+    from backend.data.database import Stock
+    from backend.research.dossier import build_research_dossier
+
+    if market not in ("CN", "US"):
+        raise HTTPException(400, "market must be CN or US")
+
+    stock = db.query(Stock).filter(Stock.symbol == symbol).first()
+    if stock is None:
+        stock = Stock(symbol=symbol, name=name or symbol, market=market, active=True)
+        db.add(stock)
+    else:
+        stock.active = True
+        if name:
+            stock.name = name
+        stock.market = stock.market or market
+    db.commit()
+
+    steps: dict[str, dict] = {}
+    try:
+        from backend.data.market import backfill_if_needed
+        rows = backfill_if_needed(symbol, stock.market, db, refresh_today=True)
+        steps["prices"] = {"ok": True, "rows": rows}
+    except Exception as exc:
+        steps["prices"] = {"ok": False, "error": str(exc)}
+
+    if stock.market == "CN":
+        try:
+            from backend.data.fundamentals import sync_financial_metrics
+            rows = sync_financial_metrics(symbol, db)
+            steps["financials"] = {"ok": True, "rows": rows}
+        except Exception as exc:
+            steps["financials"] = {"ok": False, "error": str(exc)}
+
+    dossier = build_research_dossier(db, symbol)
+    return {
+        "status": "prepared",
+        "symbol": symbol,
+        "steps": steps,
+        "runtime_readiness": runtime_readiness(),
+        "missing": dossier.get("missing", []),
+        "dossier": dossier,
+    }
 
 
 @router.get("/research/{symbol}", response_model=ResearchStateOut)
@@ -95,6 +151,7 @@ def run_deep_research_endpoint(
         as_of=request.as_of,
         persist=True,
     )
+    readiness = runtime_readiness()
     return DeepResearchResponse(
         topic=report.topic,
         symbols=report.symbols,
@@ -103,4 +160,8 @@ def run_deep_research_endpoint(
         report_path=str(report.path) if report.path else None,
         source_count=report.source_count,
         risk_flags=report.risk_flags,
+        readiness={
+            "llm": readiness,
+            "search_configured": bool(readiness.get("search", {}).get("tavily") or readiness.get("search", {}).get("anspire")),
+        },
     )

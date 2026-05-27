@@ -205,3 +205,78 @@ def test_ai_long_term_team_mode_runs_for_symbol(test_db, monkeypatch):
 
     assert "值得持有" in response.answer
     assert response.used_resources == ["long_term_team"]
+
+
+def test_prepare_symbol_research_returns_dossier_and_missing_items(test_db, monkeypatch):
+    from backend.api.routes.research import prepare_symbol_research
+
+    monkeypatch.setattr("backend.data.market.backfill_if_needed", lambda *args, **kwargs: 0)
+    monkeypatch.setattr("backend.data.fundamentals.sync_financial_metrics", lambda *args, **kwargs: 0)
+
+    response = prepare_symbol_research(
+        "300308",
+        name="中际旭创",
+        market="CN",
+        db=test_db,
+    )
+
+    assert response["status"] == "prepared"
+    assert response["dossier"]["symbol"] == "300308"
+    assert "latest_signal" in response["missing"]
+    assert response["steps"]["prices"]["ok"] is True
+
+
+def test_single_symbol_long_term_run_returns_quality_metadata(test_db, monkeypatch):
+    from backend.agents.long_term.base import LongTermLabel
+    from backend.api.routes.watchlist import run_long_term_label
+    from backend.data.database import Stock
+
+    test_db.add(Stock(symbol="300308", name="中际旭创", market="CN", active=True))
+    test_db.commit()
+
+    def fake_run(self, symbol, name, db):
+        return LongTermLabel(
+            symbol=symbol,
+            date="2026-05-26",
+            label="值得持有",
+            score=72.0,
+            votes={"track": "值得持有"},
+            key_findings=["测试长期观点"],
+            expires_at="2999-01-01",
+            quality="trusted",
+            constraint_eligible=True,
+            quality_notes=["长期标签通过质量门"],
+        )
+
+    monkeypatch.setattr("backend.agents.long_term.team.LongTermTeam.run", fake_run)
+
+    response = run_long_term_label("300308", db=test_db)
+
+    assert response.quality == "trusted"
+    assert response.constraint_eligible is True
+
+
+def test_deep_research_response_includes_readiness(test_db, monkeypatch):
+    from backend.api.routes.research import run_deep_research_endpoint
+    from backend.api.schemas import DeepResearchRequest
+    from backend.research.deep_research import DeepResearchReport
+
+    def fake_run_deep_research(**kwargs):
+        return DeepResearchReport(
+            topic=kwargs["topic"],
+            symbols=kwargs["symbols"],
+            as_of="2026-05-26",
+            summary="专题调研摘要",
+            path=None,
+            source_count=0,
+            risk_flags=[],
+        )
+
+    monkeypatch.setattr("backend.research.deep_research.run_deep_research", fake_run_deep_research)
+    response = run_deep_research_endpoint(
+        DeepResearchRequest(topic="AI算力", symbols=["300308"]),
+        db=test_db,
+    )
+
+    assert response.readiness["search_configured"] in {True, False}
+    assert "llm" in response.readiness

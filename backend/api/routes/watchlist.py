@@ -35,6 +35,9 @@ def label_to_schema(lt) -> LongTermLabelOut | None:
         votes=lt.votes,
         key_findings=lt.key_findings,
         expires_at=lt.expires_at,
+        quality=lt.quality,
+        constraint_eligible=lt.constraint_eligible,
+        quality_notes=lt.quality_notes,
     )
 
 
@@ -72,11 +75,29 @@ def get_long_term_label(symbol: str, db: Session = Depends(get_db)):
 
 
 @router.post(
+    "/long-term/{symbol}/run",
+    response_model=LongTermLabelOut,
+    dependencies=[Depends(agent_write_guard("long_term.run"))],
+)
+def run_long_term_label(symbol: str, db: Session = Depends(get_db)):
+    """Run the long-term analyst team for one symbol and return the saved label."""
+    from backend.agents.long_term.storage import save_label
+    from backend.agents.long_term.team import LongTermTeam
+
+    stock = db.query(Stock).filter(Stock.symbol == symbol).first()
+    if stock is None:
+        raise HTTPException(404, f"stock {symbol} not found")
+    label = LongTermTeam().run(stock.symbol, stock.name, db)
+    save_label(label, db)
+    return label_to_schema(label)
+
+
+@router.post(
     "/long-term/run",
     dependencies=[Depends(agent_write_guard("long_term.run"))],
 )
 def trigger_long_term_team(background_tasks: BackgroundTasks):
-    """Manually trigger the long-term analyst team in the background."""
+    """Manually trigger the active-watchlist long-term analyst team in the background."""
     from backend.scheduler import job_weekly_longterm
 
     background_tasks.add_task(job_weekly_longterm)

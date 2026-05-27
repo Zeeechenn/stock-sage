@@ -53,6 +53,9 @@ def test_default_aggregate_respects_long_term_avoid_label(monkeypatch):
         votes={"track": "规避"},
         key_findings=["基本面风险未解除"],
         expires_at="2026-06-04",
+        quality="trusted",
+        constraint_eligible=True,
+        quality_notes=["test trusted label"],
     )
     result = aggregator.aggregate(
         quant_score=0,
@@ -69,7 +72,43 @@ def test_default_aggregate_respects_long_term_avoid_label(monkeypatch):
     assert result["research_conflicts"]
 
 
-def test_default_aggregate_downgrades_entry_when_long_term_missing(monkeypatch):
+def test_default_aggregate_ignores_untrusted_long_term_avoid_label(monkeypatch):
+    from backend.agents.long_term.base import LongTermLabel
+    from backend.decision import aggregator
+
+    monkeypatch.setattr(aggregator.settings, "paper_trading_profile", "new_framework")
+    monkeypatch.setattr(aggregator.settings, "weight_quant", 0.0)
+    monkeypatch.setattr(aggregator.settings, "weight_technical", 0.6)
+    monkeypatch.setattr(aggregator.settings, "weight_sentiment", 0.4)
+    monkeypatch.setattr(aggregator.settings, "long_term_team_enabled", True)
+
+    label = LongTermLabel(
+        symbol="300308",
+        date="2026-05-25",
+        label="规避",
+        score=-60,
+        votes={"track": "规避"},
+        key_findings=["LLM 调用失败，默认观望"],
+        expires_at="2026-06-04",
+        quality="failed",
+        constraint_eligible=False,
+        quality_notes=["A老师 LLM 调用失败"],
+    )
+    result = aggregator.aggregate(
+        quant_score=0,
+        technical_result={"score": 80, "limit": {}},
+        sentiment_score=0.8,
+        close=10,
+        atr=1,
+        long_term_label=label,
+    )
+
+    assert result["recommendation"] == "可小仓试错"
+    assert result["position_pct"] > 0.0
+    assert any("未通过质量门" in note for note in result["risk_notes"])
+
+
+def test_default_aggregate_does_not_downgrade_entry_when_long_term_missing(monkeypatch):
     from backend.decision import aggregator
 
     monkeypatch.setattr(aggregator.settings, "paper_trading_profile", "new_framework")
@@ -87,9 +126,9 @@ def test_default_aggregate_downgrades_entry_when_long_term_missing(monkeypatch):
         long_term_label=None,
     )
 
-    assert result["recommendation"] == "可关注"
-    assert result["position_pct"] == 0.0
-    assert any("长期标签缺失" in note for note in result["risk_notes"])
+    assert result["recommendation"] == "可小仓试错"
+    assert result["position_pct"] > 0.0
+    assert not any("长期标签缺失" in note for note in result["risk_notes"])
 
 
 def test_default_aggregate_surfaces_memory_constraints(monkeypatch):
@@ -124,7 +163,7 @@ def test_position_sizer_preserves_caps_for_small_candidate_sets():
     assert [x["weight"] for x in sized] == [0.15, 0.15, 0.15]
 
 
-def test_risk_manager_downgrades_strong_buy_without_long_term_label():
+def test_risk_manager_does_not_downgrade_strong_buy_without_long_term_label():
     from backend.agents.risk_manager import review
     from backend.agents.trader import TraderProposal
 
@@ -140,8 +179,8 @@ def test_risk_manager_downgrades_strong_buy_without_long_term_label():
     )
 
     decision = review(proposal, regime=None, long_term_label=None)
-    assert decision.final_recommendation == "可关注"
-    assert any("长期标签缺失" in note for note in decision.risk_notes)
+    assert decision.final_recommendation == "强买"
+    assert not any("长期标签缺失" in note for note in decision.risk_notes)
 
 
 def test_aggregate_v2_regime_dampening_preserves_risk_manager_decision(monkeypatch):

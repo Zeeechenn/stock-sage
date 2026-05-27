@@ -3,6 +3,7 @@
 
 mock 三个分析师，验证 label 映射规则的所有分支。
 """
+from datetime import datetime, timedelta
 from unittest.mock import patch
 
 from backend.agents.long_term.base import LongTermLabel, LongTermReport, VoteLabel
@@ -10,6 +11,14 @@ from backend.agents.long_term.storage import bulk_get_labels, get_active_label, 
 from backend.agents.long_term.team import LongTermTeam, _aggregate_score, _resolve_label
 
 # ── 工具 ──────────────────────────────────────────────────────────────
+
+def _date_after(days: int) -> str:
+    return (datetime.utcnow() + timedelta(days=days)).strftime("%Y-%m-%d")
+
+
+def _date_before(days: int) -> str:
+    return (datetime.utcnow() - timedelta(days=days)).strftime("%Y-%m-%d")
+
 
 def _mk_report(role: str, score: float, vote: VoteLabel, conf: float = 0.8) -> LongTermReport:
     return LongTermReport(
@@ -113,6 +122,8 @@ def test_team_run_full_pipeline(mock_jingqi, mock_pio, mock_at, test_db):
     # 0.3*60 + 0.3*50 + 0.4*70 = 18 + 15 + 28 = 61 → 值得持有
     assert label.score == 61.0
     assert label.label == "值得持有"
+    assert label.quality == "trusted"
+    assert label.constraint_eligible is True
     assert "track" in label.votes
     assert "quality" in label.votes
     assert "boom" in label.votes
@@ -148,17 +159,19 @@ def test_team_run_analyst_exception_doesnt_crash(mock_jingqi, mock_pio, mock_at,
     # 仅基于 quality+boom 算分: (0.3*50 + 0.4*60) / 0.7 = 50.0
     assert label is not None
     assert label.label in ("值得持有", "估值偏高")
+    assert label.quality == "failed"
+    assert label.constraint_eligible is False
 
 
 # ── storage ──────────────────────────────────────────────────────────
 
 def test_save_and_get_active_label(test_db):
     label = LongTermLabel(
-        symbol="600519", date="2026-05-15",
+        symbol="600519", date=_date_before(1),
         label="值得持有", score=65.0,
         votes={"track": "值得持有"},
         key_findings=["test finding"],
-        expires_at="2026-05-25",
+        expires_at=_date_after(10),
     )
     save_label(label, test_db)
 
@@ -170,10 +183,10 @@ def test_save_and_get_active_label(test_db):
 
 def test_get_active_label_returns_none_when_expired(test_db):
     label = LongTermLabel(
-        symbol="600519", date="2026-04-01",
+        symbol="600519", date=_date_before(30),
         label="值得持有", score=65.0,
         votes={}, key_findings=[],
-        expires_at="2026-04-15",   # 已过期（今天 2026-05-15）
+        expires_at=_date_before(1),
     )
     save_label(label, test_db)
 
@@ -184,14 +197,14 @@ def test_get_active_label_returns_none_when_expired(test_db):
 def test_save_label_is_idempotent(test_db):
     """同 (symbol, date) 重复 save 应更新而非插入"""
     label1 = LongTermLabel(
-        symbol="600519", date="2026-05-15",
+        symbol="600519", date=_date_before(1),
         label="观望", score=10.0, votes={}, key_findings=[],
-        expires_at="2026-05-25",
+        expires_at=_date_after(10),
     )
     label2 = LongTermLabel(
-        symbol="600519", date="2026-05-15",
+        symbol="600519", date=_date_before(1),
         label="值得持有", score=60.0, votes={}, key_findings=[],
-        expires_at="2026-05-25",
+        expires_at=_date_after(10),
     )
     save_label(label1, test_db)
     save_label(label2, test_db)
@@ -206,9 +219,9 @@ def test_save_label_is_idempotent(test_db):
 def test_bulk_get_labels(test_db):
     for sym, lbl in [("A", "值得持有"), ("B", "规避"), ("C", "观望")]:
         save_label(LongTermLabel(
-            symbol=sym, date="2026-05-15",
+            symbol=sym, date=_date_before(1),
             label=lbl, score=0, votes={}, key_findings=[],
-            expires_at="2026-05-25",
+            expires_at=_date_after(10),
         ), test_db)
     result = bulk_get_labels(["A", "B", "C", "Z"], test_db)
     assert len(result) == 3

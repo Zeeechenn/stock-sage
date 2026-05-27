@@ -25,8 +25,8 @@ class Settings(BaseSettings):
         validate_assignment=True,
     )
 
-    # LLM 提供方（"anthropic" 或 "openai"）
-    ai_provider: str = "anthropic"
+    # LLM 提供方（"local_cli" / "anthropic" / "openai"）
+    ai_provider: str = "local_cli"
 
     # Anthropic
     anthropic_api_key: str = ""

@@ -5,6 +5,7 @@ from dataclasses import asdict, dataclass, field
 from typing import Literal
 
 VoteLabel = Literal["值得持有", "估值偏高", "观望", "规避"]
+LabelQuality = Literal["trusted", "degraded", "failed"]
 
 
 @dataclass
@@ -33,6 +34,9 @@ class LongTermLabel:
     votes: dict[str, VoteLabel]      # {role: vote}
     key_findings: list[str]    # 合并后 ≤6 条
     expires_at: str            # "2026-05-27"
+    quality: LabelQuality = "degraded"
+    constraint_eligible: bool = False
+    quality_notes: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         """Serialize label to dictionary."""
@@ -44,4 +48,7 @@ class LongTermLabel:
             "votes": self.votes,
             "key_findings": self.key_findings,
             "expires_at": self.expires_at,
+            "quality": self.quality,
+            "constraint_eligible": self.constraint_eligible,
+            "quality_notes": self.quality_notes,
         }

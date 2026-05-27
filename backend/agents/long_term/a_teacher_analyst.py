@@ -27,7 +27,7 @@ from pathlib import Path
 from backend.agents.long_term.base import LongTermReport
 from backend.config import settings
 from backend.data.database import Price, Stock
-from backend.llm import get_provider
+from backend.llm import get_provider, runtime_readiness
 
 logger = logging.getLogger(__name__)
 
@@ -228,6 +228,14 @@ def analyze(symbol: str, name: str, db) -> LongTermReport:
 
     system = _load_skill_system_prompt()
     prompt = _build_prompt(symbol, name, industry, moves, evidence)
+    readiness = runtime_readiness(settings)
+    if not readiness["usable"]:
+        return LongTermReport(
+            role="track", score=0, confidence=0,
+            label_vote="观望",
+            key_findings=[f"LLM 调用失败，默认观望：{readiness['reason']}"],
+            raw={"industry": industry, "moves": moves, "evidence_count": len(evidence)},
+        )
 
     try:
         data = get_provider().complete_structured(

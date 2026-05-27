@@ -37,7 +37,13 @@
 
 > Qlib 量化层已加入 point-in-time 基本面因子与可选 LambdaRank 训练入口；最近验证未通过 alpha 门槛，因此生产默认 quant 权重继续保持 0。
 
+公开默认 LLM runtime 为 `AI_PROVIDER=local_cli`，通过本机 Claude / Codex CLI 调用；`anthropic` / `openai` 只有在配置真实 key 时才可用，空 key 和 `your_*` 占位值视为未配置。`GET /api/system/health` 与 `GET /api/system/status` 会返回非敏感 runtime readiness。
+
 当前数据覆盖请以 `PYTHONPATH=. python3 -m backend.tools.coverage_snapshot` 或 `GET /api/system/data-coverage` 为准。
+
+单股研究入口：`POST /api/research/{symbol}/prepare` 尽力回填数据并返回 dossier；`GET /api/research/{symbol}/dossier` 读取信号、长期标签、copilot、记忆、专题调研索引和缺失项。
+
+长期专家团入口：`POST /api/long-term/{symbol}/run` 同步运行单股专家团，`POST /api/long-term/run` 后台批量刷新自选股。长期标签包含 `quality` / `constraint_eligible` / `quality_notes`；只有可信且 `constraint_eligible=true` 的标签会约束官方动作，失败或证据不足标签只展示。
 
 专题研究入口：`POST /api/research/deep/run` 或
 `PYTHONPATH=. python3 -m backend.research.deep_research --topic "AI算力产业链" --symbols 300308,300394`。
@@ -94,7 +100,8 @@
 
 - M22 数据完整性修复后，持仓写入路径已锁定正数数量/成本/价格与 CN/US 市场枚举；重复平仓返回 409，不再覆盖首次 realized PnL。
 - 非默认 SQLite 初始化默认跳过本机 `~/.stock-sage/memory` 迁移；确需导入时设置 `STOCKSAGE_MIGRATE_LOCAL_MEMORY=1`。
-- `PYTHONPATH=. pytest -q` → **379 passed**（2026-05-23 M17-M21 评审修复 + yfinance qfq 收口 + QFII 缓存 TTL 后）。`tests/test_agent_context.py` 的 2 个 MCP smoke 用例需 `pip install -e ".[agent]"` 装可选 `mcp` 包后才能跑。
+- `python3 -m pytest -q -p no:cacheprovider tests/test_llm_runtime_provider.py tests/test_long_term_team.py tests/integration/test_long_term_pipeline.py tests/test_stage_a_fixes.py tests/test_frontend_expansion_api.py tests/test_stock_memory.py` → **66 passed**（2026-05-26 public research readiness focused suite）。
+- `python3 -m pytest -q -p no:cacheprovider` → **439 passed**（2026-05-26 public research readiness）。
 - `python3 -m compileall backend tests` → 通过
 - `cd frontend && node --test src/*.test.js src/pages/*.test.js` → **9 passed**
 - `cd frontend && npm run build` → 通过（57 modules，约 453 KB / gzip 142 KB）
@@ -102,7 +109,7 @@
 ## 环境准备
 
 ```bash
-cp .env.example .env                   # 本地 AI 可设 AI_PROVIDER=local_cli；云 provider 才填对应 API key
+cp .env.example .env                   # 默认 AI_PROVIDER=local_cli；云 provider 才填对应 API key
 pip install ".[dev]"                   # 含 dev/test/agent 工具链
 pip install -e ".[agent]"              # 可选：只安装本地 MCP agent 工具桥
 python3 backend/data/database.py       # 初始化 DB
@@ -124,6 +131,8 @@ PYTHONPATH=. python3 -m backend.analysis.qlib_engine --train --ranker
 PYTHONPATH=. python3 -m backend.backtest.walk_forward --start 2024-01-01 --end 2026-05-15
 PYTHONPATH=. python3 -m backend.agent.mcp_server
 curl http://localhost:8000/api/system/health
+curl -X POST "http://localhost:8000/api/research/300308/prepare?name=中际旭创&market=CN"
+curl -X POST http://localhost:8000/api/long-term/300308/run
 curl -X POST http://localhost:8000/api/system/kill-switch/reset
 curl http://localhost:8000/api/signals/eval/600519?days=60
 ```
@@ -135,4 +144,4 @@ curl http://localhost:8000/api/signals/eval/600519?days=60
 - 项目记忆入口在 `backend/agent/context.py`，MCP 启动入口为 `PYTHONPATH=. python3 -m backend.agent.mcp_server`；未初始化数据库时 health/context 返回空状态，不抛出缺表错误。
 - 盘后批处理已接入 Portfolio Manager：单股信号先生成，再统一做组合层裁剪；最终仓位写入 `position_pct`，原始单股仓位保留在 `trader_position_pct`，裁剪原因进入 `portfolio_decision` / evidence。
 - Chat action 已统一走 Action Registry；远程 HTTP 写操作复用 agent guard，支持 API key、写开关和 action allowlist。
-- Runtime LLM/API key 边界见 README 的 "注意事项" 与 `AGENTS.md`；云服务额度仍以各平台控制台为准。
+- Runtime LLM/API key 边界见 README 的 "注意事项" 与 `AGENTS.md`；公开默认 local CLI，云服务额度仍以各平台控制台为准。

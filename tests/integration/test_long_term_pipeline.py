@@ -3,6 +3,7 @@
 
 不依赖网络/真实 LLM：mock 三个长期分析师返回固定标签。
 """
+from datetime import datetime, timedelta
 from unittest.mock import patch
 
 from backend.agents.long_term.base import LongTermLabel, LongTermReport
@@ -11,6 +12,14 @@ from backend.agents.long_term.team import LongTermTeam
 from backend.data.database import Price, Stock
 
 # ── 数据 helper ───────────────────────────────────────────────────────
+
+def _date_after(days: int) -> str:
+    return (datetime.utcnow() + timedelta(days=days)).strftime("%Y-%m-%d")
+
+
+def _date_before(days: int) -> str:
+    return (datetime.utcnow() - timedelta(days=days)).strftime("%Y-%m-%d")
+
 
 def _seed_prices(db, symbol: str, n: int = 100, start_price: float = 100.0):
     """种 n 条日线数据（用于 technical_score 计算）"""
@@ -101,10 +110,13 @@ def test_postmarket_pipeline_respects_avoid_label(
 
     # 给 600036 标"规避"
     save_label(LongTermLabel(
-        symbol="600036", date="2026-05-15",
+        symbol="600036", date=_date_before(1),
         label="规避", score=-60,
         votes={"track": "规避"}, key_findings=["金融板块β负"],
-        expires_at="2026-05-25",
+        expires_at=_date_after(10),
+        quality="trusted",
+        constraint_eligible=True,
+        quality_notes=["test trusted label"],
     ), test_db)
 
     # 模拟短期信号产出（technical_score 高 + 量化中等，应该买入）
@@ -148,10 +160,13 @@ def test_postmarket_pipeline_respects_overvalued_label(
 
     _seed_stocks_with_data(test_db)
     save_label(LongTermLabel(
-        symbol="603986", date="2026-05-15",
+        symbol="603986", date=_date_before(1),
         label="估值偏高", score=35,
         votes={"track": "估值偏高"}, key_findings=["涨幅80%"],
-        expires_at="2026-05-25",
+        expires_at=_date_after(10),
+        quality="trusted",
+        constraint_eligible=True,
+        quality_notes=["test trusted label"],
     ), test_db)
 
     technical_result = {
@@ -197,10 +212,13 @@ def test_mirror_json_written(test_db, tmp_path, monkeypatch):
     monkeypatch.setattr(storage, "MIRROR_PATH", tmp_path / "labels.json")
 
     label = LongTermLabel(
-        symbol="300308", date="2026-05-15",
+        symbol="300308", date=_date_before(1),
         label="值得持有", score=65,
         votes={"track": "值得持有"}, key_findings=["test"],
-        expires_at="2026-05-25",
+        expires_at=_date_after(10),
+        quality="trusted",
+        constraint_eligible=True,
+        quality_notes=["test trusted label"],
     )
     storage.save_label(label, test_db)
 
@@ -221,10 +239,10 @@ def test_mirror_json_skipped_by_default(test_db, tmp_path, monkeypatch):
     monkeypatch.setattr(storage.settings, "long_term_label_mirror_path", "")
 
     label = LongTermLabel(
-        symbol="300308", date="2026-05-15",
+        symbol="300308", date=_date_before(1),
         label="值得持有", score=65,
         votes={"track": "值得持有"}, key_findings=["test"],
-        expires_at="2026-05-25",
+        expires_at=_date_after(10),
     )
     storage.save_label(label, test_db)
 

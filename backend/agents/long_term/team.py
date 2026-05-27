@@ -21,7 +21,7 @@ from backend.agents.long_term import (
     piotroski_analyst,
     qfii_flow_analyst,
 )
-from backend.agents.long_term.base import LongTermLabel, LongTermReport, VoteLabel
+from backend.agents.long_term.base import LabelQuality, LongTermLabel, LongTermReport, VoteLabel
 from backend.config import settings
 
 logger = logging.getLogger(__name__)
@@ -93,6 +93,35 @@ def _merge_findings(reports: dict[str, LongTermReport]) -> list[str]:
     return merged[:8]
 
 
+def _assess_label_quality(reports: dict[str, LongTermReport]) -> tuple[LabelQuality, bool, list[str]]:
+    """Return quality metadata that controls whether a label may constrain trades."""
+    notes: list[str] = []
+    valid_reports = [r for r in reports.values() if r.confidence >= 0.01]
+
+    if not valid_reports:
+        return "failed", False, ["没有有效长期分析师报告"]
+
+    track = reports.get("track")
+    if settings.long_term_a_teacher_enabled:
+        if track is None:
+            return "failed", False, ["A老师分析缺失"]
+        if track.confidence < 0.01:
+            finding_text = "；".join(track.key_findings)
+            if "LLM 调用失败" in finding_text:
+                return "failed", False, ["A老师 LLM 调用失败"]
+            return "degraded", False, ["A老师置信度为 0，标签仅展示"]
+
+    if len(valid_reports) < 2:
+        notes.append("有效长期分析师少于 2 路")
+    avg_conf = sum(r.confidence for r in valid_reports) / len(valid_reports)
+    if avg_conf < 0.25:
+        notes.append(f"长期分析师平均置信度过低 ({avg_conf:.2f})")
+
+    if notes:
+        return "degraded", False, notes
+    return "trusted", True, ["长期标签通过质量门"]
+
+
 class LongTermTeam:
     """长期分析师团（封装三路分析师 + 聚合逻辑）"""
 
@@ -130,6 +159,7 @@ class LongTermTeam:
 
         final_label = _resolve_label(score, votes, layer5)
         findings = _merge_findings(reports)
+        quality, constraint_eligible, quality_notes = _assess_label_quality(reports)
 
         today = datetime.utcnow().strftime("%Y-%m-%d")
         expires = (datetime.utcnow() + timedelta(days=settings.long_term_label_ttl_days)) \
@@ -151,4 +181,7 @@ class LongTermTeam:
             votes=votes,
             key_findings=findings,
             expires_at=expires,
+            quality=quality,
+            constraint_eligible=constraint_eligible,
+            quality_notes=quality_notes,
         )

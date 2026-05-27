@@ -63,6 +63,9 @@ class LongTermLabelOut(BaseModel):
     votes: dict[str, str] = {}           # {role: vote}
     key_findings: list[str] = []
     expires_at: str
+    quality: Literal["trusted", "degraded", "failed"] = "degraded"
+    constraint_eligible: bool = False
+    quality_notes: list[str] = []
 
 
 class WatchlistItem(BaseModel):
@@ -245,6 +248,7 @@ class DeepResearchResponse(BaseModel):
     report_path: str | None = None
     source_count: int = 0
     risk_flags: list[str] = []
+    readiness: dict = {}
 
 
 class AIChatRequest(BaseModel):

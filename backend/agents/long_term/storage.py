@@ -13,7 +13,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import cast
 
-from backend.agents.long_term.base import LongTermLabel, VoteLabel
+from backend.agents.long_term.base import LabelQuality, LongTermLabel, VoteLabel
 from backend.config import settings
 from backend.data.database import LongTermLabel as LongTermLabelORM
 
@@ -44,6 +44,9 @@ def save_label(label: LongTermLabel, db) -> None:
         votes_json=json.dumps(label.votes, ensure_ascii=False),
         key_findings_json=json.dumps(label.key_findings, ensure_ascii=False),
         expires_at=label.expires_at,
+        quality=label.quality,
+        constraint_eligible=label.constraint_eligible,
+        quality_notes_json=json.dumps(label.quality_notes, ensure_ascii=False),
     )
     if existing:
         for k, v in payload.items():
@@ -73,6 +76,9 @@ def _write_mirror(db) -> None:
                 "votes": json.loads(r.votes_json) if r.votes_json else {},
                 "key_findings": json.loads(r.key_findings_json) if r.key_findings_json else [],
                 "expires_at": r.expires_at,
+                "quality": getattr(r, "quality", "degraded") or "degraded",
+                "constraint_eligible": bool(getattr(r, "constraint_eligible", False)),
+                "quality_notes": json.loads(r.quality_notes_json) if getattr(r, "quality_notes_json", None) else [],
             }
         mirror_path.parent.mkdir(parents=True, exist_ok=True)
         mirror_path.write_text(json.dumps(out, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -98,6 +104,9 @@ def get_active_label(symbol: str, db) -> LongTermLabel | None:
         votes=json.loads(row.votes_json) if row.votes_json else {},
         key_findings=json.loads(row.key_findings_json) if row.key_findings_json else [],
         expires_at=row.expires_at,
+        quality=cast(LabelQuality, getattr(row, "quality", "degraded") or "degraded"),
+        constraint_eligible=bool(getattr(row, "constraint_eligible", False)),
+        quality_notes=json.loads(row.quality_notes_json) if getattr(row, "quality_notes_json", None) else [],
     )
 
 
@@ -122,6 +131,9 @@ def bulk_get_labels(symbols: list[str], db) -> dict[str, LongTermLabel]:
             votes=json.loads(r.votes_json) if r.votes_json else {},
             key_findings=json.loads(r.key_findings_json) if r.key_findings_json else [],
             expires_at=r.expires_at,
+            quality=cast(LabelQuality, getattr(r, "quality", "degraded") or "degraded"),
+            constraint_eligible=bool(getattr(r, "constraint_eligible", False)),
+            quality_notes=json.loads(r.quality_notes_json) if getattr(r, "quality_notes_json", None) else [],
         )
         for sym, r in by_symbol.items()
     }

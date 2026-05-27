@@ -145,6 +145,9 @@ def _latest_long_term(symbol: str, db) -> dict | None:
         "score": row.score,
         "key_findings": _parse(row.key_findings_json, []),
         "expires_at": row.expires_at,
+        "quality": getattr(row, "quality", "degraded") or "degraded",
+        "constraint_eligible": bool(getattr(row, "constraint_eligible", False)),
+        "quality_notes": _parse(getattr(row, "quality_notes_json", None), []),
     }
 
 

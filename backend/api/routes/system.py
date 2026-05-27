@@ -155,6 +155,7 @@ def update_runtime_config(payload: dict):
 def system_status(db: Session = Depends(get_db)):
     """Return database and long-term label status summary."""
     from backend.config import settings
+    from backend.llm import runtime_readiness
 
     latest_price_date = db.query(Price.date).order_by(Price.date.desc()).first()
     latest_label_date = db.query(LongTermLabel.date).order_by(LongTermLabel.date.desc()).first()
@@ -173,6 +174,7 @@ def system_status(db: Session = Depends(get_db)):
         "long_term_labels_count": db.query(LongTermLabel).count(),
         "latest_long_term_label_date": latest_label_date[0] if latest_label_date else None,
         "scheduler": scheduler_state,
+        "runtime_readiness": runtime_readiness(settings),
     }
 
 
@@ -200,6 +202,7 @@ def system_health(db: Session = Depends(get_db)):
     供外部监控（如 Bark / Uptime / Grafana）轮询。
     """
     from backend.config import settings
+    from backend.llm import runtime_readiness
     from backend.ops import kill_switch
 
     db_path = settings.database_url.removeprefix("sqlite:///")
@@ -265,6 +268,7 @@ def system_health(db: Session = Depends(get_db)):
         "consecutive_losses": recent_losses,
         "consecutive_losses_threshold": kill_switch.DEFAULT_CONSECUTIVE_LOSSES,
         "scheduler": scheduler_state,
+        "runtime_readiness": runtime_readiness(settings),
     }
 
 

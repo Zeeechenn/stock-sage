@@ -127,6 +127,17 @@ class Signal(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
+class SentimentCache(Base):
+    """Persistent cache for expensive news sentiment LLM calls."""
+    __tablename__ = "sentiment_cache"
+    cache_key: Mapped[str] = mapped_column(String, primary_key=True)
+    symbol: Mapped[str | None] = mapped_column(String, index=True, nullable=True)
+    titles_hash: Mapped[str] = mapped_column(String, index=True)
+    result_json: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
 class FinancialMetric(Base):
     """
     季度财务指标（长期分析师团数据基础）
@@ -192,6 +203,9 @@ class LongTermLabel(Base):
     votes_json: Mapped[str | None] = mapped_column(Text, nullable=True)        # {role: vote} JSON
     key_findings_json: Mapped[str | None] = mapped_column(Text, nullable=True) # [str] JSON，≤6 条
     expires_at: Mapped[str] = mapped_column(String)                     # "2026-05-27"
+    quality: Mapped[str] = mapped_column(String, default="degraded")    # trusted/degraded/failed
+    constraint_eligible: Mapped[bool] = mapped_column(Boolean, default=False)
+    quality_notes_json: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
@@ -343,6 +357,21 @@ def _ensure_runtime_schema() -> None:
         if "data_timestamp" not in signal_cols:
             conn.execute(text("ALTER TABLE signals ADD COLUMN data_timestamp TEXT"))
 
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS sentiment_cache (
+                cache_key TEXT PRIMARY KEY,
+                symbol TEXT,
+                titles_hash TEXT,
+                result_json TEXT,
+                created_at DATETIME,
+                updated_at DATETIME
+            )
+        """))
+        conn.execute(text("""
+            CREATE INDEX IF NOT EXISTS idx_sentiment_cache_symbol_hash
+            ON sentiment_cache(symbol, titles_hash)
+        """))
+
         position_cols = [r[1] for r in conn.execute(text("PRAGMA table_info(positions)")).fetchall()]
         for col, ddl in {
             "closed_at": "ALTER TABLE positions ADD COLUMN closed_at TEXT",
@@ -356,6 +385,15 @@ def _ensure_runtime_schema() -> None:
         fm_cols = [r[1] for r in conn.execute(text("PRAGMA table_info(financial_metrics)")).fetchall()]
         if "disclosure_date" not in fm_cols:
             conn.execute(text("ALTER TABLE financial_metrics ADD COLUMN disclosure_date TEXT"))
+
+        ltl_cols = [r[1] for r in conn.execute(text("PRAGMA table_info(long_term_labels)")).fetchall()]
+        if ltl_cols:
+            if "quality" not in ltl_cols:
+                conn.execute(text("ALTER TABLE long_term_labels ADD COLUMN quality TEXT DEFAULT 'degraded'"))
+            if "constraint_eligible" not in ltl_cols:
+                conn.execute(text("ALTER TABLE long_term_labels ADD COLUMN constraint_eligible BOOLEAN DEFAULT 0"))
+            if "quality_notes_json" not in ltl_cols:
+                conn.execute(text("ALTER TABLE long_term_labels ADD COLUMN quality_notes_json TEXT"))
 
         conn.execute(text("""
             CREATE TABLE IF NOT EXISTS ai_memory (

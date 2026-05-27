@@ -26,14 +26,28 @@ def _mock_provider(outputs: list[dict]) -> MagicMock:
 
 
 def test_local_cli_runtime_provider_is_available_without_cloud_keys():
-    from backend.llm.factory import has_runtime_llm_provider
+    from backend.llm.factory import has_runtime_llm_provider, runtime_readiness
 
-    with patch("backend.llm.factory.settings") as mock_settings:
+    with patch("backend.llm.factory.settings") as mock_settings, \
+            patch("backend.llm.factory.shutil.which") as mock_which:
         mock_settings.ai_provider = "local_cli"
         mock_settings.anthropic_api_key = ""
         mock_settings.openai_api_key = ""
+        mock_which.side_effect = lambda name: f"/usr/bin/{name}" if name == "claude" else None
 
         assert has_runtime_llm_provider() is True
+        assert runtime_readiness()["local_cli"]["claude"] is True
+
+
+def test_local_cli_runtime_provider_reports_missing_cli():
+    from backend.llm.factory import has_runtime_llm_provider, runtime_readiness
+
+    with patch("backend.llm.factory.settings") as mock_settings, \
+            patch("backend.llm.factory.shutil.which", return_value=None):
+        mock_settings.ai_provider = "local_cli"
+
+        assert has_runtime_llm_provider() is False
+        assert "Neither" in runtime_readiness()["reason"]
 
 
 def test_cloud_runtime_provider_requires_matching_key():
@@ -45,10 +59,22 @@ def test_cloud_runtime_provider_requires_matching_key():
         mock_settings.openai_api_key = "openai-key"
         assert has_runtime_llm_provider() is False
 
+        mock_settings.anthropic_api_key = "your_anthropic_api_key_here"
+        assert has_runtime_llm_provider() is False
+
+        mock_settings.anthropic_api_key = "anthropic-key"
+        assert has_runtime_llm_provider() is True
+
         mock_settings.ai_provider = "openai"
         mock_settings.openai_api_key = ""
         mock_settings.anthropic_api_key = "anthropic-key"
         assert has_runtime_llm_provider() is False
+
+        mock_settings.openai_api_key = "your_openai_api_key_here"
+        assert has_runtime_llm_provider() is False
+
+        mock_settings.openai_api_key = "openai-key"
+        assert has_runtime_llm_provider() is True
 
 
 def test_disabled_runtime_provider_is_not_available():
@@ -122,6 +148,29 @@ def test_analyze_news_skips_provider_when_runtime_disabled(mock_get_provider):
     mock_get_provider.assert_not_called()
 
 
+@patch("backend.analysis.sentiment.get_provider")
+def test_analyze_news_uses_persistent_cache_before_provider(mock_get_provider, monkeypatch):
+    from backend.analysis import sentiment
+
+    sentiment._cache.clear()
+    monkeypatch.setattr(
+        sentiment,
+        "_persistent_cache_get",
+        lambda _key: {
+            "sentiment": 0.5,
+            "summary": "缓存命中",
+            "impact": "short",
+            "key_events": ["订单改善"],
+        },
+    )
+
+    result = sentiment.analyze_news(["订单改善"], symbol="600519")
+
+    assert result["sentiment"] == 0.5
+    assert result["summary"] == "缓存命中"
+    mock_get_provider.assert_not_called()
+
+
 @patch("backend.agents.researcher.get_provider")
 def test_multi_round_debate_uses_local_cli_without_cloud_keys(mock_get_provider):
     mock_get_provider.return_value = _mock_provider([
@@ -134,12 +183,14 @@ def test_multi_round_debate_uses_local_cli_without_cloud_keys(mock_get_provider)
             "rationale": "本地 runtime 完成裁定",
         },
     ])
-    with patch("backend.agents.researcher.settings") as mock_settings:
+    with patch("backend.agents.researcher.settings") as mock_settings, \
+            patch("backend.llm.factory.shutil.which") as mock_which:
         mock_settings.multi_round_debate_enabled = True
         mock_settings.ai_provider = "local_cli"
         mock_settings.anthropic_api_key = ""
         mock_settings.openai_api_key = ""
         mock_settings.multi_round_debate_min_divergence = 20.0
+        mock_which.side_effect = lambda name: f"/usr/bin/{name}" if name == "claude" else None
 
         conclusion = multi_round_debate(_reports([60, -30, 20, -10]))
 
@@ -158,10 +209,12 @@ def test_bull_bear_debate_uses_local_cli_without_cloud_keys(mock_get_provider):
             "rationale": "分歧较大，等待确认",
         },
     ])
-    with patch("backend.decision.aggregator.settings") as mock_settings:
+    with patch("backend.decision.aggregator.settings") as mock_settings, \
+            patch("backend.llm.factory.shutil.which") as mock_which:
         mock_settings.ai_provider = "local_cli"
         mock_settings.anthropic_api_key = ""
         mock_settings.openai_api_key = ""
+        mock_which.side_effect = lambda name: f"/usr/bin/{name}" if name == "claude" else None
 
         result = aggregator._bull_bear_debate(
             composite_score=10,

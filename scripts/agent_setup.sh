@@ -47,9 +47,9 @@ else
 fi
 
 if ! grep -Eq '^AI_PROVIDER=(anthropic|openai|local_cli)' .env; then
-  printf "Choose StockSage runtime provider [anthropic/openai/local_cli] (default: anthropic): "
+  printf "Choose StockSage runtime provider [local_cli/anthropic/openai] (default: local_cli): "
   read -r provider
-  provider="${provider:-anthropic}"
+  provider="${provider:-local_cli}"
   printf "\nAI_PROVIDER=%s\n" "$provider" >> .env
 fi
 
