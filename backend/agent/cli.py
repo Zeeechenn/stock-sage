@@ -41,6 +41,13 @@ def _with_db(fn: Callable[[Any], dict], *, ensure_schema: bool = False) -> dict:
         db.close()
 
 
+def _with_read_only_memory_usage(fn: Callable[[], dict]) -> dict:
+    from backend.memory.stock_memory import suppress_memory_usage_recording
+
+    with suppress_memory_usage_recording():
+        return fn()
+
+
 def _read_guard(args: argparse.Namespace) -> None:
     require_agent_access("read", api_key=args.api_key)
 
@@ -99,33 +106,39 @@ def _command_health(args: argparse.Namespace) -> dict:
             "watchlist": context["watchlist"],
         }
 
-    return _with_db(_health)
+    return _with_read_only_memory_usage(lambda: _with_db(_health))
 
 
 def _command_project_context(args: argparse.Namespace) -> dict:
     _read_guard(args)
-    return _with_db(lambda db: stock_sage_context(db, symbol=args.symbol))
+    return _with_read_only_memory_usage(
+        lambda: _with_db(lambda db: stock_sage_context(db, symbol=args.symbol))
+    )
 
 
 def _command_memory_snapshot(args: argparse.Namespace) -> dict:
     _read_guard(args)
-    return _with_db(stock_sage_memory_snapshot)
+    return _with_read_only_memory_usage(lambda: _with_db(stock_sage_memory_snapshot))
 
 
 def _command_memory_context(args: argparse.Namespace) -> dict:
     _read_guard(args)
-    return _with_db(lambda db: stock_sage_memory_context(
-        db,
-        symbol=args.symbol,
-        query=args.query,
-        task_type=args.task_type,
-        limit=args.limit,
-    ))
+    return _with_read_only_memory_usage(
+        lambda: _with_db(lambda db: stock_sage_memory_context(
+            db,
+            symbol=args.symbol,
+            query=args.query,
+            task_type=args.task_type,
+            limit=args.limit,
+        ))
+    )
 
 
 def _command_stock_context(args: argparse.Namespace) -> dict:
     _read_guard(args)
-    return _with_db(lambda db: stock_sage_stock_context(db, args.symbol))
+    return _with_read_only_memory_usage(
+        lambda: _with_db(lambda db: stock_sage_stock_context(db, args.symbol))
+    )
 
 
 def _command_action(args: argparse.Namespace) -> dict:
@@ -151,6 +164,13 @@ def _command_action(args: argparse.Namespace) -> dict:
         return execute_registered_action(definition.name, payload, db)
 
     return {**base, "dry_run": False, "executed": True, "result": _with_db(_execute, ensure_schema=True)}
+
+
+def _command_actions(args: argparse.Namespace) -> dict:
+    _read_guard(args)
+    from backend.agent.action_registry import list_action_definitions
+
+    return {"actions": list_action_definitions()}
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -200,6 +220,12 @@ def build_parser() -> argparse.ArgumentParser:
     action.add_argument("--payload-json", required=True)
     action.add_argument("--confirm", action="store_true", help="execute the action")
     action.set_defaults(handler=_command_action)
+
+    actions = subparsers.add_parser(
+        "actions",
+        help="list registered local agent actions",
+    )
+    actions.set_defaults(handler=_command_actions)
 
     return parser
 

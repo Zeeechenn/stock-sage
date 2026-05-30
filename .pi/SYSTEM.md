@@ -28,15 +28,24 @@ For memory-sensitive work, read:
 python3 -m backend.agent.cli memory-snapshot --pretty
 ```
 
+To discover safe project mutations before proposing them, read:
+
+```bash
+python3 -m backend.agent.cli actions --pretty
+```
+
 ## Tool Boundary
 
-- Use StockSage CLI/MCP tools for project state, memory, watchlist, positions
-  and health before relying on chat-only memory.
+- Use StockSage CLI or the project-local `.pi/extensions/stocksage.ts` tools
+  for project state, memory, watchlist, positions and health before relying on
+  chat-only memory.
 - Use project commands for verification: `make test`, `make verify`,
-  `make coverage-snapshot`, `make paper-stats`.
+  `make coverage-snapshot`.
 - Research and read-only inspection can run directly in local mode.
 - Mutating actions must be confirmed by the user first. After confirmation, run
   `python3 -m backend.agent.cli action <name> --payload-json '<json>' --confirm`.
+- Do not assume project `.env` values are exported into the Pi process. Python
+  StockSage commands read the project `.env` themselves.
 
 ## Finance Boundary
 

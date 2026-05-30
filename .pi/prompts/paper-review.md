@@ -1,9 +1,9 @@
 # Paper Trading Review
 
-Run:
+Read:
 
 ```bash
-make paper-stats
+python3 -m backend.agent.cli project-context --pretty
 ```
 
 Then summarize:

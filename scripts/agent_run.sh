@@ -9,19 +9,14 @@ if ! command -v pi >/dev/null 2>&1; then
   exit 1
 fi
 
-if [[ -f ".env" ]]; then
-  set -a
-  # shellcheck disable=SC1091
-  source .env
-  set +a
-fi
-
 profile="${1:-research}"
 export STOCKSAGE_PI_PROFILE="$profile"
+export PYTHONPATH="$ROOT${PYTHONPATH:+:$PYTHONPATH}"
 if [[ "$profile" == "dev" ]]; then
-  echo "Starting StockSage pi developer session. Read AGENTS.md before editing."
+  echo "Starting StockSage native Pi developer session. Read AGENTS.md before editing."
 else
-  echo "Starting StockSage pi research session. Confirm mutating actions before running them."
+  echo "Starting StockSage native Pi research session. Confirm mutating actions before running them."
 fi
+echo "Project .env stays private to StockSage Python runtime; it is not bulk-exported into Pi."
 
 exec pi

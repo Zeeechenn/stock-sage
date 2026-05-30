@@ -126,15 +126,27 @@ for the first time:
 7. Execute mutations only after explicit user confirmation by adding
    `--confirm`.
 
-The terminal pi entrypoint is:
+The native Pi terminal entrypoint is:
 
 ```bash
 make agent-setup
 make agent
 ```
 
-`make agent-dev` starts the same pi shell with developer intent; use it for code
-changes rather than trading research.
+`INSTALL_PI=1 make agent-setup` may install the official native Pi CLI with npm
+when `pi` is missing. `make agent-dev` starts the same native Pi shell with
+developer intent; use it for code changes rather than trading research.
+
+The installer/launcher path is:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Zeeechenn/stock-sage/main/scripts/install.sh | sh
+stocksage
+```
+
+The native Pi shell loads project-local `.pi/skills`, `.pi/prompts` and
+`.pi/extensions`. The launch script does not bulk-export project `.env` secrets
+into the Pi process; StockSage Python commands read `.env` from the project root.
 
 The local MCP entrypoint is:
 
@@ -156,6 +168,15 @@ Useful agent tools are:
 - `stock_sage_memory_snapshot`
 - `stock_sage_stock_context`
 - `stock_sage_health`
+
+Native Pi extension tools are:
+
+- `stocksage_health`
+- `stocksage_project_context`
+- `stocksage_stock_context`
+- `stocksage_memory_snapshot`
+- `stocksage_action_dry_run`
+- `stocksage_action_confirm`
 
 To generate a local MCP client config snippet:
 

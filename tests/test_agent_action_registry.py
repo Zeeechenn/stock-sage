@@ -4,7 +4,7 @@ import pytest
 
 
 def test_action_registry_exposes_metadata_for_known_actions():
-    from backend.agent.action_registry import get_action_definition
+    from backend.agent.action_registry import get_action_definition, list_action_definitions
 
     definition = get_action_definition("watchlist.add")
 
@@ -15,6 +15,8 @@ def test_action_registry_exposes_metadata_for_known_actions():
     assert definition.input_schema["type"] == "object"
     config_definition = get_action_definition("config.update")
     assert "long_term_constraints_enabled" in config_definition.input_schema["properties"]
+    names = {item["name"] for item in list_action_definitions()}
+    assert {"research.prepare", "research.copilot", "research.deep.run", "long_term.run"} <= names
 
 
 def test_pending_action_includes_registry_metadata(test_db):
@@ -100,6 +102,36 @@ def test_execute_action_validates_payload_before_handler(test_db):
 
     assert exc.value.status_code == 400
     assert "symbol" in exc.value.detail
+
+
+def test_long_term_run_action_delegates_to_route(monkeypatch, test_db):
+    from backend.agent.action_registry import execute_registered_action
+    from backend.api.routes import watchlist
+
+    calls = []
+
+    def fake_run_long_term_label(symbol, db):
+        calls.append((symbol, db))
+        return {"symbol": symbol, "label": "观望"}
+
+    monkeypatch.setattr(watchlist, "run_long_term_label", fake_run_long_term_label)
+
+    result = execute_registered_action("long_term.run", {"symbol": "300308"}, test_db)
+
+    assert result == {"symbol": "300308", "label": "观望"}
+    assert calls == [("300308", test_db)]
+
+
+def test_heavy_research_action_rejects_missing_required_payload(test_db):
+    from fastapi import HTTPException
+
+    from backend.agent.action_registry import execute_registered_action
+
+    with pytest.raises(HTTPException) as exc:
+        execute_registered_action("research.deep.run", {}, test_db)
+
+    assert exc.value.status_code == 400
+    assert "topic" in exc.value.detail
 
 
 def test_stock_memory_write_action_persists_structured_memory(test_db):

@@ -220,6 +220,38 @@ def _stock_memory_write(payload: dict, db) -> dict:
     }
 
 
+def _research_prepare(payload: dict, db) -> dict:
+    from backend.api.routes.research import prepare_symbol_research
+
+    return prepare_symbol_research(
+        payload["symbol"],
+        name=payload.get("name"),
+        market=payload.get("market", "CN"),
+        db=db,
+    )
+
+
+def _research_copilot(payload: dict, db) -> dict:
+    from backend.api.routes.research import refresh_symbol_copilot
+
+    return refresh_symbol_copilot(payload["symbol"], db=db)
+
+
+def _research_deep_run(payload: dict, db) -> dict:
+    from backend.api.routes.research import run_deep_research_endpoint
+    from backend.api.schemas import DeepResearchRequest
+
+    result = run_deep_research_endpoint(DeepResearchRequest(**payload), db=db)
+    return result.model_dump() if hasattr(result, "model_dump") else result
+
+
+def _long_term_run(payload: dict, db) -> dict:
+    from backend.api.routes.watchlist import run_long_term_label
+
+    result = run_long_term_label(payload["symbol"], db=db)
+    return result.model_dump() if hasattr(result, "model_dump") else result
+
+
 _ACTIONS: dict[str, ActionDefinition] = {
     "watchlist.add": ActionDefinition(
         name="watchlist.add",
@@ -317,6 +349,51 @@ _ACTIONS: dict[str, ActionDefinition] = {
         allowed_modes=("local", "remote"),
         handler=_stock_memory_write,
     ),
+    "research.prepare": ActionDefinition(
+        name="research.prepare",
+        input_schema=_object_schema(["symbol"], {
+            "symbol": {"type": "string", "minLength": 1},
+            "name": {"type": "string"},
+            "market": {"type": "string", "enum": ["CN", "US"]},
+        }),
+        risk_level="medium",
+        requires_confirmation=True,
+        allowed_modes=("local", "remote"),
+        handler=_research_prepare,
+    ),
+    "research.copilot": ActionDefinition(
+        name="research.copilot",
+        input_schema=_object_schema(["symbol"], {
+            "symbol": {"type": "string", "minLength": 1},
+        }),
+        risk_level="high",
+        requires_confirmation=True,
+        allowed_modes=("local", "remote"),
+        handler=_research_copilot,
+    ),
+    "research.deep.run": ActionDefinition(
+        name="research.deep.run",
+        input_schema=_object_schema(["topic"], {
+            "topic": {"type": "string", "minLength": 1},
+            "symbols": {"type": "array", "items": {"type": "string"}},
+            "as_of": {"type": ["string", "null"]},
+            "seed_queries": {"type": "array", "items": {"type": "string"}},
+        }),
+        risk_level="high",
+        requires_confirmation=True,
+        allowed_modes=("local", "remote"),
+        handler=_research_deep_run,
+    ),
+    "long_term.run": ActionDefinition(
+        name="long_term.run",
+        input_schema=_object_schema(["symbol"], {
+            "symbol": {"type": "string", "minLength": 1},
+        }),
+        risk_level="high",
+        requires_confirmation=True,
+        allowed_modes=("local", "remote"),
+        handler=_long_term_run,
+    ),
 }
 
 
@@ -334,6 +411,20 @@ def action_metadata(name: str) -> dict:
         "requires_confirmation": definition.requires_confirmation,
         "schema_version": definition.schema_version,
     }
+
+
+def list_action_definitions() -> list[dict]:
+    return [
+        {
+            "name": definition.name,
+            "risk_level": definition.risk_level,
+            "requires_confirmation": definition.requires_confirmation,
+            "allowed_modes": list(definition.allowed_modes),
+            "schema_version": definition.schema_version,
+            "input_schema": definition.input_schema,
+        }
+        for definition in sorted(_ACTIONS.values(), key=lambda item: item.name)
+    ]
 
 
 def execute_registered_action(name: str, payload: dict, db) -> dict:

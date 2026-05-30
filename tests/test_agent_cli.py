@@ -6,6 +6,9 @@ import sys
 import uuid
 from pathlib import Path
 
+from sqlalchemy import create_engine, text
+from sqlalchemy.orm import sessionmaker
+
 
 def _run_cli(repo: Path, db_url: str, *args: str, env: dict[str, str] | None = None):
     full_env = {
@@ -78,6 +81,72 @@ def test_agent_cli_memory_context_reads_project_memory(tmp_path):
     assert "用户偏好：不追高" in payload["text"]
 
 
+def test_agent_cli_actions_lists_registered_actions(tmp_path):
+    repo = Path(__file__).resolve().parents[1]
+    db_url = f"sqlite:///{tmp_path / f'actions-{uuid.uuid4().hex}.db'}"
+
+    result = _run_cli(repo, db_url, "actions")
+
+    assert result.returncode == 0, result.stderr
+    payload = json.loads(result.stdout)
+    names = {item["name"] for item in payload["actions"]}
+    assert "research.prepare" in names
+    assert "long_term.run" in names
+
+
+def test_agent_cli_read_context_commands_do_not_record_stock_memory_usage(tmp_path):
+    from backend.memory.stock_memory import create_stock_memory
+
+    repo = Path(__file__).resolve().parents[1]
+    db_path = tmp_path / f"readonly-context-{uuid.uuid4().hex}.db"
+    db_url = f"sqlite:///{db_path}"
+
+    engine = create_engine(db_url, connect_args={"check_same_thread": False})
+    Session = sessionmaker(bind=engine)
+    db = Session()
+    try:
+        row = create_stock_memory(
+            db,
+            symbol="300308",
+            memory_type="risk",
+            summary="300308 只读上下文不应刷新使用痕迹",
+            source_type="unit_test",
+        )
+    finally:
+        db.close()
+
+    for args in (
+        ("project-context", "--symbol", "300308"),
+        ("stock-context", "300308"),
+        ("memory-context", "--symbol", "300308"),
+    ):
+        result = _run_cli(repo, db_url, *args)
+
+        assert result.returncode == 0, result.stderr
+        payload = json.loads(result.stdout)
+        if args[0] == "project-context":
+            assert "300308 只读上下文不应刷新使用痕迹" in payload["memory_context"]["text"]
+        elif args[0] == "stock-context":
+            assert "300308 只读上下文不应刷新使用痕迹" in payload["memory_context"]["text"]
+        else:
+            assert "300308 只读上下文不应刷新使用痕迹" in payload["text"]
+
+    db = Session()
+    try:
+        used = db.execute(
+            text("SELECT last_used_at FROM stock_memory_items WHERE id = :id"),
+            {"id": row["id"]},
+        ).scalar()
+        recalls = db.execute(
+            text("SELECT count(*) FROM audit_log_fts WHERE event_type='stock_memory.recall'")
+        ).scalar()
+    finally:
+        db.close()
+
+    assert used is None
+    assert recalls == 0
+
+
 def test_agent_cli_action_without_confirm_returns_metadata_without_writing(tmp_path):
     repo = Path(__file__).resolve().parents[1]
     db_path = tmp_path / f"dry-run-{uuid.uuid4().hex}.db"
@@ -103,6 +172,27 @@ def test_agent_cli_action_without_confirm_returns_metadata_without_writing(tmp_p
 
     context = json.loads(_run_cli(repo, db_url, "project-context").stdout)
     assert "600519" not in context["watchlist"]["symbols"]
+
+
+def test_agent_cli_heavy_action_dry_run_does_not_execute(tmp_path):
+    repo = Path(__file__).resolve().parents[1]
+    db_url = f"sqlite:///{tmp_path / f'deep-dry-run-{uuid.uuid4().hex}.db'}"
+
+    result = _run_cli(
+        repo,
+        db_url,
+        "action",
+        "research.deep.run",
+        "--payload-json",
+        '{"topic":"AI算力产业链","symbols":["300308"]}',
+    )
+
+    assert result.returncode == 0, result.stderr
+    payload = json.loads(result.stdout)
+    assert payload["dry_run"] is True
+    assert payload["risk_level"] == "high"
+    assert payload["payload"]["topic"] == "AI算力产业链"
+    assert "executed" not in payload
 
 
 def test_agent_cli_action_with_confirm_executes_registered_action(tmp_path):

@@ -42,9 +42,16 @@ A complete multi-agent pipeline — Bull/Bear three-round debate + Research Dire
 ## 🚀 Quick Start
 
 ```bash
+curl -fsSL https://raw.githubusercontent.com/Zeeechenn/stock-sage/main/scripts/install.sh | sh
+stocksage               # Enter the native Pi terminal workspace
+```
+
+Developers can also clone and run manually:
+
+```bash
 git clone <repo-url> && cd stock-sage
 make agent-setup        # Check Python, install deps, create .env, init the DB
-make agent              # Enter the terminal shell and start asking in natural language
+make agent              # Enter the native Pi shell and start asking in natural language
 ```
 
 The default local setup uses `AI_PROVIDER=local_cli` (your logged-in Claude / Codex CLI) — **no cloud LLM key required**. If no local CLI is available, health checks report the runtime readiness reason directly.
@@ -57,7 +64,9 @@ cp .env.example .env
 # Or AI_PROVIDER=openai + OPENAI_API_KEY (and OPENAI_BASE_URL for compatible endpoints)
 ```
 
-After configuration, you still enter the project from the terminal with `make agent-setup && make agent`; the Web console and MCP entry points are listed in Recommended Usage below.
+After configuration, run `stocksage configure && stocksage`, or enter the project
+with `make agent-setup && make agent`; the Web console and MCP entry points are
+listed in Recommended Usage below.
 
 Verify things are healthy:
 
@@ -82,7 +91,7 @@ Add 300394 to my watchlist.
 | Option | When to use | Entry |
 |---|---|---|
 | **A. Hand the project to Codex / Claude Code** | Drop the repo at an agent and let it read the README, run health, configure `.env` itself | Any agent client |
-| **A2. Terminal Agent** | You want a built-in research / review chat interface | `make agent-setup && make agent` |
+| **A2. Native Pi Terminal Agent** | You want a built-in research / review chat interface | `stocksage` or `make agent-setup && make agent` |
 | **B. Web console** (in development) | You want a graphical research dashboard | <http://localhost:5173> (API: <http://localhost:8000/docs>) |
 | **C. Docker / compose** | You want a one-shot deployment of backend + frontend | `cp .env.example .env && make docker-up` |
 | **D. Connect MCP tools** | You want StockSage as a tool surface for an outer agent | `make agent-mcp && make agent-mcp-config` |
@@ -102,7 +111,9 @@ Add 300394 to my watchlist.
 <details>
 <summary><b>Option A2 — terminal Agent</b></summary>
 
-`make agent-setup` checks Python, installs StockSage agent dependencies, creates `.env`, initializes the database, and prompts for pi installation if needed. The default is `AI_PROVIDER=local_cli`, so internal LLM workflows use your local Claude / Codex CLI; switch to `anthropic` or `openai` only when you want cloud runtime keys.
+`make agent-setup` checks Python, installs StockSage agent dependencies, creates `.env`, initializes the database, and prompts for native Pi installation if needed. To let setup install Pi directly, run `INSTALL_PI=1 make agent-setup`. The default is `AI_PROVIDER=local_cli`, so internal LLM workflows use your local Claude / Codex CLI; switch to `anthropic` or `openai` only when you want cloud runtime keys.
+
+`make agent` / `stocksage` starts the native Pi CLI and loads project-local `.pi/skills`, `.pi/prompts` and `.pi/extensions`. The project `.env` is read by the StockSage Python runtime and is not bulk-exported into the Pi process.
 
 </details>
 

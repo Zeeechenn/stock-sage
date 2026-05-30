@@ -39,9 +39,29 @@ echo "Python agent dependencies are installed."
 
 if ! command -v pi >/dev/null 2>&1; then
   echo "pi was not found on PATH."
-  echo "Install it with one of the official pi commands, then rerun make agent:"
-  echo "  npm install -g --ignore-scripts @earendil-works/pi-coding-agent"
-  echo "  curl https://pi.dev/install.sh | sh"
+  if [[ "${INSTALL_PI:-}" == "0" ]]; then
+    echo "Skipping Pi install because INSTALL_PI=0."
+  elif [[ "${INSTALL_PI:-}" == "1" ]]; then
+    if command -v npm >/dev/null 2>&1; then
+      npm install -g --ignore-scripts @earendil-works/pi-coding-agent
+    else
+      echo "npm was not found. Install native Pi with the official installer, then rerun setup:"
+      echo "  curl -fsSL https://pi.dev/install.sh | sh"
+    fi
+  elif [[ -t 0 ]] && command -v npm >/dev/null 2>&1; then
+    printf "Install native Pi now with npm? [y/N]: "
+    read -r install_pi
+    if [[ "$install_pi" =~ ^[Yy]$ ]]; then
+      npm install -g --ignore-scripts @earendil-works/pi-coding-agent
+    else
+      echo "Skipping Pi install. To install later:"
+      echo "  INSTALL_PI=1 make agent-setup"
+    fi
+  else
+    echo "Install native Pi with one of the official commands, then rerun make agent:"
+    echo "  npm install -g --ignore-scripts @earendil-works/pi-coding-agent"
+    echo "  curl -fsSL https://pi.dev/install.sh | sh"
+  fi
 else
   echo "pi is installed: $(command -v pi)"
 fi
@@ -58,7 +78,7 @@ case "$provider" in
   anthropic)
     current_key="$(grep -E '^ANTHROPIC_API_KEY=' .env | tail -n 1 | cut -d= -f2- || true)"
     if [[ -z "$current_key" || "$current_key" == your_* ]]; then
-      printf "Enter Anthropic API key for pi + StockSage runtime (leave blank to skip): "
+      printf "Enter Anthropic API key for StockSage runtime (leave blank to skip): "
       read -rs key
       printf "\n"
       if [[ -n "$key" ]]; then
@@ -69,7 +89,7 @@ case "$provider" in
   openai)
     current_key="$(grep -E '^OPENAI_API_KEY=' .env | tail -n 1 | cut -d= -f2- || true)"
     if [[ -z "$current_key" || "$current_key" == your_* ]]; then
-      printf "Enter OpenAI/OpenAI-compatible API key for pi + StockSage runtime (leave blank to skip): "
+      printf "Enter OpenAI/OpenAI-compatible API key for StockSage runtime (leave blank to skip): "
       read -rs key
       printf "\n"
       if [[ -n "$key" ]]; then
@@ -89,3 +109,4 @@ PYTHONPATH=. "$PYTHON_BIN" backend/data/database.py >/dev/null
 PYTHONPATH=. "$PYTHON_BIN" -m backend.agent.cli health --pretty
 
 echo "Setup complete. Run: make agent"
+echo "If installed through scripts/install.sh, you can also run: stocksage"
