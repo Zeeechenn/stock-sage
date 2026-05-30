@@ -19,8 +19,8 @@ the linked documents.
 | 文件 | 内容 |
 |------|------|
 | [STATUS.md](STATUS.md) | 当前公开快照（默认权重 / 调度 / 验证 / 启动命令） |
-| [CHANGELOG.md](CHANGELOG.md) | 已完成里程碑详情（M0–M26，按时间倒序） |
-| [docs/ROADMAP.md](docs/ROADMAP.md) | 进行中与待做（当前重点 M27 / M28，后置 M24.3 / M25.5 等） |
+| [CHANGELOG.md](CHANGELOG.md) | 已完成里程碑详情（M0–M28，按时间倒序） |
+| [docs/ROADMAP.md](docs/ROADMAP.md) | 进行中与待做（当前重点 M27，后置 M24.3 / M25.5 等） |
 | [README.md](README.md) | 项目门面（Quick Start / 架构图） |
 | [AGENTS.md](AGENTS.md) | Codex / Claude Code / MCP 本地 agent 使用说明 |
 
@@ -61,8 +61,8 @@ runtime databases and personal trading records stay outside Git tracking.
 | **M24** | 长期标签隔离与约束观察 | ✅ M24.0-M24.2 完成；M24.3 观察中 |
 | **M25** | 综合改进路线图 | ✅ M25.0-M25.4 主体完成；M25.5/M25.6 后置 |
 | **M26** | 量化层重估 | ✅ M26.0-M26.2 完成；M26.3 暂停 |
-| **M27** | Alpha 根治工程 | ⏳ 当前最高优先 |
-| **M28** | 调研模块整合与实时搜索接入 | 🔲 规划完成，待实施 |
+| **M27** | Alpha 根治工程 | ⏳ 工程接线完成；M27.1a/1b 指向 label/objective 重设计，生产 quant 继续关闭 |
+| **M28** | 调研模块整合与实时搜索接入 | ✅ 完成（deep_research / copilot / debate 信息流打通） |
 
 ---
 

@@ -6,6 +6,21 @@
 
 ---
 
+## [M28] 调研模块整合与实时搜索接入（2026-05-30）
+
+### Added
+- `ResearchSection` 升级为 IC Memo schema，结构化保存 `catalysts` / `risks` / `valuation_anchor` / `evidence_snippets` / `stance` / `confidence`。
+- `run_deep_research` 支持 Tavily 纯内存 `web_search` 与 `seed_queries`，末轮搜索结果会重新审计后进入报告。
+- 多轮辩论支持注入 `research_context`，盘后路径可从持久化 `research_pointer.sections` 恢复 catalysts / risks / evidence。
+- dossier 新增 `pending_questions`，承接 copilot `validation_questions`，打通 copilot → deep_research 的问题流。
+
+### Changed
+- Tavily 搜索结果不写 DB、不创建 `Signal`、不进入日常信号，仅在显式 deep research / dossier / debate 场景作为研究上下文使用。
+- M28 完成后，当前活跃路线图重心回到 M27 Alpha 根治工程。
+
+### Tests
+- M28 集成覆盖进入 2026-05-30 M26/M27/M28 聚焦套件与 full suite；当前通过状态以 `STATUS.md` 为准。
+
 ## [M26] 量化层重估：扩盘、Kronos 零样本评估与生产边界（2026-05-30）
 
 ### Added
@@ -23,7 +38,7 @@
 ### Decision
 - M26.0/M26.1/M26.2 已完成；M26.3 小权重验证暂停。
 - 生产继续 `weight_quant=0.0`，`kronos_enabled=false`。
-- Kronos 零样本结果不替代 LightGBM；后续只在 M27.1 因子工程和 M27.2 交易池扩容后，进入 M27.4 微调路径。
+- Kronos 零样本结果不替代 LightGBM；后续 M27.4 微调路径需基于 M27.2 交易池，并等真实 finetuned checkpoint 同标尺验证后再决定是否重启 M26.3。
 
 ### Tests
 - 新增 M26 baseline、扩盘重训、Kronos 评估窗口、portfolio eval 与长期约束影响报告聚焦测试。

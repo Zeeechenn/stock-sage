@@ -33,8 +33,8 @@ def test_qlib_promotion_gate_blocks_weak_candidate():
     from backend.analysis.qlib_engine import _passes_promotion_gate
 
     settings = SimpleNamespace(
-        qlib_train_ic_floor=0.02,
-        qlib_train_icir_floor=0.3,
+        qlib_train_ic_floor=0.04,
+        qlib_train_icir_floor=0.4,
         qlib_train_require_monotonic=True,
     )
     report = {
@@ -49,8 +49,8 @@ def test_qlib_promotion_gate_requires_monotonic_when_enabled():
     from backend.analysis.qlib_engine import _passes_promotion_gate
 
     settings = SimpleNamespace(
-        qlib_train_ic_floor=0.02,
-        qlib_train_icir_floor=0.3,
+        qlib_train_ic_floor=0.04,
+        qlib_train_icir_floor=0.4,
         qlib_train_require_monotonic=True,
     )
     report = {
@@ -65,8 +65,8 @@ def test_qlib_promotion_gate_allows_strong_candidate():
     from backend.analysis.qlib_engine import _passes_promotion_gate
 
     settings = SimpleNamespace(
-        qlib_train_ic_floor=0.02,
-        qlib_train_icir_floor=0.3,
+        qlib_train_ic_floor=0.04,
+        qlib_train_icir_floor=0.4,
         qlib_train_require_monotonic=True,
     )
     report = {

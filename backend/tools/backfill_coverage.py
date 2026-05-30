@@ -12,7 +12,7 @@ import json
 import logging
 import time
 from dataclasses import asdict, dataclass, field
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
 
 import pandas as pd
 from sqlalchemy import func
@@ -84,7 +84,7 @@ def _fetch_tavily_news(stock: Stock, limit: int = 3) -> list[RawNews]:
             RawNews(
                 title=title,
                 url=url,
-                published_at=datetime.now(timezone.utc).replace(tzinfo=None),
+                published_at=datetime.now(UTC).replace(tzinfo=None),
                 source=f"tavily:{host}",
                 symbol=symbol,
             )
@@ -107,7 +107,7 @@ def _missing_financial_symbols(db, limit: int | None = None) -> list[Stock]:
 
 
 def _missing_news_symbols(db, hours: int = 24, limit: int | None = None) -> list[Stock]:
-    cutoff = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(hours=hours)
+    cutoff = datetime.now(UTC).replace(tzinfo=None) - timedelta(hours=hours)
     query = (
         db.query(Stock).filter(Stock.active.is_(True), Stock.market == "CN").order_by(Stock.symbol)
     )

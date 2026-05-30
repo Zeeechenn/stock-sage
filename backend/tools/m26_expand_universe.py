@@ -21,6 +21,7 @@ import logging
 import os
 import time
 from datetime import date, timedelta
+from typing import TypedDict
 
 import pandas as pd
 
@@ -30,6 +31,15 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s %(name)s: %(message)s",
     datefmt="%H:%M:%S",
 )
+
+
+class ExpandStats(TypedDict):
+    total: int
+    added: int
+    skipped: int
+    failed: int
+    bars_written: int
+    sources: dict[str, int]
 
 # ── 常量 ────────────────────────────────────────────────────────────────────
 INDICES = ["000300", "000905"]          # HS300 + CSI500
@@ -256,15 +266,21 @@ def run(
     dry_run: bool = False,
     retrain: bool = False,
     delay: float = DELAY_BETWEEN_STOCKS,
-) -> dict:
+) -> ExpandStats:
     from backend.data.database import SessionLocal
 
     if symbols is None:
         symbols = fetch_index_constituents(INDICES)
 
     db = SessionLocal()
-    stats = {"total": len(symbols), "added": 0, "skipped": 0,
-             "failed": 0, "bars_written": 0, "sources": {}}
+    stats: ExpandStats = {
+        "total": len(symbols),
+        "added": 0,
+        "skipped": 0,
+        "failed": 0,
+        "bars_written": 0,
+        "sources": {},
+    }
     days = BACKFILL_YEARS * 365 + 10
 
     try:

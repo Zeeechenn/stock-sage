@@ -103,7 +103,7 @@ class PortfolioValueAnalyzer(bt.Analyzer):
 class PortfolioTechStrategy(bt.Strategy):
     """Single-account multi-feed technical strategy with 15/30/80 caps."""
 
-    params = (
+    params: tuple[tuple[str, object], ...] = (
         ("entry_threshold", 20.0),
         ("atr_mult", 2.0),
         ("rr", 2.0),
@@ -304,13 +304,13 @@ def equity_metrics(equity_curve: list[dict[str, Any]], initial_cash: float, star
         if values[i - 1] != 0
     ]
     final_value = values[-1]
+    sharpe = annualized_sharpe_from_daily_returns(daily_returns)
     return {
         "initial_value": round(initial_cash, 2),
         "final_value": round(final_value, 2),
         "total_return_pct": round((final_value / initial_cash - 1) * 100, 2),
         "cagr_pct": round(cagr_pct(initial_cash, final_value, start, end), 2),
-        "sharpe": round(annualized_sharpe_from_daily_returns(daily_returns), 2)
-        if annualized_sharpe_from_daily_returns(daily_returns) is not None else None,
+        "sharpe": round(sharpe, 2) if sharpe is not None else None,
         "max_drawdown_pct": round(max_drawdown_pct(values), 2),
         "daily_return_count": len(daily_returns),
     }

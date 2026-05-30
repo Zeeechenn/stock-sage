@@ -21,7 +21,7 @@ def test_build_validation_report_has_decision_gate():
     assert report["equity_curve"]["points"]
     assert report["equity_curve"]["max_drawdown"] == 0.0
     assert report["gates"]["pass_ic"] is True
-    assert report["gates"]["ic_floor"] == 0.02
+    assert report["gates"]["ic_floor"] == 0.04
     assert report["recommendation"] == "eligible_for_quant_review"
 
 
