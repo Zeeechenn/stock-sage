@@ -2,6 +2,8 @@
 
 > Public runtime and release snapshot. Detailed history lives in `CHANGELOG.md`; future work lives in `docs/ROADMAP.md`.
 
+当前公开 release：`v0.2.0`（2026-05-31），聚合 M26/M27/M28/M29 agent-ready research runtime 与 alpha evidence 更新；生产量化层继续关闭。
+
 ---
 
 ## 里程碑状态

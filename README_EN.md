@@ -20,7 +20,15 @@ A complete multi-agent pipeline — Bull/Bear three-round debate + Research Dire
 
 **Language**: [简体中文](README.md) · [English](README_EN.md)
 
-**Contents**: [Highlights](#-highlights) · [Quick Start](#-quick-start) · [Recommended Usage](#-recommended-usage) · [Agent Usage Guide](#-agent-usage-guide) · [Configuration](#-configuration) · [Architecture](#-architecture) · [Roadmap](#-roadmap) · [Cautions](#-cautions) · [More Docs](#-more-docs) · [Disclaimer](#-disclaimer)
+**Contents**: [Current Release](#-current-release) · [Highlights](#-highlights) · [Quick Start](#-quick-start) · [Recommended Usage](#-recommended-usage) · [Agent Usage Guide](#-agent-usage-guide) · [Configuration](#-configuration) · [Architecture](#-architecture) · [Roadmap](#-roadmap) · [Cautions](#-cautions) · [More Docs](#-more-docs) · [Disclaimer](#-disclaimer)
+
+---
+
+## 📦 Current Release
+
+**v0.2.0 (2026-05-31)** is an agent-ready / research-runtime release: the native `stocksage` Pi terminal, CLI / MCP context entry points, M28 dossier / deep research / copilot flow, Tushare qfq late fallback and the iFinD MCP observe-only adapter are now on the public line.
+
+The M26 / M27 quant and Kronos evidence loop is also public in this release: no candidate passed the production promotion gate, so production keeps `WEIGHT_QUANT=0.0` / `kronos_enabled=false`. The next phase is M29 Forward Evidence Engine: read-only evidence ledgers and pre-registered alpha hypotheses, not promoting weak candidates into production.
 
 ---
 
@@ -30,12 +38,12 @@ A complete multi-agent pipeline — Bull/Bear three-round debate + Research Dire
 |---|---|
 | 🗂 **Local-first** | Market data, news, fundamentals, QFII, positions, reviews and long-term memory all live in a local SQLite — offline-capable and auditable. |
 | 🤖 **Agent-ready** | Natively works with Codex, Claude Code, Claude Desktop, and Cursor over both CLI and MCP. |
-| 🔗 **Multi-source data** | efinance / Eastmoney / AkShare fallback by default; optional Tushare, yfinance, TickFlow, Tavily, Anspire enrichments. |
+| 🔗 **Multi-source data** | efinance / Eastmoney / AkShare fallback by default; optional Tushare qfq, yfinance, TickFlow, Tavily, Anspire and iFinD MCP observe-only enrichments. |
 | 🧩 **Layered signals** | Technical indicators + LLM news sentiment + long-term analyst team + portfolio risk — each layer independently reviewable. |
 | 📒 **Auditable memory** | Project memory, layered decision memory and chat summaries each stored in their own bucket, every write audit-logged. |
 | 🛡 **Risk-first** | Stop-loss / take-profit levels come from ATR formulas and portfolio constraints — LLMs never predict prices directly. |
 
-> Current focus: **agent-ready usage**, data quality and research-review workflows. Not an automated trading system. The Web console is still evolving.
+> Current focus: **M29 forward evidence and pre-registered alpha hypotheses**, agent-ready usage, data quality and research-review workflows. Not an automated trading system. The Web console is still evolving.
 
 ---
 

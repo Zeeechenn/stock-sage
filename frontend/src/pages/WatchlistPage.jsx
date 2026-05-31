@@ -17,6 +17,12 @@ const REC_STYLE = {
 const PANEL = 'rounded-sm border border-stone-300/80 bg-[#faf6ec] dark:border-slate-700 dark:bg-[#1d232e]'
 const PANEL_ALT = 'rounded-sm border border-stone-300/80 bg-[#fffaf0] dark:border-slate-700 dark:bg-[#222936]'
 const LABEL = 'text-[10px] font-semibold uppercase tracking-[0.2em] text-stone-500 dark:text-slate-400'
+const RELEASE_ITEMS = [
+  ['v0.2.0', '公开发布'],
+  ['M28', '调研链路打通'],
+  ['M29', 'Forward evidence'],
+  ['Quant', '生产继续关闭'],
+]
 
 function signed(value, digits = 1) {
   if (value === null || value === undefined || Number.isNaN(Number(value))) return '-'
@@ -67,6 +73,29 @@ function Section({ title, eyebrow, right, children }) {
       </div>
       <div className="p-4">{children}</div>
     </section>
+  )
+}
+
+function ReleaseStatus() {
+  return (
+    <div className={`${PANEL} p-4`}>
+      <div className="grid gap-3 lg:grid-cols-[1fr_auto] lg:items-center">
+        <div>
+          <div className={LABEL}>当前发布</div>
+          <div className="mt-1 text-sm font-medium text-stone-950 dark:text-slate-100">
+            M27 证据闭环未晋升，M29 进入只读证据账本与预注册 alpha 假设阶段。
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {RELEASE_ITEMS.map(([label, value]) => (
+            <div key={label} className="rounded-sm border border-stone-300 bg-[#f3eddc] px-3 py-2 dark:border-slate-700 dark:bg-[#161b25]">
+              <div className="font-mono text-[11px] font-semibold text-cyan-700 dark:text-cyan-200">{label}</div>
+              <div className="mt-1 text-xs text-stone-600 dark:text-slate-300">{value}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -526,6 +555,8 @@ export default function WatchlistPage() {
           {summary?.signals?.latest_date || '暂无信号日期'} · {summary?.system?.profile || '-'}
         </div>
       </div>
+
+      <ReleaseStatus />
 
       <TodayCall summary={summary} watchlist={items} />
 

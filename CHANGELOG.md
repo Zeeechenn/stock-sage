@@ -6,6 +6,25 @@
 
 ---
 
+## [v0.2.0] Agent-ready research runtime 与 Alpha evidence release（2026-05-31）
+
+### Added
+- 原生 `stocksage` Pi 终端、项目内 `.pi` prompts/skills/extensions、安装脚本与本地 agent launcher 进入公开主线。
+- M26 / M27 工具链公开：量化 baseline、Kronos 零样本/finetuned 评估、alpha diagnostic、label/objective search、forward shadow、sentiment cache backfill plan/runner 与 production-profile A/B。
+- M28 research runtime 整合：dossier、deep research、copilot validation questions、多轮辩论 research_context 与结构化 IC Memo sections 串联。
+- 可选数据源扩展：Tushare qfq late fallback 与 iFinD MCP observe-only adapter，默认均关闭，不写入生产信号。
+
+### Changed
+- 公开版本号统一到 `0.2.0`，README / README_EN / Web 首页补充当前 release 摘要。
+- 生产 promotion gate 保持严格：未通过 IC / ICIR / monotonic / multiple-comparison 检查前，量化层与 Kronos 不进入生产配置。
+
+### Decision
+- M27 证据闭环结论为 `keep_quant_disabled`：`WEIGHT_QUANT=0.0`、`kronos_enabled=false`、signal profile 不变。
+- 下一阶段切入 M29 Forward Evidence Engine：只读证据账本、预注册 alpha 假设、样本门与停止条件优先。
+
+### Tests
+- 当前 release 以 `STATUS.md` 中 2026-05-31 `make verify` 摘要为准；本条仅记录 release 面向用户的聚合范围。
+
 ## [M28] 调研模块整合与实时搜索接入（2026-05-30）
 
 ### Added

@@ -492,7 +492,7 @@ def _group_examples(examples: list[dict[str, Any]]) -> list[list[dict[str, Any]]
 def _build_model(torch: Any, input_dim: int, reconstruction_dim: int) -> Any:
     nn = torch.nn
 
-    class PathASmokeModel(nn.Module):
+    class PathASmokeModel(nn.Module):  # type: ignore[name-defined]
         def __init__(self) -> None:
             super().__init__()
             hidden = max(8, min(64, input_dim * 2))

@@ -261,15 +261,16 @@ def _avg_net_return_delta(report: dict[str, Any]) -> float | None:
 
 
 def _trade_weighted_delta(window_reports: list[dict[str, Any]]) -> float | None:
-    weighted = [
-        (_avg_net_return_delta(report), _trades(report, "filtered_arm"))
-        for report in window_reports
-        if _avg_net_return_delta(report) is not None and _trades(report, "filtered_arm") > 0
-    ]
+    weighted: list[tuple[float, int]] = []
+    for report in window_reports:
+        delta = _avg_net_return_delta(report)
+        weight = _trades(report, "filtered_arm")
+        if delta is not None and weight > 0:
+            weighted.append((delta, weight))
     total_weight = sum(weight for _, weight in weighted)
     if total_weight <= 0:
         return None
-    return _round(sum(float(delta) * weight for delta, weight in weighted) / total_weight)
+    return _round(sum(delta * weight for delta, weight in weighted) / total_weight)
 
 
 def build_rolling_report(

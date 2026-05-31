@@ -26,9 +26,12 @@ PYTHONPATH=. uvicorn backend.main:app --reload
 
 | 页面 | 路由 | 说明 |
 |------|------|------|
-| Watchlist | `/` | 自选股总览，展示所有持仓信号 |
-| StockDetail | `/stock/:symbol` | 单股详情：K 线 + 信号 + 新闻 + 复盘卡片 |
-| SignalHistory | `/history` | 历史信号列表 |
+| Pulse / Watchlist | `/` | 决策引擎收盘快照、自选股、持仓、大盘和最新信号 |
+| StockDetail | `/stock/:symbol` | 单股详情：K 线、信号、新闻、dossier、copilot 与长期标签 |
+| Reviews | `/reviews` | 每日复盘与长期复盘中心 |
+| Positions | `/positions` | 本地持仓设置与平仓记录 |
+| Chat | `/chat` | 项目内 AI 对话助手 |
+| Admin | `/admin` | 后端参数、LLM/agent、成本与专题研究控制台 |
 
 ---
 
@@ -37,7 +40,8 @@ PYTHONPATH=. uvicorn backend.main:app --reload
 | 组件 | 说明 |
 |------|------|
 | `Chart.jsx` | TradingView Lightweight Charts K 线图 |
-| `SignalBadge.jsx` | 信号标签（可小仓试错 / 可关注 / 观望 / 规避） |
+| `EvidenceCard.jsx` | 信号证据链、仓位和风控裁剪展示 |
+| `ResearchCopilotCard.jsx` | copilot / shadow research 结论展示 |
 | `SignalEvalCard.jsx` | 信号复盘卡片：胜率 / 平均次日收益 / 30~180 天窗口切换 |
 
 ---

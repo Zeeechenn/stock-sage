@@ -490,7 +490,7 @@ export default function AdminPage() {
             </p>
           </div>
           <div className="flex items-center gap-3 font-mono text-xs text-stone-500 dark:text-slate-400">
-            <span className="rounded-sm border border-stone-300 px-2 py-1 dark:border-slate-700">v0.1.0</span>
+            <span className="rounded-sm border border-stone-300 px-2 py-1 dark:border-slate-700">v0.2.0</span>
             <span className="flex items-center gap-1.5">
               <span className="h-2 w-2 rounded-full bg-emerald-500" />
               本地配置
