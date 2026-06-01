@@ -45,6 +45,7 @@ dependencies = [
 [project.optional-dependencies]
 test = [
     "pytest>=8.0.0",
+    "pytest-cov>=5.0.0",
 ]
 dev = [
     "stock-sage[test]",
@@ -52,6 +53,7 @@ dev = [
     "ruff>=0.4.0",
     "mypy>=1.10.0",
     "pre-commit>=3.7.0",
+    "pip-audit>=2.7.0",
 ]
 agent = [
     "mcp>=1.0.0",
@@ -101,3 +103,16 @@ ignore_missing_imports = true
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
+
+[tool.coverage.run]
+branch = true
+source = ["backend"]
+
+[tool.coverage.report]
+show_missing = true
+skip_empty = true
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "if __name__ == .__main__.:",
+]

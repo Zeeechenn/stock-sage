@@ -83,12 +83,87 @@
 
 > 2026-06-01 M29.4 contract hardening：`backend.tools.m29_hypothesis_registry.validate_registry` 现在会校验完整 promotion gate 字段：IC、ICIR、stride ICIR、monotonic、fresh OOS/forward、data-quality blockers 清零和人工确认；`backend.tools.m29_evidence_ledger` Markdown 也会渲染 Promotion Contract，避免只在 JSON 中可见。该补强不改变生产配置、不恢复 quant、不产生 promotable artifact。
 
-### 新对话执行交接（2026-05-31）
+### M29.5 Quant Residual Attribution / Interaction Audit（P0 下一步）
+
+**目标**：回答“量化负向影响来自策略/label、数据不足，还是新闻/技术面交互”这个因果问题；只做 attribution 与 shadow evidence，不恢复 `weight_quant`，不修改 production signal profile。
+
+- [ ] 先跑 readiness：每轮先用 `backend.tools.m29_forward_readiness --db-url ...` 确认完整新增交易日与 1d/3d/5d future-return 覆盖；未 ready 时不运行 forward shadow、不追加 fresh evidence。
+- [ ] 单变量 quant sweep：固定 entry threshold 与 tech:sent 比例，只改 `Q=0 / 0.225 / 0.45`，比较入场集合、收益、回撤、max positions 下的边缘持仓差异，避免把阈值变化误归因为量化。
+- [ ] 逐笔 attribution：对 quant_on 与 quant_off 差异交易记录 `composite_with_quant - composite_without_quant`、是否跨 entry threshold、后续 1d/3d/5d/10d 收益与相对沪深 300 超额收益。
+- [ ] 残差 IC：在同一 forward window 下分别评估 `technical only`、`sentiment/event only`、`T+S`、`quant only`、`T+S+quant`，再看 quant 对 `T+S` 残差收益是否有增量 IC / ICIR / monotonic。
+- [ ] 交互分桶：按强/弱技术面、正/负情绪、event/no event、low/high volatility 分桶测 quant IC、top-bottom 与分层单调；若只在特定状态有效，转入 M29 预注册的 regime-conditioned 或 post-event drift 假设。
+- [ ] 输出接入 ledger：所有 attribution/sweep/residual 结果必须写为 shadow artifact，并被 `m29_evidence_ledger` 纳入；未满足 fresh forward、stride ICIR、monotonic、provenance 与人工确认前，结论只能是 non-promoting。
+
+**验收**：能把“量化是否有独立残差信息”与“融合/阈值是否放大噪声”分开判断；若 residual IC 仍弱或非单调，继续保持 `weight_quant=0.0`，并把 top-decile 只作为离散 entry filter 研究线索。
+
+> 2026-06-01 代理团队结论落地：当前更支持“量化策略/label/objective 与连续 score 形态未站住”，数据不足是 forward readiness 与置信度 blocker，新闻/技术面不是压坏有效量化的主因。下一步不打开量化层，而是按 M29.5 做 fixed-threshold quant sweep、逐笔 attribution、residual IC 与交互分桶；只有证明 quant 对 `technical+sentiment/event` 残差有稳定正贡献，才进入后续 non-promoting train candidate 讨论。
+
+### 新对话执行交接（2026-06-01）
 
 1. 先读 `STATUS.md § M29` 与本节，再运行 `git status --short`；不要回滚当前未提交的 M27/M29 工具、测试和文档更新。
-2. 第一动作是 M29.1：实现或细化 read-only evidence ledger，聚合已有 M27 artifact 和未来 forward shadow 结果。
-3. 第二动作是 M29.2：把新 alpha 假设写成预注册候选清单，先定义 gate/样本/OOS/停止条件，再跑实验。
-4. 停止条件：任何步骤会改变生产信号、恢复 quant、接入 checkpoint、继续 Kronos 长训、真实写 `sentiment_cache`、下载新依赖或调用额外付费外部服务。
+2. 第一动作是 M29.3 readiness：只读检查完整新增交易日与 1d/3d/5d future-return 覆盖；未 ready 时停在等待状态，不把 partial local data 当 fresh evidence。
+3. 第二动作是 M29.5：在同一 forward window 上设计或执行 fixed-threshold quant sweep、逐笔 attribution、residual IC 与交互分桶；先证明残差贡献，再讨论任何小权重灰度。
+4. 第三动作是把新增 shadow artifact 纳入 M29.1 ledger；若 ledger 仍有 `gate_pass_count=0` 或 provenance/data-quality blockers，保持 non-promoting。
+5. 停止条件：任何步骤会改变生产信号、恢复 quant、接入 checkpoint、继续 Kronos 长训、真实写 `sentiment_cache`、下载新依赖或调用额外付费外部服务。
+
+---
+
+## M30 工程质量收敛【主体完成：M30.5/M30.6 后置】🛠️
+
+> 来源：2026-06-01 外部全栈评审二次核验。只纳入可复现、可定位、对后续开发有实际收益的发现；已判定为错误、过度表述或未证实的报告项不进入规划。
+
+### M30.1 类型检查与 M29 工具收敛（P0）
+
+- [x] 修复 `backend.tools.m29_evidence_ledger`、`backend.tools.m29_forward_readiness`、`backend.tools.m29_hypothesis_registry` 的 13 个 mypy 错误；验收命令显式使用可写 cache，例如 `--cache-dir /private/tmp/stocksage-mypy-cache`，避免把环境 cache 问题误判为代码问题。
+- [x] 将 `make typecheck` / CI 的 mypy 输出保持为 0 error；若 mypy 版本升级导致行为变化，先固定工具版本或记录版本边界，再修业务类型问题。
+
+> 2026-06-01 M30.1 完成：M29 ledger / readiness / registry 工具完成类型收窄；`PYTHONPATH=. .venv/bin/python -m mypy backend --ignore-missing-imports --no-incremental --cache-dir /private/tmp/stocksage-mypy-cache-main` 与 `make typecheck` 均为 0 error。
+
+### M30.2 Python 依赖可复现（P0）
+
+- [x] 引入 Python lock 流程（`uv lock` / `pip-compile` 二选一，按仓库实际工具链定），保留 `pyproject.toml` 作为声明源，CI 使用 frozen/sync 模式验证。
+- [x] 对 akshare / efinance / tushare / yfinance 等易漂移数据源依赖设置可复现边界；升级依赖必须能通过 `make verify` 与关键数据源 smoke。
+
+> 2026-06-01 M30.2 完成：新增 `uv.lock`；Makefile 增加 `python-sync`、`python-lock`、`python-lock-check`，CI 使用 `uv sync --frozen --extra dev` 与 `uv lock --check`。当前 lock 验证通过，后续数据源依赖升级仍必须走 `make verify` 与关键 smoke。
+
+### M30.3 CI / 安全 / 覆盖率补强（P1）
+
+- [x] 拆分 CI job：backend lint/typecheck、backend tests、frontend test/build；保留当前 `make verify` 已覆盖 `npm run build` 这一事实，不重复修一个不存在的 build 缺口。
+- [x] 增加 pip cache、pytest coverage 输出与最小 coverage snapshot；先观察当前覆盖率，再决定阈值，避免一次性设置不可维护的硬门槛。
+- [x] 增加依赖与安全扫描的低噪声入口：优先 `pip-audit` / `bandit` 或 `ruff --select S` 的分阶段策略；先用 per-file-ignore / noqa 处理确定误报，再把规则放进 CI。
+
+> 2026-06-01 M30.3 主体完成：`.github/workflows/test.yml` 拆成 backend-quality、backend-tests、security、frontend 四个 job；Makefile 增加 cache-aware lint/typecheck/test、`coverage`、`security`、`dependency-audit`。当前 coverage snapshot 为 backend total 63%。`ruff --select S --exit-zero` 只作 advisory；`pip-audit` 已接入但发现 `py==1.11.0` 的 `PYSEC-2022-42969`，来源链路为 `efinance -> retry -> py`，CI 暂设为 non-blocking，待 M30.5 或数据源依赖替换时处理。
+
+### M30.4 核心路径专项测试（P1）
+
+- [x] 不采用“9 个核心模块无直接单测”的原报告说法；现有 tests 已直接覆盖 `aggregator.py`、`pipeline.py`、`database.py`、`copilot.py` 等路径。M30 的真实目标是补更聚焦、更快反馈的专项测试。
+- [x] 优先补 `backend/decision/aggregator.py`、`backend/agents/pipeline.py`、`backend/data/database.py` 三条核心路径的边界测试：信号聚合解释、pipeline 透传与降级、DB schema/runtime migration。
+- [x] 次级补 `backend/api/routes/ai.py`、`backend/api/routes/system.py`、`backend/decision/memory_layered.py`、`backend/agents/researcher.py` 的 happy-path / auth-failed / degraded-input 测试。
+
+> 2026-06-01 M30.4 完成：新增 `tests/test_core_aggregator.py`、`tests/test_core_pipeline.py`、`tests/test_core_database.py`、`tests/test_core_paths_worker_d.py`，覆盖 aggregator event override / quant blend、pipeline context merge / no-LLM trace、DB latest price isolation / session close、AI/system route auth/degrade、memory layered 与 researcher degraded input。
+
+### M30.5 低噪声安全与代码气味修复（P1/P2）
+
+- [ ] 逐条处理当前可复现的 `ruff --select S608` 发现：`backend/agent/context.py` 的 table name 走白名单；动态 `IN (...)` 迁移到安全 bind 参数或补充精准 `noqa` 注释；不要把参数化 placeholder 误报升级为注入漏洞。
+- [ ] 处理当前可复现的 `S324` 非密码学 hash 使用：确认用途是 cache key / dedup 后，加说明性 `noqa`，或替换为 `blake2b(digest_size=16)`。
+- [ ] 对非 CLI 库代码中的 `print()` 分批替换为 logger；tools / backtest CLI 可以保留命令行输出，避免为了 lint 牺牲可读的本地工具体验。
+
+### M30.6 可维护性拆分（P2）
+
+- [ ] `frontend/src/pages/AdminPage.jsx` 已接近 1000 行，后续改 Admin 功能时顺手拆成更小 panel，并保留现有 node:test 覆盖。
+- [ ] `paper_trading/test2_ab_runner.py` 是 A/B 验证核心，后续改 test2 逻辑时拆出 cli / runner / stats / report，避免一次性大重构影响回放真实性。
+
+### 不纳入 M30 的外部报告项
+
+- `EVIDENCE.md` 路径错误：当前实际证据文件是 `/Users/zeeechenn/stock-sage-review/raw-data.md`；不把缺失路径写成项目问题。
+- “CI 没跑 `npm run build`”为错误结论；当前 `.github/workflows/test.yml` 跑 `make verify`，而 `make verify` 包含 frontend build。
+- “9 个核心模块无直接单元测试”为过度表述；改为 M30.4 的专项覆盖补强。
+- “agent_mode decorator / kwargs symbol XSS”未找到对应代码，不作为修复项；若未来发现真实渲染风险，再以具体 file:line 建任务。
+- “S324 有 58 处 sha1”与当前复现不符；按实际 `ruff --select S324` 结果处理。
+- “docs/reviews 有 16 篇”与当前仓库不符；不基于这个数字建立整理任务。
+- “pre-commit 只有 ruff”不准确；当前已有基础 pre-commit hooks，M30 只补 mypy/安全等缺口。
+
+**主体验收（2026-06-01）**：M30.1-M30.4 已完成；`make verify` 主体通过，backend tests 为 662 passed / 5 skipped，frontend node tests 为 19 passed，frontend build 在沙盒外写入 Vite temp config 后通过；mypy、Python lock/frozen install、核心路径专项测试、coverage 与低噪声安全扫描都能复现。M30.5/M30.6 保留为后续安全债与可维护性拆分，不把外部报告的错误断言转成仓库任务。
 
 ---
 
@@ -369,6 +444,7 @@ QMT/miniQMT 券商对接；盘中实时止损；半自动→全自动渐进。
 
 | 里程碑 | 完成时间 | 简述 |
 |---|---|---|
+| M30 | 2026-06-01 主体完成 | 工程质量收敛：mypy、Python lock、CI/安全/覆盖率、核心路径专项测试；安全债与可维护性拆分后置 |
 | M29.0–M29.4 | 进行中 | Alpha Reset / Forward Evidence Engine，当前最高优先 |
 | M27.0–M27.4 | 2026-05-31 | Alpha 根治工程证据闭环，未过 promotion gate，转入 M29 |
 | M26.0 量化基线 | 2026-05-30 | 初始 test2 基线归档；后续以 M26.1/M26.2 的生产边界为准 |

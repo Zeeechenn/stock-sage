@@ -117,7 +117,7 @@ def _price_coverage(db_url: str, universe_symbols: set[str], min_complete_symbol
             "error": str(exc),
         }
 
-    coverage = []
+    coverage: list[dict[str, Any]] = []
     for row in rows:
         symbol_count = int(row[1] or 0)
         symbols_with_source = int(row[2] or 0)
@@ -140,12 +140,12 @@ def _price_coverage(db_url: str, universe_symbols: set[str], min_complete_symbol
                 "complete_for_universe": has_required_symbols and has_price_provenance,
             }
         )
-    provenance_incomplete_dates = [
-        row["date"]
+    provenance_incomplete_dates: list[str] = [
+        str(row["date"])
         for row in coverage
         if row["symbol_count"] >= min_complete_symbols and not row["price_provenance_complete"]
     ]
-    complete_dates = [row["date"] for row in coverage if row["complete_for_universe"]]
+    complete_dates = [str(row["date"]) for row in coverage if row["complete_for_universe"]]
     return {
         "mode": "sqlite_readonly",
         "latest_price_date": coverage[-1]["date"] if coverage else None,
@@ -229,14 +229,17 @@ def _readiness_decision(
         blockers.append("no_common_existing_forward_artifact_end")
     if recommended and latest_existing and recommended <= latest_existing:
         blockers.append("recommended_forward_end_not_after_all_existing_artifacts")
+    latest_price_date = price_data.get("latest_price_date")
+    if not isinstance(latest_price_date, str):
+        latest_price_date = None
+    latest_complete_price_date = price_data.get("latest_complete_price_date")
+    if not isinstance(latest_complete_price_date, str):
+        latest_complete_price_date = None
     if (
-        price_data.get("latest_price_date")
+        latest_price_date
         and latest_existing
-        and price_data.get("latest_price_date") > latest_existing
-        and (
-            not price_data.get("latest_complete_price_date")
-            or price_data.get("latest_complete_price_date") <= latest_existing
-        )
+        and latest_price_date > latest_existing
+        and (not latest_complete_price_date or latest_complete_price_date <= latest_existing)
     ):
         blockers.append("partial_latest_trading_day_after_last_artifact")
 

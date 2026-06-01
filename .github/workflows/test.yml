@@ -5,8 +5,8 @@ on:
   pull_request:
 
 jobs:
-  verify:
-    name: Verify
+  backend-quality:
+    name: Backend lint/typecheck
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -16,8 +16,82 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
       - name: Install dependencies
-        run: pip install ".[dev]"
+        run: make python-sync
+
+      - name: Check Python lockfile
+        run: make python-lock-check
+
+      - name: Run backend lint
+        run: make lint
+
+      - name: Run backend typecheck
+        run: make typecheck
+
+  backend-tests:
+    name: Backend tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: make python-sync
+
+      - name: Run backend tests with coverage
+        run: make coverage
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage
+          path: coverage.xml
+
+  security:
+    name: Security and dependency audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: make python-sync
+
+      - name: Run low-noise security snapshot
+        run: make security
+
+      - name: Run dependency audit
+        run: make dependency-audit
+        continue-on-error: true
+
+  frontend:
+    name: Frontend test/build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -30,5 +104,8 @@ jobs:
         working-directory: frontend
         run: npm ci
 
-      - name: Run full verification
-        run: make verify
+      - name: Run frontend tests
+        run: make frontend-test
+
+      - name: Run frontend build
+        run: make build

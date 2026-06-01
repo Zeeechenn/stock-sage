@@ -26,7 +26,8 @@
 | M26 | 量化层重估（扩盘+Kronos评估） | ✅ M26.0/M26.1/M26.2 完成；M26.3 暂停待 M29 新 alpha gate 达标 |
 | M27 | Alpha 根治工程 | ✅ 证据闭环完成但未晋升；所有候选均未过 promotion gate，继续保持 quant 关闭 |
 | M28 | 调研模块整合与实时搜索接入 | ✅ 完成，deep_research / copilot / debate 信息流打通 |
-| M29 | Alpha Reset / Forward Evidence Engine | ⏳ 当前活跃：固化 M27 失败证据，建立 forward evidence 与新 alpha 假设机制 |
+| M29 | Alpha Reset / Forward Evidence Engine | ⏳ 当前活跃：等待完整 forward 覆盖，并规划 quant residual attribution / interaction audit |
+| M30 | 工程质量收敛 | ✅ 主体完成：mypy、Python lock、CI/安全/覆盖率、核心路径专项测试；S608/S324 与 `efinance -> retry -> py` audit debt 后置 |
 
 ---
 
@@ -74,11 +75,19 @@
 - M29.3 provenance producer 补强：`backend.tools.m27_top_decile_forward_shadow` 后续新产物会写出 `universe_hash` 与 `train_label_realized_end`，rolling 报告会汇总 `train_label_realized_end_range`；既有历史 artifact 未回写，ledger 会继续把旧产物的 provenance 缺口标为 blocker。`backend.data.qlib_data.build_training_data` 已把 price row 的 `_price_source` / `_price_fetched_at` / `_price_adjustment` 带入训练面板，`backend.tools.m27_label_objective_eval` 已把 panel cache 升到 version 2 并在 panel meta 输出 `price_provenance` 覆盖率；`backend.tools.m29_evidence_ledger` 会读取 `panel.price_provenance`，若未来新 artifact 仍有缺口则标记 `panel_price_provenance_incomplete`。旧 DB 行的来源仍不猜测回填。
 - M29.3 provenance audit 首版：`backend.tools.m29_provenance_audit` 已接入只读检查；`backend.data.database.Price` / `IndexPrice` 已新增 nullable `source` / `fetched_at` / `adjustment`，`backend.data.market.fetch_daily` / `fetch_cn_index` 会把 provider provenance 写入 DataFrame attrs，`backfill_if_needed` / `sync_index_to_db` 会写入未来新增行情。已对本地 SQLite 执行轻量 runtime schema patch（只加 nullable 列，不回填旧数据、不刷新行情）。最新 smoke 输出 `/private/tmp/m29_provenance_audit_with_post_event_shadow.{json,md}`：`prices` / `index_prices` / `market_snapshots` schema blocker 已清零；当前 14 条 ledger entries 均仍有历史 artifact provenance 缺口（artifact hash 与 generated_at 可证明，旧 daily source/fetched_at/adjustment 与旧 universe_hash 不可证明）。结论：M29 可以继续收集 forward evidence，但旧 artifact provenance blocker 清零前不得进入 promotion review；未来新增行情应自然带 provider provenance。
 - M29.4（P1）：promotion contract 继续沿用生产 gate：IC≥0.04 / ICIR≥0.40 / monotonic=True，并要求 stride ICIR、multiple-comparison warning、fresh OOS/forward 证据、data-quality blockers 清零和人工确认；`backend.tools.m29_hypothesis_registry` 会校验完整 gate 字段，`backend.tools.m29_evidence_ledger` Markdown 会显式渲染 promotion contract；当前状态为 contract-enforced、promotion-not-started，没有候选满足 fresh OOS/forward、provenance blockers 清零和人工确认；未过 gate 前 `weight_quant=0.0`、`kronos_enabled=false`、signal profile 不变。
+- M29.5（P0 下一步）：围绕“量化负向影响来自策略/label、数据不足，还是新闻/技术面交互”做只读 attribution 规划；先固定 threshold 与 tech:sent 比例跑 `Q=0 / 0.225 / 0.45` 单变量 sweep，再做逐笔 `with_quant - without_quant` attribution、`technical+sentiment/event` 残差 IC、以及强/弱技术面、正/负情绪、event/no event、low/high volatility 分桶。所有结果只作为 shadow artifact 纳入 ledger；只有 quant 对残差有稳定正贡献且通过 fresh forward / stride ICIR / monotonic / provenance / 人工确认，才讨论后续 non-promoting train candidate 或小权重灰度。
 
-**新对话接手目标（2026-05-31，M29）**
-- 先读本节和 `docs/ROADMAP.md § M29`，再看 `git status --short`；当前预期未提交变更包含 M27/M29 交付文件，不要回滚 M27 工具、测试和文档更新。
-- 第一动作：复核或扩展 M29.1 read-only evidence ledger；当前首版已聚合已有 `/private/tmp/m27_*`、`~/.stock-sage/m27_*` 报告，后续只允许追加 artifact 读取或未来 forward shadow 结果，不能写 DB、不调 LLM、不改生产配置。
-- 第二动作：基于 M29.2 预注册清单挑一个 shadow hypothesis 设计只读验证；候选必须先满足 registry 的样本门、OOS/forward 窗口、gate 字段和 stop condition，避免事后筛选。
+**M30 工程质量收敛（2026-06-01 主体完成）**
+- M29 工具的 13 个 mypy 错误已修复，`make typecheck` 与显式可写 cache 的全 backend mypy 均为 0 error。
+- Python 依赖新增 `uv.lock`；Makefile 增加 `python-sync`、`python-lock`、`python-lock-check`，CI 使用 frozen sync / lock check 复现依赖。
+- CI 拆成 backend-quality、backend-tests、security、frontend；新增 coverage snapshot、安全快照和依赖审计入口。当前 backend coverage 为 63%；`ruff --select S` 作为 advisory 扫描保留 56 个既有 security findings，`pip-audit` 发现 `py==1.11.0` 的 `PYSEC-2022-42969`，来源为 `efinance -> retry -> py`，暂列 M30.5 后续债务。
+- 新增核心路径专项测试覆盖 aggregator、pipeline、database、AI/system routes、memory_layered、researcher；本轮验证：backend 662 passed / 5 skipped，frontend node tests 19 passed，Vite build 通过，`make verify` 通过。
+
+**新对话接手目标（2026-06-01，M29）**
+- 先读本节和 `docs/ROADMAP.md § M29`，再看 `git status --short`；当前预期未提交变更包含 M27/M29/M30 交付文件，不要回滚 M27/M29 工具、测试和 M30 工程质量更新。
+- 第一动作：运行 M29.3 readiness guard；只有完整新增交易日与 1d/3d/5d future-return 覆盖都 ready，才追加新的 forward shadow，不能把 partial local data 当 fresh evidence。
+- 第二动作：按 `docs/ROADMAP.md § M29.5` 设计或执行 fixed-threshold quant sweep、逐笔 attribution、residual IC 与交互分桶，先证明量化是否有独立残差信息。
+- 第三动作：把新增 shadow artifact 纳入 M29.1 ledger；若 `gate_pass_count=0` 或仍有 provenance/data-quality blockers，保持 non-promoting。
 - 停止条件：任何步骤可能恢复 quant 权重、改变 production signal profile、接入/覆盖 checkpoint、继续更长 Kronos training、真实写 `sentiment_cache`、或需要新依赖/外部付费调用时，先停下汇报。
 
 **M28 调研模块整合（2026-05-30 完成）**

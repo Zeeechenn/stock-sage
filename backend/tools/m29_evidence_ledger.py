@@ -155,7 +155,7 @@ def _base_entry(path: Path, payload: dict[str, Any], *, candidate: str, variant:
         }.items()
         if value is None
     ]
-    entry = {
+    entry: dict[str, Any] = {
         "evidence_id": f"{candidate}:{variant}:{path.expanduser().name}",
         "candidate": candidate,
         "variant": variant,
@@ -183,9 +183,13 @@ def _base_entry(path: Path, payload: dict[str, Any], *, candidate: str, variant:
     for flag in unknown_boundary_flags:
         _append_blocker(entry, f"unknown_source_{flag}")
         _add_data_quality_blocker(entry, f"unknown_source_{flag}")
-    for field in entry["provenance"]["missing_provenance_fields"]:
+    provenance = entry["provenance"]
+    missing_provenance_fields = provenance.get("missing_provenance_fields", [])
+    if not isinstance(missing_provenance_fields, list):
+        missing_provenance_fields = []
+    for field in missing_provenance_fields:
         _add_data_quality_blocker(entry, f"missing_provenance_{field}")
-    missing_price_provenance_rows = entry["provenance"].get("panel_price_provenance_missing_rows")
+    missing_price_provenance_rows = provenance.get("panel_price_provenance_missing_rows")
     if isinstance(missing_price_provenance_rows, (int, float)) and missing_price_provenance_rows > 0:
         _add_data_quality_blocker(entry, "panel_price_provenance_incomplete")
     for flag, value in read_only_flags.items():

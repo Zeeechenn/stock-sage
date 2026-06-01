@@ -267,7 +267,7 @@ def validate_registry(report: dict[str, Any], *, strict: bool = True) -> list[st
 
 
 def build_registry(*, as_of_date: str | None = None) -> dict[str, Any]:
-    report = {
+    report: dict[str, Any] = {
         "generated_at": datetime.now(UTC).isoformat(timespec="seconds"),
         "as_of_date": as_of_date,
         "schema_version": "m29_hypothesis_registry.v1",
