@@ -140,6 +140,9 @@ class Settings(BaseSettings):
     # M34 Evidence-Bounded Stress Test
     stress_test_enabled: bool = True
 
+    # M35 Thesis Ledger
+    thesis_ledger_enabled: bool = True
+
     # M4.3 Portfolio Manager（组合层仓位统筹）
     portfolio_manager_enabled: bool = True
 
