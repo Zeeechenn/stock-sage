@@ -112,7 +112,7 @@
 
 ---
 
-## M30 工程质量收敛【主体完成：M30.5/M30.6 后置】🛠️
+## M30 工程质量收敛【完成】🛠️
 
 > 来源：2026-06-01 外部全栈评审二次核验。只纳入可复现、可定位、对后续开发有实际收益的发现；已判定为错误、过度表述或未证实的报告项不进入规划。
 
@@ -162,8 +162,8 @@
 ### M30.6 可维护性拆分（P2）
 
 - [x] 新增前端 advisory lint/format 入口：`make frontend-lint` 与 `make frontend-format-check` 可单独运行，先不并入 `make verify`，避免大规模格式化 churn。
-- [ ] `frontend/src/pages/AdminPage.jsx` 可维护性拆分：2026-06-02 已先抽出 `adminPageUi.jsx` / `adminPageConstants.js`，页面主体从 992 行降到约 716 行；下一步再拆 `AdminSettingsPanel` / sidebar cards，并保留现有 node:test 覆盖。
-- [ ] `paper_trading/test2_ab_runner.py` 是 A/B 验证核心：2026-06-02 已先抽出 `test2_ab_models.py`（常量、dataclass、framework 与 composite），runner 仍作为兼容入口；后续按 stats / report / runner / cli 顺序继续拆，所有行为验证必须 pin `--end 2026-06-01` 并 diff `test2_ab_state.json`。
+- [x] `frontend/src/pages/AdminPage.jsx` 可维护性拆分：2026-06-02 已抽出 `adminPageUi.jsx` / `adminPageConstants.js` / `adminPagePanels.jsx`，页面主体从 992 行降到约 391 行，`AdminSettingsPanel` 与 sidebar cards 保持展示职责，`AdminPage.jsx` 保留 state/API 容器职责；前端 lint、node tests 19 passed、Vite build 通过。
+- [x] `paper_trading/test2_ab_runner.py` 是 A/B 验证核心：2026-06-02 已抽出 `test2_ab_models.py`（常量、dataclass、framework 与 composite），并按 data / stats / report / runner / cli 完成本地 ignored 材料拆分；runner 仍作为兼容入口且降到约 254 行，selftest 6 passed，固定 `--end 2026-06-01` 生成的 replay JSON 与 `paper_trading/test2_ab_state.json` 无差异。
 
 ### 不纳入 M30 的外部报告项
 
@@ -175,7 +175,7 @@
 - “docs/reviews 有 16 篇”与当前仓库不符；不基于这个数字建立整理任务。
 - “pre-commit 只有 ruff”不准确；当前已有基础 pre-commit hooks，M30 只补 mypy/安全等缺口。
 
-**主体验收（2026-06-01 / 2026-06-02 更新）**：M30.1-M30.4 已完成；M30.5 已完成第一轮低噪声安全修复、Python / npm dependency audit debt 与非 CLI print 审计，M30.6 已新增前端 advisory lint/format 入口。最新 `make verify` 后端与前端测试通过，frontend build 在沙盒外写入 Vite temp config 后通过；mypy、Python lock/frozen install、核心路径专项测试、coverage、低噪声安全扫描、Python dependency audit 与 npm audit 都能复现。剩余 M30 债务为 AdminPage 与 test2 runner 后续拆分。
+**主体验收（2026-06-01 / 2026-06-02 更新）**：M30.1-M30.4 已完成；M30.5 已完成低噪声安全修复、Python / npm dependency audit debt 与非 CLI print 审计；M30.6 已完成前端 advisory lint/format 入口、AdminPage 展示组件拆分，以及本地 test2 A/B runner 的 data / stats / report / runner / cli 拆分。最新 `make verify` 后端与前端测试通过，frontend build 在沙盒外写入 Vite temp config 后通过；mypy、Python lock/frozen install、核心路径专项测试、coverage、低噪声安全扫描、Python dependency audit、npm audit、前端 lint/test/build 与 test2 固定日期 replay diff 都能复现。M30 当前无剩余规划项；后续优先级回到 M29 fresh forward evidence。
 
 ---
 

@@ -27,7 +27,7 @@
 | M27 | Alpha 根治工程 | ✅ 证据闭环完成但未晋升；所有候选均未过 promotion gate，继续保持 quant 关闭 |
 | M28 | 调研模块整合与实时搜索接入 | ✅ 完成，deep_research / copilot / debate 信息流打通 |
 | M29 | Alpha Reset / Forward Evidence Engine | ⏳ 当前活跃：等待完整 forward 覆盖；M29.5 quant residual attribution 首轮已完成且保持 non-promoting |
-| M30 | 工程质量收敛 | ✅ 主体完成：mypy、Python lock、CI/安全/覆盖率、核心路径专项测试；Python/npm audit 已清，剩维护性拆分 |
+| M30 | 工程质量收敛 | ✅ 完成：mypy、Python lock、CI/安全/覆盖率、核心路径测试、依赖审计与 M30.6 可维护性拆分收口 |
 
 ---
 
@@ -79,14 +79,14 @@
 - M29.5（P0 下一步）：围绕“量化负向影响来自策略/label、数据不足，还是新闻/技术面交互”做只读 attribution 规划；先固定 threshold 与 tech:sent 比例跑 `Q=0 / 0.225 / 0.45` 单变量 sweep，再做逐笔 `with_quant - without_quant` attribution、`technical+sentiment/event` 残差 IC、以及强/弱技术面、正/负情绪、event/no event、low/high volatility 分桶。所有结果只作为 shadow artifact 纳入 ledger；只有 quant 对残差有稳定正贡献且通过 fresh forward / stride ICIR / monotonic / provenance / 人工确认，才讨论后续 non-promoting train candidate 或小权重灰度。
 - M29.5 首轮只读 attribution（2026-06-01）：`backend.tools.m29_quant_residual_attribution` 已接入，产物 `/private/tmp/m29_quant_residual_attribution_v1.{json,md}`，ledger 复核 `/private/tmp/m29_evidence_ledger_with_quant_residual_v1.{json,md}`。本轮对 test3 universe 2025-11-01~2026-05-14 生成 signal_inputs=2600，使用当前 `lgbm_alpha_v1` 做 attribution-only quant 重算（rows_with_nonzero_quant=2596，`lookahead_quant_warning=true`，不是 PIT-safe promotion proof），1/3/5/10d forward 与 HS300 excess 覆盖均完整。固定阈值 sweep 显示 Q=0.45 trades=31、avg net=0.008292、Sharpe=0.638303，高于 Q=0 的 avg net=0.005543 / Sharpe=0.450818，但主要通过减少交易数实现（dropped_by_quant=281、added_by_quant=16）；核心残差检验仍未过 gate：5d quant residual IC=0.018251 / ICIR=0.151156 / monotonic=False / gate_pass=False。ledger entries=1、gate_pass_count=0、promotable_count=0；blockers 包含 historical current-model attribution、缺 fresh forward、stride ICIR missing、requires human confirmation、quant residual not monotonic 与 provenance 缺口。结论：不恢复 quant，不改 signal profile，继续等待 fresh forward 覆盖并只把结果作为 shadow evidence。
 
-**M30 工程质量收敛（2026-06-01 主体完成）**
+**M30 工程质量收敛（2026-06-02 完成）**
 - M29 工具的 13 个 mypy 错误已修复，`make typecheck` 与显式可写 cache 的全 backend mypy 均为 0 error。
 - Python 依赖新增 `uv.lock`；Makefile 增加 `python-sync`、`python-lock`、`python-lock-check`，CI 使用 frozen sync / lock check 复现依赖。
 - CI 拆成 backend-quality、backend-tests、security、frontend；新增 coverage snapshot、安全快照和依赖审计入口。当前 backend coverage 为 63%；`ruff --select S` 作为 advisory 扫描保留 56 个既有 security findings；历史 `efinance -> retry -> py` dependency audit 链路已在 2026-06-02 通过 optional extra 与重锁解除。
 - 新增核心路径专项测试覆盖 aggregator、pipeline、database、AI/system routes、memory_layered、researcher；本轮验证：backend 662 passed / 5 skipped，frontend node tests 19 passed，Vite build 通过，`make verify` 通过。
 - M30.5/M30.6 首轮优化执行（2026-06-02）：Python 依赖已补上限并重锁 `uv.lock`，新增直接 `joblib` 依赖；`ruff check backend --select S301,S310,S324,S608` 已清零，S608 table/IN 查询改为白名单或 bind 参数，S324 保留为 cache/dedup/source_ref 精准 `noqa`，非 CLI 外部探测与 Bark 通知改用 `requests`，Qlib 模型持久化改为 `joblib`。前端新增 advisory `make frontend-lint` / `make frontend-format-check`，暂不并入 `make verify`。本轮验证：`make verify` 通过（backend 675 passed / 5 skipped，frontend node tests 19 passed，Vite build 通过），backend coverage snapshot 升至 64%。
-- M30.5 dependency audit 收口（2026-06-02）：`efinance` 已从默认依赖移到 optional extra，CN 日线与指数 provider 仅在安装后注册；默认环境不再带入 `retry -> py`，`pytest` 升至 9.0.3，`uv.lock` 已重锁，`make python-lock-check` 与 `make dependency-audit` 通过且无已知漏洞。前端已小步升级到 Vite 6.4.3 / `@vitejs/plugin-react` 4.7，`npm audit` 为 0 vulnerabilities，未使用 force 跳 Vite 8；非 CLI print 已审计，剩余 `print()` 都是 CLI/tools/backtest/manual report 输出。剩余 M30 债务为 AdminPage 与 test2 runner 后续拆分。
-- M30.6 维护性拆分继续推进（2026-06-02）：AdminPage 已抽出 `frontend/src/pages/adminPageUi.jsx` / `adminPageConstants.js`，主体从 992 行降到约 716 行，前端 lint、node tests 19 passed、Vite build 通过；test2 A/B runner 已抽出 `paper_trading/test2_ab_models.py`，selftest 6 passed，固定 `--end 2026-06-01` 生成的 replay JSON 与 `paper_trading/test2_ab_state.json` 无差异。后续 test2 拆分必须继续固定 end date，避免 2026-06-02 盘中不完整行情污染 replay truth。
+- M30.5 dependency audit 收口（2026-06-02）：`efinance` 已从默认依赖移到 optional extra，CN 日线与指数 provider 仅在安装后注册；默认环境不再带入 `retry -> py`，`pytest` 升至 9.0.3，`uv.lock` 已重锁，`make python-lock-check` 与 `make dependency-audit` 通过且无已知漏洞。前端已小步升级到 Vite 6.4.3 / `@vitejs/plugin-react` 4.7，`npm audit` 为 0 vulnerabilities，未使用 force 跳 Vite 8；非 CLI print 已审计，剩余 `print()` 都是 CLI/tools/backtest/manual report 输出。
+- M30.6 维护性拆分完成（2026-06-02）：AdminPage 已抽出 `frontend/src/pages/adminPageUi.jsx`、`adminPageConstants.js` 与 `adminPagePanels.jsx`，主体从 992 行降到约 391 行，前端 lint、node tests 19 passed、Vite build 通过；test2 A/B runner 本地 ignored 材料已按 data / stats / report / runner / cli 拆分，`paper_trading/test2_ab_runner.py` 保持兼容入口，runner 降到约 254 行，selftest 6 passed，固定 `--end 2026-06-01` 生成的 replay JSON 与 `paper_trading/test2_ab_state.json` 无差异，避免 2026-06-02 盘中不完整行情污染 replay truth。M30 当前无剩余规划项。
 
 **新对话接手目标（2026-06-01，M29）**
 - 先读本节和 `docs/ROADMAP.md § M29`，再看 `git status --short`；当前预期未提交变更包含 M27/M29/M30 交付文件，不要回滚 M27/M29 工具、测试和 M30 工程质量更新。
