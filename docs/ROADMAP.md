@@ -162,7 +162,7 @@
 ### M30.6 可维护性拆分（P2）
 
 - [x] 新增前端 advisory lint/format 入口：`make frontend-lint` 与 `make frontend-format-check` 可单独运行，先不并入 `make verify`，避免大规模格式化 churn。
-- [ ] `frontend/src/pages/AdminPage.jsx` 已接近 1000 行，后续改 Admin 功能时顺手拆成更小 panel，并保留现有 node:test 覆盖。
+- [ ] `frontend/src/pages/AdminPage.jsx` 可维护性拆分：2026-06-02 已先抽出 `adminPageUi.jsx` / `adminPageConstants.js`，页面主体从 992 行降到约 716 行；下一步再拆 `AdminSettingsPanel` / sidebar cards，并保留现有 node:test 覆盖。
 - [ ] `paper_trading/test2_ab_runner.py` 是 A/B 验证核心，后续改 test2 逻辑时拆出 cli / runner / stats / report，避免一次性大重构影响回放真实性。
 
 ### 不纳入 M30 的外部报告项
