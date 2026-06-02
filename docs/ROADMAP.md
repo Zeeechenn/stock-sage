@@ -153,11 +153,11 @@
 - [x] 处理当前可复现的 `S301` / `S310` 噪声：Qlib 模型持久化改为直接 `joblib` 依赖；非 CLI 外部探测与 Bark 通知改用 `requests`，保留超时、错误降级与响应大小限制。
 - [ ] 对非 CLI 库代码中的 `print()` 分批替换为 logger；tools / backtest CLI 可以保留命令行输出，避免为了 lint 牺牲可读的本地工具体验。
 - [x] Python dependency audit debt：`efinance` 已从默认依赖移到 optional extra，CN 日线与指数 provider 仅在安装后注册；`pytest` 升至 9.0.3 并重锁 `uv.lock`，当前 `make dependency-audit` 无已知漏洞。
-- [ ] npm audit debt：当前 `vite/esbuild` moderate advisory 需要前端依赖升级计划；不要用 `npm audit fix --force` 直接跳到破坏性 Vite 8。
+- [x] npm audit debt：Vite 已小步升到 6.4.3，避开 `vite <=6.4.1` / `esbuild <=0.24.2` advisory；`@vitejs/plugin-react` 约束同步到 v4.7，未使用 `npm audit fix --force` 跳 Vite 8。
 
 > 2026-06-02 M30.5 首轮完成：Python 依赖已补上限并同步 `uv.lock`；`ruff check backend --select S301,S310,S324,S608` 通过；新增 focused tests 覆盖 external source requests size guard、Bark requests retry、market OHLCV normalize、CN news dedupe/CST、Qlib joblib roundtrip 与 stock memory bound params。`make verify` 通过，backend coverage snapshot 升至 64%。
 
-> 2026-06-02 M30.5 依赖审计收口：`efinance` 改为 optional extra（默认安装不再带入 `retry -> py`），provider registry 在未安装时跳过 `efinance_cn` / `efinance_index_cn`，并补充 daily/index fallback focused tests；`pytest` 升至 9.0.3。当前 Python lock check 与 `make dependency-audit` 通过；剩余 audit 债务为 `vite/esbuild` npm advisory，需要后续 Vite 6 升级计划而不是 force 跳 Vite 8。
+> 2026-06-02 M30.5 依赖审计收口：`efinance` 改为 optional extra（默认安装不再带入 `retry -> py`），provider registry 在未安装时跳过 `efinance_cn` / `efinance_index_cn`，并补充 daily/index fallback focused tests；`pytest` 升至 9.0.3。当前 Python lock check 与 `make dependency-audit` 通过。前端随后小步升级到 Vite 6.4.3 / `@vitejs/plugin-react` 4.7，`npm audit` 为 0 vulnerabilities，未使用 force 跳 Vite 8。
 
 ### M30.6 可维护性拆分（P2）
 
@@ -175,7 +175,7 @@
 - “docs/reviews 有 16 篇”与当前仓库不符；不基于这个数字建立整理任务。
 - “pre-commit 只有 ruff”不准确；当前已有基础 pre-commit hooks，M30 只补 mypy/安全等缺口。
 
-**主体验收（2026-06-01 / 2026-06-02 更新）**：M30.1-M30.4 已完成；M30.5 已完成第一轮低噪声安全修复并清掉 Python dependency audit debt，M30.6 已新增前端 advisory lint/format 入口。最新 `make verify` 通过，backend tests 为 675 passed / 5 skipped，frontend node tests 为 19 passed，frontend build 在沙盒外写入 Vite temp config 后通过；mypy、Python lock/frozen install、核心路径专项测试、coverage、低噪声安全扫描与 Python dependency audit 都能复现。剩余 M30 债务为 `vite/esbuild` npm audit、非 CLI logger 化、AdminPage 与 test2 runner 后续拆分。
+**主体验收（2026-06-01 / 2026-06-02 更新）**：M30.1-M30.4 已完成；M30.5 已完成第一轮低噪声安全修复并清掉 Python / npm dependency audit debt，M30.6 已新增前端 advisory lint/format 入口。最新 `make verify` 后端与前端测试通过，frontend build 在沙盒外写入 Vite temp config 后通过；mypy、Python lock/frozen install、核心路径专项测试、coverage、低噪声安全扫描、Python dependency audit 与 npm audit 都能复现。剩余 M30 债务为非 CLI logger 化、AdminPage 与 test2 runner 后续拆分。
 
 ---
 
