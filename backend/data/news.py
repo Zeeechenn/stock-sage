@@ -477,3 +477,52 @@ def fetch_titles_tavily(symbol: str, name: str, days: int = 1, max_results: int 
     DB 新闻不足时作为补充，返回标题列表（空列表表示未启用或失败）。
     """
     return search_titles_tavily(f"{name} {symbol} 股票 最新消息", days=days, max_results=max_results)
+
+
+def fetch_titles_ifind(symbol: str, name: str, days: int = 2, max_results: int = 5) -> list[str]:
+    """用 iFinD MCP search_news + search_notice 补充该股标题，仅读取不写库。"""
+    import json as _json
+    from datetime import datetime, timedelta
+
+    from backend.config import settings
+    from backend.data.ifind_mcp import NEWS_MCP_ID, IfindMcpClient
+
+    if not settings.ifind_mcp_enabled or not settings.ifind_mcp_token:
+        return []
+
+    end = datetime.now()
+    start = end - timedelta(days=days)
+    time_start = start.strftime("%Y-%m-%d")
+    time_end = end.strftime("%Y-%m-%d")
+    query = f"{name} {symbol}"
+
+    client = IfindMcpClient()
+    titles: list[str] = []
+    for tool in ("search_news", "search_notice"):
+        try:
+            result = client.call_tool(
+                NEWS_MCP_ID,
+                tool,
+                {"query": query, "time_start": time_start, "time_end": time_end, "size": max_results},
+            )
+            outer = _json.loads(result.text)
+            inner_str = (outer.get("data") or {}).get("data", "")
+            items = _json.loads(inner_str) if isinstance(inner_str, str) else []
+            for item in items:
+                if not isinstance(item, dict):
+                    continue
+                title = item.get("资讯标题") or item.get("公告标题") or item.get("title") or ""
+                if title and len(title) >= 5:
+                    titles.append(title)
+            if len(titles) >= max_results:
+                break
+        except Exception as e:
+            logger.warning("iFinD %s fetch failed for %s: %s", tool, symbol, e)
+
+    seen: set[str] = set()
+    deduped = []
+    for t in titles:
+        if t not in seen:
+            seen.add(t)
+            deduped.append(t)
+    return deduped[:max_results]

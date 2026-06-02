@@ -255,7 +255,7 @@ def _postmarket_news_sentiment(stock, db) -> dict:
     from backend.analysis.sentiment import analyze_news
     from backend.config import settings
     from backend.data.news import (
-        fetch_stock_news_anspire,
+        fetch_titles_ifind,
         fetch_titles_tavily,
         get_recent_news_items,
     )
@@ -264,20 +264,12 @@ def _postmarket_news_sentiment(stock, db) -> dict:
     news_items = get_recent_news_items(stock.symbol, db, hours=24)
     titles, news_audits = audited_titles(news_items)
     db_title_count = len(titles)
-    if len(titles) < settings.tavily_supplement_threshold:
-        slots = settings.tavily_supplement_threshold - len(titles)
-        limit = min(settings.anspire_news_max_add, max(0, slots))
-        anspire_items = fetch_stock_news_anspire(stock.symbol, stock.name, limit=limit)
-        if anspire_items:
-            anspire_titles, anspire_audits = audited_titles(
-                anspire_items,
-                min_score=settings.anspire_news_min_score,
-                limit=limit,
-            )
-            titles = titles + anspire_titles[:slots]
-            news_audits = news_audits + anspire_audits
-            logger.info("Anspire补充 %s: +%d条 (DB=%d条)",
-                        stock.symbol, len(anspire_titles[:slots]), db_title_count)
+    if settings.ifind_mcp_enabled and len(titles) < settings.tavily_supplement_threshold:
+        ifind_titles = fetch_titles_ifind(stock.symbol, stock.name)
+        if ifind_titles:
+            titles = titles + ifind_titles
+            logger.info("iFinD补充 %s: +%d条 (DB=%d条)",
+                        stock.symbol, len(ifind_titles), db_title_count)
     if settings.tavily_api_key and len(titles) < settings.tavily_supplement_threshold:
         tavily_titles = fetch_titles_tavily(stock.symbol, stock.name)
         if tavily_titles:
