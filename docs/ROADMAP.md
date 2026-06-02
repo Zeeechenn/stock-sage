@@ -151,7 +151,7 @@
 - [x] 逐条处理当前可复现的 `ruff --select S608` 发现：`backend/agent/context.py` 的 table name 走白名单；动态 `IN (...)` 迁移到安全 bind 参数或补充精准 `noqa` 注释；不要把参数化 placeholder 误报升级为注入漏洞。
 - [x] 处理当前可复现的 `S324` 非密码学 hash 使用：确认用途是 cache key / dedup 后，加说明性 `noqa`，或替换为 `blake2b(digest_size=16)`。
 - [x] 处理当前可复现的 `S301` / `S310` 噪声：Qlib 模型持久化改为直接 `joblib` 依赖；非 CLI 外部探测与 Bark 通知改用 `requests`，保留超时、错误降级与响应大小限制。
-- [ ] 对非 CLI 库代码中的 `print()` 分批替换为 logger；tools / backtest CLI 可以保留命令行输出，避免为了 lint 牺牲可读的本地工具体验。
+- [x] 对非 CLI 库代码中的 `print()` 分批替换为 logger / 审计保留：当前剩余 `print()` 均在 `__main__`、agent CLI、tools、backtest 或手动报告输出路径，属于刻意的命令行输出，暂不为 lint 做 churn。
 - [x] Python dependency audit debt：`efinance` 已从默认依赖移到 optional extra，CN 日线与指数 provider 仅在安装后注册；`pytest` 升至 9.0.3 并重锁 `uv.lock`，当前 `make dependency-audit` 无已知漏洞。
 - [x] npm audit debt：Vite 已小步升到 6.4.3，避开 `vite <=6.4.1` / `esbuild <=0.24.2` advisory；`@vitejs/plugin-react` 约束同步到 v4.7，未使用 `npm audit fix --force` 跳 Vite 8。
 
@@ -175,7 +175,7 @@
 - “docs/reviews 有 16 篇”与当前仓库不符；不基于这个数字建立整理任务。
 - “pre-commit 只有 ruff”不准确；当前已有基础 pre-commit hooks，M30 只补 mypy/安全等缺口。
 
-**主体验收（2026-06-01 / 2026-06-02 更新）**：M30.1-M30.4 已完成；M30.5 已完成第一轮低噪声安全修复并清掉 Python / npm dependency audit debt，M30.6 已新增前端 advisory lint/format 入口。最新 `make verify` 后端与前端测试通过，frontend build 在沙盒外写入 Vite temp config 后通过；mypy、Python lock/frozen install、核心路径专项测试、coverage、低噪声安全扫描、Python dependency audit 与 npm audit 都能复现。剩余 M30 债务为非 CLI logger 化、AdminPage 与 test2 runner 后续拆分。
+**主体验收（2026-06-01 / 2026-06-02 更新）**：M30.1-M30.4 已完成；M30.5 已完成第一轮低噪声安全修复、Python / npm dependency audit debt 与非 CLI print 审计，M30.6 已新增前端 advisory lint/format 入口。最新 `make verify` 后端与前端测试通过，frontend build 在沙盒外写入 Vite temp config 后通过；mypy、Python lock/frozen install、核心路径专项测试、coverage、低噪声安全扫描、Python dependency audit 与 npm audit 都能复现。剩余 M30 债务为 AdminPage 与 test2 runner 后续拆分。
 
 ---
 
