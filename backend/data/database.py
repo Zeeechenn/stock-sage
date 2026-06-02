@@ -509,6 +509,32 @@ class MemoryPromotionCandidate(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow)
 
 
+class UniverseSnapshot(Base):
+    """
+    M38 Dynamic Universe / Survivorship Guard — one row per point-in-time universe snapshot.
+
+    Append-only: past rows are never mutated.  The (cutoff_date, market_filter,
+    universe_hash) triple is unique, making snapshot_universe() idempotent.
+    Used exclusively by backtest and forward-validation contexts.
+    """
+    __tablename__ = "universe_snapshots"
+    __table_args__ = (
+        UniqueConstraint(
+            "cutoff_date", "market_filter", "universe_hash",
+            name="uq_universe_snapshot_cutoff_market_hash",
+        ),
+    )
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    universe_hash: Mapped[str] = mapped_column(String(64), index=True)
+    cutoff_date: Mapped[str] = mapped_column(String, index=True)   # "YYYY-MM-DD"
+    market_filter: Mapped[str] = mapped_column(String, default="ALL")  # CN | US | ALL
+    symbols_json: Mapped[str] = mapped_column(Text)                # JSON array of sorted symbol strings
+    n_symbols: Mapped[int] = mapped_column(Integer)
+    provenance_completeness_json: Mapped[str | None] = mapped_column(Text, nullable=True)
+    context: Mapped[str | None] = mapped_column(String, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow)
+
+
 def get_latest_price_date(symbol: str, db) -> str | None:
     """返回该股最新一条价格记录的日期字符串，无数据时返回 None"""
     result = db.query(Price.date).filter(Price.symbol == symbol)\
@@ -521,6 +547,30 @@ def _ensure_runtime_schema() -> None:
     from backend.data.schema_runtime import _ensure_runtime_schema as ensure_runtime_schema
 
     ensure_runtime_schema()
+
+        # M38 Dynamic Universe / Survivorship Guard
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS universe_snapshots (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                universe_hash TEXT NOT NULL,
+                cutoff_date TEXT NOT NULL,
+                market_filter TEXT NOT NULL DEFAULT 'ALL',
+                symbols_json TEXT NOT NULL,
+                n_symbols INTEGER NOT NULL,
+                provenance_completeness_json TEXT,
+                context TEXT,
+                created_at DATETIME,
+                UNIQUE(cutoff_date, market_filter, universe_hash)
+            )
+        """))
+        conn.execute(text("""
+            CREATE INDEX IF NOT EXISTS idx_universe_snapshots_hash
+            ON universe_snapshots(universe_hash)
+        """))
+        conn.execute(text("""
+            CREATE INDEX IF NOT EXISTS idx_universe_snapshots_cutoff_market
+            ON universe_snapshots(cutoff_date, market_filter)
+        """))
 
 
 def _verify_schema_consistency() -> list[str]:

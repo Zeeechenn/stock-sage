@@ -149,6 +149,9 @@ class Settings(BaseSettings):
     # M37 ReviewCase / 回顾归因循环
     review_loop_enabled: bool = True
 
+    # M38 Dynamic Universe / Survivorship Guard
+    universe_guard_enabled: bool = True
+
     # M4.3 Portfolio Manager（组合层仓位统筹）
     portfolio_manager_enabled: bool = True
 
