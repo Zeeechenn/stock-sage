@@ -143,6 +143,9 @@ class Settings(BaseSettings):
     # M35 Thesis Ledger
     thesis_ledger_enabled: bool = True
 
+    # M36 Theme Hypothesis Engine
+    theme_engine_enabled: bool = True
+
     # M4.3 Portfolio Manager（组合层仓位统筹）
     portfolio_manager_enabled: bool = True
 
