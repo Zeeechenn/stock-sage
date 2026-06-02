@@ -1,10 +1,10 @@
 """
 M36 Theme Hypothesis Engine — pure storage layer.
 
-Exposes eight injectable-Session functions:
+Exposes nine injectable-Session functions:
   create_theme, get_theme, list_themes,
   create_hypothesis, get_hypothesis, list_hypotheses,
-  update_hypothesis_status, set_beneficiary_tiers
+  update_hypothesis_status, set_beneficiary_tiers, attach_forward_evidence
 
 No LLM calls. No writes to Signal / DecisionRun / M29 / quant-weight / ai_memory tables.
 Beneficiary-tier labels are advisory display metadata only and must not be passed to
@@ -225,5 +225,45 @@ def set_beneficiary_tiers(db, hypothesis_id: int, *, tiers: list[dict]) -> dict:
     db.flush()
     symbols = [t.get("symbol", "?") for t in tiers]
     audit_write(db, "theme_engine.set_tiers", f"beneficiary tiers set for hypothesis_id={hypothesis_id}: {symbols}")
+    db.commit()
+    return _hyp_to_dict(row)
+
+
+def attach_forward_evidence(
+    db,
+    hypothesis_id: int,
+    *,
+    evidence_payload: dict,
+    as_of: str,
+) -> dict:
+    """Populate ThemeHypothesis.forward_evidence_ref_json with the given evidence payload dict.
+
+    Mirrors attach_review_case from thesis_ledger.py.  The forward_evidence_ref_json
+    column was reserved as a nullable stub in M36 and is now populated by M39.
+
+    The evidence_payload dict passed by M39 callers should contain at minimum:
+      {forward_thesis_id: int, universe_snapshot_id: int, attached_at: ISO-string,
+       schema_version: 'm39.v1'}
+
+    No related_symbol kwarg is passed to audit_write because ThemeHypothesis spans
+    multiple symbols.
+
+    Raises ValueError if hypothesis_id does not exist.
+    Always calls audit_write on success.
+    """
+    from backend.data.database import ThemeHypothesis
+
+    row = db.query(ThemeHypothesis).filter(ThemeHypothesis.id == hypothesis_id).first()
+    if row is None:
+        raise ValueError(f"hypothesis {hypothesis_id} not found")
+
+    row.forward_evidence_ref_json = json.dumps(evidence_payload, ensure_ascii=False, default=str)
+    row.updated_at = _utc_now()
+    db.flush()
+    audit_write(
+        db,
+        "theme_engine.forward_evidence",
+        f"forward_evidence attached as_of={as_of}",
+    )
     db.commit()
     return _hyp_to_dict(row)

@@ -535,6 +535,46 @@ class UniverseSnapshot(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow)
 
 
+class ForwardThesis(Base):
+    """
+    M39 Forward Thesis Beta — bounded forward judgment record.
+
+    confidence_low / confidence_high are a judgment band only, NEVER a buy score.
+    No price_target, direction, or buy_score columns by design.
+
+    Append-on-update: past rows are updated in place (status transitions, band updates).
+    The (statement, horizon_date) pair is unique, making create_forward_thesis idempotent.
+    """
+    __tablename__ = "forward_theses"
+    __table_args__ = (
+        UniqueConstraint(
+            "statement", "horizon_date",
+            name="uq_forward_theses_statement_horizon",
+        ),
+    )
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    symbol: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
+    statement: Mapped[str] = mapped_column(String)
+    status: Mapped[str] = mapped_column(String, default="draft", index=True)
+    horizon_date: Mapped[str | None] = mapped_column(String, nullable=True)
+    # Confidence band — bounded judgment only, NOT a buy score or signal score
+    confidence_low: Mapped[float | None] = mapped_column(Float, nullable=True)
+    confidence_high: Mapped[float | None] = mapped_column(Float, nullable=True)
+    # JSON columns
+    evidence_manifest_json: Mapped[str | None] = mapped_column(Text, nullable=True)
+    invalidation_conditions_json: Mapped[str | None] = mapped_column(Text, nullable=True)
+    follow_up_metrics_json: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Review schedule
+    next_review_date: Mapped[str | None] = mapped_column(String, nullable=True)
+    review_cadence_days: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # Bare int cross-references (no FK constraints)
+    thesis_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    theme_hypothesis_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    universe_snapshot_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow)
+
+
 def get_latest_price_date(symbol: str, db) -> str | None:
     """返回该股最新一条价格记录的日期字符串，无数据时返回 None"""
     result = db.query(Price.date).filter(Price.symbol == symbol)\
@@ -570,6 +610,38 @@ def _ensure_runtime_schema() -> None:
         conn.execute(text("""
             CREATE INDEX IF NOT EXISTS idx_universe_snapshots_cutoff_market
             ON universe_snapshots(cutoff_date, market_filter)
+        """))
+
+        # M39 Forward Thesis Beta
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS forward_theses (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                symbol TEXT,
+                statement TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT 'draft',
+                horizon_date TEXT,
+                confidence_low REAL,
+                confidence_high REAL,
+                evidence_manifest_json TEXT,
+                invalidation_conditions_json TEXT,
+                follow_up_metrics_json TEXT,
+                next_review_date TEXT,
+                review_cadence_days INTEGER,
+                thesis_id INTEGER,
+                theme_hypothesis_id INTEGER,
+                universe_snapshot_id INTEGER,
+                created_at DATETIME,
+                updated_at DATETIME,
+                UNIQUE(statement, horizon_date)
+            )
+        """))
+        conn.execute(text("""
+            CREATE INDEX IF NOT EXISTS idx_forward_theses_symbol
+            ON forward_theses(symbol)
+        """))
+        conn.execute(text("""
+            CREATE INDEX IF NOT EXISTS idx_forward_theses_status
+            ON forward_theses(status)
         """))
 
 

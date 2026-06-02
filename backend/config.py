@@ -152,6 +152,9 @@ class Settings(BaseSettings):
     # M38 Dynamic Universe / Survivorship Guard
     universe_guard_enabled: bool = True
 
+    # M39 Forward Thesis Beta
+    forward_thesis_enabled: bool = True
+
     # M4.3 Portfolio Manager（组合层仓位统筹）
     portfolio_manager_enabled: bool = True
 
