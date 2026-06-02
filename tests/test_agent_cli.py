@@ -61,7 +61,7 @@ def test_agent_cli_trading_rhythm_commands_are_dry_run_contract(tmp_path):
     db_path = tmp_path / f"rhythm-{uuid.uuid4().hex}.db"
     db_url = f"sqlite:///{db_path}"
 
-    for command in ("premarket", "intraday", "postmarket"):
+    for command in ("premarket", "intraday", "postmarket", "weekend"):
         result = _run_cli(repo, db_url, command, "--symbol", "300308")
 
         assert result.returncode == 0, result.stderr

@@ -20,7 +20,7 @@ maintenance. It does not place real trades or provide financial advice.
 | Kronos | disabled for production |
 | M29 | active: forward evidence and residual attribution remain non-promoting |
 | M30 | complete: mypy, lockfile, CI/security, coverage, core tests, maintainability |
-| M31 | complete: cache policy, provider fallback observability, rhythm CLI, postmarket export with evidence cards + position review (only M31.3 weekend-review workflow still open) |
+| M31 | complete: cache policy, provider fallback observability, rhythm CLI (premarket/intraday/postmarket/weekend), postmarket export with evidence cards + position review |
 | remote agent mode | opt-in only; read-only by default |
 
 Daily/batch post-market signals do not enable multi-agent research by default,
@@ -52,7 +52,7 @@ Stop loss / take profit remain ATR-derived project rules, not LLM predictions.
 |---|---|---|
 | M29 Alpha Reset / Forward Evidence Engine | active | wait for complete fresh forward coverage, then rerun readiness -> forward shadow -> ledger |
 | M29.5 Quant Residual Attribution | first pass complete, non-promoting | continue only if fresh evidence clears gates |
-| M31 Product/Engineering Borrowings | M31.1–31.4 done | L1/L2/L3 policy, provider chains, dry-run rhythm commands, postmarket export with evidence cards + position review; only weekend-review rhythm workflow pending |
+| M31 Product/Engineering Borrowings | complete | L1/L2/L3 policy, provider chains, dry-run rhythm commands (incl. weekend review), postmarket export with evidence cards + position review |
 | M32 Forward Hypothesis Bridge | design stance set | start only after review data is thick enough |
 
 For detailed sequencing, read `docs/ROADMAP.md`. For historical milestone
@@ -67,8 +67,8 @@ commands; `/api/export/postmarket-review.html` and `?format=word` export
 postmarket review reports with the day's signal table, per-signal evidence cards
 (score decomposition + stop/take + LLM rationale), a position-review section
 (open holdings with unrealized P/L plus same-day closes), rule/profile version,
-and non-advice disclaimers. M31.4 is complete; only the M31.3 weekend-review
-rhythm workflow remains open.
+and non-advice disclaimers. The M31.3 weekend-review rhythm command
+(`weekend` / `周末`) is also packaged, so M31 is now fully complete.
 
 ## Validation Snapshot
 

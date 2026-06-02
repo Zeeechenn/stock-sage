@@ -109,7 +109,7 @@ FRESHNESS_CONTRACTS: tuple[FreshnessContract, ...] = (
 )
 
 
-REMOTE_REFRESH_PHASES = {"premarket", "postmarket", "maintenance"}
+REMOTE_REFRESH_PHASES = {"premarket", "postmarket", "maintenance", "weekend"}
 
 
 def cache_layers_payload() -> list[dict]:
@@ -167,7 +167,7 @@ def cache_policy_payload() -> dict:
         "cache_layers": cache_layers_payload(),
         "workflow_policies": {
             phase: workflow_cache_policy(phase)
-            for phase in ("premarket", "intraday", "postmarket", "maintenance")
+            for phase in ("premarket", "intraday", "postmarket", "maintenance", "weekend")
         },
         "intraday_zero_network_policy": intraday_zero_network_policy(),
         "freshness_contracts": freshness_contracts_payload(),

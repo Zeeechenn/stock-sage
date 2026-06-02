@@ -202,10 +202,10 @@
 
 ### M31.3 按交易节奏的命令 UX（P2）
 
-- [x] 把现有 Pi 终端 / CLI 能力按"盘前 / 盘中 / 盘后"打包成少数几条一句话命令（如盘前自检、盘中快速个股、盘后全市场入库 + 复盘报告），降低入口心智负担。
+- [x] 把现有 Pi 终端 / CLI 能力按"盘前 / 盘中 / 盘后 / 周末"打包成少数几条一句话命令（如盘前自检、盘中快速个股、盘后全市场入库 + 复盘报告、周末长期标签刷新 + 周度反思），降低入口心智负担。
 - [x] 命令只做编排，复用现有 `backend.agent.cli` 子命令，不新增分析逻辑。
 
-> 2026-06-02 M31.3 完成：`backend.agent.cli` 新增 `premarket` / `intraday` / `postmarket`（含中文 alias `盘前` / `盘中` / `盘后`），默认只输出 dry-run orchestration JSON，列出 reused entrypoints、side effects、confirmation_required 与 cache policy，不执行重型 job；`scripts/stocksage_launcher.sh` 同步支持 `stocksage premarket|intraday|postmarket` 薄封装。
+> 2026-06-02 M31.3 完成：`backend.agent.cli` 新增 `premarket` / `intraday` / `postmarket` / `weekend`（含中文 alias `盘前` / `盘中` / `盘后` / `周末`），默认只输出 dry-run orchestration JSON，列出 reused entrypoints、side effects、confirmation_required 与 cache policy，不执行重型 job；`weekend` 复用 `job_weekly_longterm` / `job_weekly_long_term_reflect` 并按 maintenance 口径允许 L3（`REMOTE_REFRESH_PHASES` 增加 `weekend`）；`scripts/stocksage_launcher.sh` 同步支持 `stocksage premarket|intraday|postmarket|weekend` 薄封装。
 
 ### M31.4 一键多端报告输出（P3）
 

@@ -210,6 +210,18 @@ def _workflow_payload(args: argparse.Namespace, phase: str) -> dict:
             "side_effects_if_executed": ["writes signals/reviews/memory", "may call news/LLM providers", "may send Bark alerts"],
             "operator_command": "python3 -m backend.agent.cli postmarket --pretty",
         },
+        "weekend": {
+            "label": "周末复盘",
+            "one_sentence": "周末刷新长期标签与周度反思、导出本周复盘报告；市场休市，不在盘中触发。",
+            "reused_entrypoints": [
+                "backend.scheduler.job_weekly_longterm",
+                "backend.scheduler.job_weekly_long_term_reflect",
+                "GET /api/export/postmarket-review.html",
+                "GET /api/export/reviews.csv",
+            ],
+            "side_effects_if_executed": ["writes long_term_labels/reviews/memory", "may call LLM/data providers"],
+            "operator_command": "python3 -m backend.agent.cli weekend --pretty",
+        },
     }
     payload = workflows[phase]
     side_effects_if_executed = payload["side_effects_if_executed"]
@@ -247,6 +259,10 @@ def _command_intraday(args: argparse.Namespace) -> dict:
 
 def _command_postmarket(args: argparse.Namespace) -> dict:
     return _workflow_payload(args, "postmarket")
+
+
+def _command_weekend(args: argparse.Namespace) -> dict:
+    return _workflow_payload(args, "weekend")
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -326,6 +342,14 @@ def build_parser() -> argparse.ArgumentParser:
     )
     postmarket.add_argument("--symbol", help="optional focus symbol")
     postmarket.set_defaults(handler=_command_postmarket)
+
+    weekend = subparsers.add_parser(
+        "weekend",
+        aliases=["周末"],
+        help="周末一句话工作流：长期标签刷新、周度反思与复盘报告入口",
+    )
+    weekend.add_argument("--symbol", help="optional focus symbol")
+    weekend.set_defaults(handler=_command_weekend)
 
     return parser
 

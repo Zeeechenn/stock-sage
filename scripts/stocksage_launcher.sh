@@ -39,7 +39,7 @@ case "$command_name" in
     PYTHONPATH=. "$PYTHON_BIN" -m backend.agent.cli health --pretty
     PYTHONPATH=. "$PYTHON_BIN" -m backend.agent.cli actions --pretty
     ;;
-  premarket|intraday|postmarket)
+  premarket|intraday|postmarket|weekend)
     PYTHONPATH=. "$PYTHON_BIN" -m backend.agent.cli "$command_name" --pretty "$@"
     ;;
   update)
@@ -60,6 +60,7 @@ Usage:
   stocksage premarket   Show the premarket workflow contract (dry-run)
   stocksage intraday    Show the intraday local-cache workflow contract (dry-run)
   stocksage postmarket  Show the postmarket review/export workflow contract (dry-run)
+  stocksage weekend     Show the weekend review/calibration workflow contract (dry-run)
   stocksage update      Pull latest code and refresh setup
 USAGE
     ;;
