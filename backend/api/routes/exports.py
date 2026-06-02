@@ -20,11 +20,12 @@ from fastapi import APIRouter, Depends, Query
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
-from backend.data.database import Position, ReviewRun, Signal, Stock, get_db
+from backend.data.database import Position, Price, ReviewRun, Signal, Stock, get_db
 
 router = APIRouter()
 
-_POSTMARKET_REPORT_VERSION = "m31_postmarket_review_v1"
+_POSTMARKET_REPORT_VERSION = "m31_postmarket_review_v2"
+_EVIDENCE_CARD_CAP = 10
 _POSTMARKET_DISCLAIMER = "研究复盘，非投资建议、非价格预测"
 
 
@@ -57,6 +58,114 @@ def _active_profile_for_day(day: str):
     except ValueError:
         parsed_day = None
     return active_signal_weights(parsed_day)
+
+
+def _percent(value: float | None, digits: int = 2) -> str:
+    if value is None:
+        return ""
+    return f"{value:+.{digits}f}%"
+
+
+def _evidence_cards_html(signals: list, names: dict, cap: int = _EVIDENCE_CARD_CAP) -> str:
+    """Render per-signal evidence cards (score decomposition, levels, rationale)."""
+    cards = []
+    for signal in signals[:cap]:
+        label = f"{signal.symbol} {names.get(signal.symbol, '')}".strip()
+        rationale = (signal.llm_rationale or "").strip() or "（无 LLM 综合理由记录）"
+        cards.append(
+            '<div class="card">'
+            f"<h3>{html.escape(label)} · {html.escape(signal.recommendation or '')} "
+            f"（综合 {html.escape(_format_number(signal.composite_score))} / 置信 {html.escape(signal.confidence or '')}）</h3>"
+            '<ul class="meta">'
+            f"<li>量化 / 技术 / 情感分: {html.escape(_format_number(signal.quant_score))} / "
+            f"{html.escape(_format_number(signal.technical_score))} / {html.escape(_format_number(signal.sentiment_score))}</li>"
+            f"<li>止损 / 止盈: {html.escape(_format_number(signal.stop_loss, 2))} / {html.escape(_format_number(signal.take_profit, 2))}</li>"
+            f"<li>涨跌停 / 规则版本: {html.escape(signal.limit_status or 'normal')} / {html.escape(signal.rule_version or 'unknown')}</li>"
+            "</ul>"
+            f"<p>{html.escape(rationale)}</p>"
+            "</div>"
+        )
+    if not cards:
+        return "<p>当日没有可展示的信号证据卡。</p>"
+    capped_note = ""
+    if len(signals) > cap:
+        capped_note = f'<p class="meta">仅展示综合分最高的 {cap} 条信号证据卡，完整 {len(signals)} 条见上方信号表。</p>'
+    return "\n".join(cards) + capped_note
+
+
+def _position_review_html(db: Session, day: str) -> str:
+    """Render open-position review plus any positions closed on the report day."""
+    open_positions = (
+        db.query(Position)
+        .filter(Position.status == "open")
+        .order_by(Position.symbol)
+        .all()
+    )
+    closed_today = (
+        db.query(Position)
+        .filter(Position.status == "closed", Position.closed_at == day)
+        .order_by(Position.symbol)
+        .all()
+    )
+    if not open_positions and not closed_today:
+        return "<p>当前没有持仓，且当日没有平仓记录。</p>"
+
+    open_rows = []
+    for pos in open_positions:
+        latest = (
+            db.query(Price.close)
+            .filter(Price.symbol == pos.symbol)
+            .order_by(Price.date.desc())
+            .first()
+        )
+        current = float(latest[0]) if latest else None
+        unrealized = None
+        if current is not None and pos.avg_cost:
+            unrealized = (current - pos.avg_cost) / pos.avg_cost * 100
+        label = f"{pos.symbol} {pos.name or ''}".strip()
+        open_rows.append(
+            "<tr>"
+            f"<td>{html.escape(label)}</td>"
+            f"<td>{html.escape(_format_number(pos.quantity, 0))}</td>"
+            f"<td>{html.escape(_format_number(pos.avg_cost, 2))}</td>"
+            f"<td>{html.escape(_format_number(current, 2))}</td>"
+            f"<td>{html.escape(_percent(unrealized))}</td>"
+            f"<td>{html.escape(_format_number(pos.stop_loss, 2))}</td>"
+            f"<td>{html.escape(_format_number(pos.take_profit, 2))}</td>"
+            f"<td>{html.escape(pos.opened_at or '')}</td>"
+            "</tr>"
+        )
+
+    parts = ["<h3>当前持仓</h3>"]
+    open_table = "\n".join(open_rows) if open_rows else '<tr><td colspan="8">当前无持仓。</td></tr>'
+    parts.append(
+        "<table><thead><tr>"
+        "<th>股票</th><th>数量</th><th>成本</th><th>现价</th><th>浮动盈亏</th>"
+        "<th>止损</th><th>止盈</th><th>建仓日</th>"
+        f"</tr></thead><tbody>{open_table}</tbody></table>"
+    )
+
+    if closed_today:
+        closed_rows = []
+        for pos in closed_today:
+            label = f"{pos.symbol} {pos.name or ''}".strip()
+            closed_rows.append(
+                "<tr>"
+                f"<td>{html.escape(label)}</td>"
+                f"<td>{html.escape(_format_number(pos.quantity, 0))}</td>"
+                f"<td>{html.escape(_format_number(pos.avg_cost, 2))}</td>"
+                f"<td>{html.escape(_format_number(pos.close_price, 2))}</td>"
+                f"<td>{html.escape(_percent(pos.realized_pnl_pct))}</td>"
+                f"<td>{html.escape(_format_number(pos.realized_pnl, 2))}</td>"
+                "</tr>"
+            )
+        parts.append("<h3>当日平仓</h3>")
+        parts.append(
+            "<table><thead><tr>"
+            "<th>股票</th><th>数量</th><th>成本</th><th>平仓价</th><th>已实现盈亏%</th><th>已实现盈亏</th>"
+            f"</tr></thead><tbody>{''.join(closed_rows)}</tbody></table>"
+        )
+    return "\n".join(parts)
 
 
 def _postmarket_review_html(db: Session, day: str) -> str:
@@ -99,6 +208,8 @@ def _postmarket_review_html(db: Session, day: str) -> str:
             "</tr>"
         )
     signal_table = "\n".join(rows) if rows else '<tr><td colspan="8">当日没有信号。</td></tr>'
+    evidence_cards = _evidence_cards_html(signals, names)
+    position_review = _position_review_html(db, day)
     rule_version_text = ", ".join(rule_versions)
     profile_text = str(weights.profile or "unknown")
 
@@ -116,6 +227,10 @@ def _postmarket_review_html(db: Session, day: str) -> str:
     th {{ background: #f3f4f6; }}
     .notice {{ font-weight: 700; color: #7c2d12; }}
     .meta {{ color: #374151; }}
+    .card {{ border: 1px solid #d1d5db; border-radius: 8px; padding: 10px 14px; margin: 10px 0; }}
+    .card h3 {{ margin: 0 0 6px; font-size: 15px; }}
+    .card p {{ margin: 6px 0 0; white-space: pre-wrap; }}
+    h3 {{ margin: 16px 0 8px; }}
   </style>
 </head>
 <body>
@@ -153,6 +268,14 @@ def _postmarket_review_html(db: Session, day: str) -> str:
         {signal_table}
       </tbody>
     </table>
+  </section>
+  <section>
+    <h2>信号证据卡</h2>
+    {evidence_cards}
+  </section>
+  <section>
+    <h2>持仓复盘</h2>
+    {position_review}
   </section>
 </body>
 </html>

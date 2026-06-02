@@ -109,6 +109,59 @@ def test_export_postmarket_review_html_includes_versions_and_disclaimer(test_db)
     assert "盘后复盘已生成。" in resp.text
 
 
+def test_export_postmarket_review_html_includes_evidence_cards_and_positions(test_db):
+    from backend.data.database import Position, Price, Signal, Stock
+
+    test_db.add(Stock(symbol="300308", name="中际旭创", market="CN", active=True))
+    test_db.add(Signal(
+        symbol="300308",
+        date="2026-05-21",
+        quant_score=0,
+        technical_score=20,
+        sentiment_score=35,
+        composite_score=36,
+        recommendation="可小仓试错",
+        confidence="中",
+        stop_loss=88.5,
+        take_profit=120.0,
+        limit_status="normal",
+        llm_rationale="光模块需求边际改善，技术面突破均线，给予小仓试错。",
+        rule_version="multi_agent_v2:new_framework",
+    ))
+    test_db.add(Position(
+        symbol="300308", name="中际旭创", market="CN",
+        quantity=200, avg_cost=95.0, opened_at="2026-05-10",
+        stop_loss=88.5, take_profit=120.0, status="open",
+    ))
+    test_db.add(Price(symbol="300308", date="2026-05-21", open=99, high=104, low=98, close=104.0, volume=1000))
+    test_db.add(Position(
+        symbol="002475", name="立讯精密", market="CN",
+        quantity=300, avg_cost=30.0, opened_at="2026-04-01",
+        closed_at="2026-05-21", close_price=33.0,
+        realized_pnl=900.0, realized_pnl_pct=10.0, status="closed",
+    ))
+    test_db.commit()
+
+    client = _client_for_db(test_db)
+    try:
+        resp = client.get("/api/export/postmarket-review.html?as_of=2026-05-21")
+    finally:
+        _clear_client_override()
+
+    assert resp.status_code == 200
+    text = resp.text
+    # evidence card: rationale + score decomposition surfaced
+    assert "信号证据卡" in text
+    assert "光模块需求边际改善" in text
+    # position review: open holding with unrealized P/L and the day's close
+    assert "持仓复盘" in text
+    assert "当前持仓" in text
+    assert "+9.47%" in text  # (104 - 95) / 95
+    # closed-today position appears with realized P/L
+    assert "当日平仓" in text
+    assert "立讯精密" in text
+
+
 def test_export_postmarket_review_word_compatible_response(test_db):
     client = _client_for_db(test_db)
     try:

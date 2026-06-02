@@ -209,11 +209,10 @@
 
 ### M31.4 一键多端报告输出（P3）
 
-- [x] 扩展 `backend/api/routes/exports.py`：盘后一条命令生成可分享的复盘报告（Word-compatible / HTML），导出当日信号表与复盘摘要。
+- [x] 扩展 `backend/api/routes/exports.py`：盘后一条命令生成可分享的复盘报告（Word-compatible / HTML），证据卡 / 信号 / 持仓复盘随报告导出。
 - [x] 报告显式标注 rule/profile 版本与"研究复盘，非投资建议、非价格预测"声明。
-- [ ] 证据卡与独立持仓复盘段落随报告导出（M31.4 待补：当前导出仅含信号表 + 复盘摘要，未含逐信号证据卡与持仓复盘段）。
 
-> 2026-06-02 M31.4 部分完成：新增 `/api/export/postmarket-review.html?as_of=YYYY-MM-DD` 与 `?format=word` 的 Word-compatible `.doc` HTML 响应；报告包含 report_version、rule/profile version、当日信号表、复盘摘要与“研究复盘，非投资建议、非价格预测”声明。未引入 `python-docx` 或新依赖，避免依赖锁与审计 churn。**待补**：导出当前不含逐信号证据卡与独立持仓复盘段，故 M31.4 标记 partial。
+> 2026-06-02 M31.4 完成：`/api/export/postmarket-review.html?as_of=YYYY-MM-DD`（含 `?format=word` 的 Word-compatible `.doc` HTML）导出 report_version、rule/profile version、当日信号表、**逐信号证据卡**（量化/技术/情感分解 + 止损/止盈 + LLM rationale，按综合分取前 10）、**持仓复盘段**（当前持仓含现价与浮动盈亏 + 当日平仓的已实现盈亏）与“研究复盘，非投资建议、非价格预测”声明。report_version 升至 `m31_postmarket_review_v2`；未引入 `python-docx` 或新依赖。新增 `test_export_postmarket_review_html_includes_evidence_cards_and_positions` 覆盖。
 
 ---
 
