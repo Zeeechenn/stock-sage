@@ -72,6 +72,7 @@ def test_fetch_daily_registers_cn_multi_source_chain(monkeypatch):
 
     monkeypatch.setattr(market.settings, "tickflow_enabled", False)
     monkeypatch.setattr(market.settings, "tickflow_api_key", "")
+    monkeypatch.setattr(market, "_efinance_available", lambda: True)
     monkeypatch.setattr(market, "fetch_daily_with_fallback", fake_fetch)
 
     df = market.fetch_daily("600519", "CN", days=30)
@@ -88,6 +89,31 @@ def test_fetch_daily_registers_cn_multi_source_chain(monkeypatch):
     ]
 
 
+def test_fetch_daily_skips_optional_efinance_when_not_installed(monkeypatch):
+    from backend.data import market
+    from backend.data.providers import list_daily_providers, reset_provider_registry
+
+    reset_provider_registry()
+    monkeypatch.setattr(market.settings, "tickflow_enabled", False)
+    monkeypatch.setattr(market.settings, "tickflow_api_key", "")
+    monkeypatch.setattr(market, "_efinance_available", lambda: False)
+
+    def fake_fetch(symbol, market_name, days):
+        return pd.DataFrame([{"open": 1, "high": 1, "low": 1, "close": 1, "volume": 1}]), "eastmoney_cn"
+
+    monkeypatch.setattr(market, "fetch_daily_with_fallback", fake_fetch)
+
+    df = market.fetch_daily("600519", "CN", days=30)
+
+    assert not df.empty
+    assert df.attrs["source"] == "eastmoney_cn"
+    assert list_daily_providers("CN") == [
+        "akshare_sina_cn",
+        "eastmoney_cn",
+        "akshare_em_cn",
+    ]
+
+
 def test_fetch_daily_does_not_register_unadjusted_tushare_when_token_configured(monkeypatch):
     from backend.config import settings
     from backend.data import market
@@ -95,6 +121,7 @@ def test_fetch_daily_does_not_register_unadjusted_tushare_when_token_configured(
 
     reset_provider_registry()
     monkeypatch.setattr(settings, "tushare_token", "unit-token")
+    monkeypatch.setattr(market, "_efinance_available", lambda: True)
 
     def fake_fetch(symbol, market_name, days):
         return pd.DataFrame([{"open": 1, "high": 1, "low": 1, "close": 1, "volume": 1}]), "efinance_cn"
@@ -115,6 +142,7 @@ def test_fetch_daily_registers_tushare_qfq_only_when_enabled(monkeypatch):
     reset_provider_registry()
     monkeypatch.setattr(settings, "tushare_token", "unit-token")
     monkeypatch.setattr(settings, "tushare_qfq_enabled", True)
+    monkeypatch.setattr(market, "_efinance_available", lambda: True)
 
     def fake_fetch(symbol, market_name, days):
         return pd.DataFrame([{"open": 1, "high": 1, "low": 1, "close": 1, "volume": 1}]), "akshare_sina_cn"
@@ -194,6 +222,27 @@ def test_fetch_cn_index_uses_index_provider_fallback(monkeypatch):
     assert df.attrs["adjustment"] == "index_unadjusted"
     assert df.attrs["fetched_at"] is not None
     assert float(df.loc["2026-05-18", "close"]) == 4000.0
+
+
+def test_fetch_cn_index_skips_optional_efinance_when_not_installed(monkeypatch):
+    from backend.data import market
+    from backend.data.providers import list_index_providers, reset_provider_registry
+
+    reset_provider_registry()
+    monkeypatch.setattr(market, "_efinance_available", lambda: False)
+
+    def ok(index_symbol, days):
+        return pd.DataFrame(
+            [{"date": "2026-05-18", "close": 4000.0, "change_pct": 1.2}]
+        ).set_index("date")
+
+    monkeypatch.setattr(market, "fetch_cn_index_akshare", ok)
+
+    df = market.fetch_cn_index("sh000300", days=30)
+
+    assert not df.empty
+    assert df.attrs["source"] == "akshare_index_cn"
+    assert "efinance_index_cn" not in list_index_providers()
 
 
 def test_backfill_if_needed_writes_price_provenance(test_db, monkeypatch):

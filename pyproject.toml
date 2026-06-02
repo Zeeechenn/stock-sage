@@ -26,7 +26,6 @@ dependencies = [
     "sqlalchemy>=2.0.0,<3.0.0",
     "requests>=2.31.0,<3.0.0",
     "akshare>=1.12.0,<2.0.0",
-    "efinance>=0.5.5,<1.0.0",
     "tushare>=1.2.26,<2.0.0",
     "yfinance>=0.2.38,<1.0.0",
     "anthropic>=0.25.0,<1.0.0",
@@ -45,7 +44,7 @@ dependencies = [
 
 [project.optional-dependencies]
 test = [
-    "pytest>=8.0.0,<9.0.0",
+    "pytest>=9.0.3,<10.0.0",
     "pytest-cov>=5.0.0,<8.0.0",
 ]
 dev = [
@@ -58,6 +57,9 @@ dev = [
 ]
 agent = [
     "mcp>=1.0.0,<2.0.0",
+]
+efinance = [
+    "efinance>=0.5.5,<1.0.0",
 ]
 
 [tool.setuptools]

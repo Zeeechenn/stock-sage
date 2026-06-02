@@ -133,6 +133,11 @@ def list_daily_providers(market: str | None = None) -> list[str]:
     return [p.name for p in _DAILY_PROVIDERS if "ALL" in p.markets or market in p.markets]
 
 
+def list_index_providers() -> list[str]:
+    """List registered index provider names."""
+    return [p.name for p in _INDEX_PROVIDERS]
+
+
 def fetch_daily_with_fallback(symbol: str, market: str, days: int) -> tuple[pd.DataFrame, str]:
     """Fetch daily bars from the first provider covering market that succeeds."""
     errors: list[str] = []

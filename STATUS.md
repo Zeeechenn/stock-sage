@@ -27,7 +27,7 @@
 | M27 | Alpha 根治工程 | ✅ 证据闭环完成但未晋升；所有候选均未过 promotion gate，继续保持 quant 关闭 |
 | M28 | 调研模块整合与实时搜索接入 | ✅ 完成，deep_research / copilot / debate 信息流打通 |
 | M29 | Alpha Reset / Forward Evidence Engine | ⏳ 当前活跃：等待完整 forward 覆盖；M29.5 quant residual attribution 首轮已完成且保持 non-promoting |
-| M30 | 工程质量收敛 | ✅ 主体完成：mypy、Python lock、CI/安全/覆盖率、核心路径专项测试；S608/S324 与 `efinance -> retry -> py` audit debt 后置 |
+| M30 | 工程质量收敛 | ✅ 主体完成：mypy、Python lock、CI/安全/覆盖率、核心路径专项测试；Python dependency audit 已清，剩 npm/Vite 与维护性拆分 |
 
 ---
 
@@ -82,9 +82,10 @@
 **M30 工程质量收敛（2026-06-01 主体完成）**
 - M29 工具的 13 个 mypy 错误已修复，`make typecheck` 与显式可写 cache 的全 backend mypy 均为 0 error。
 - Python 依赖新增 `uv.lock`；Makefile 增加 `python-sync`、`python-lock`、`python-lock-check`，CI 使用 frozen sync / lock check 复现依赖。
-- CI 拆成 backend-quality、backend-tests、security、frontend；新增 coverage snapshot、安全快照和依赖审计入口。当前 backend coverage 为 63%；`ruff --select S` 作为 advisory 扫描保留 56 个既有 security findings，`pip-audit` 发现 `py==1.11.0` 的 `PYSEC-2022-42969`，来源为 `efinance -> retry -> py`，暂列 M30.5 后续债务。
+- CI 拆成 backend-quality、backend-tests、security、frontend；新增 coverage snapshot、安全快照和依赖审计入口。当前 backend coverage 为 63%；`ruff --select S` 作为 advisory 扫描保留 56 个既有 security findings；历史 `efinance -> retry -> py` dependency audit 链路已在 2026-06-02 通过 optional extra 与重锁解除。
 - 新增核心路径专项测试覆盖 aggregator、pipeline、database、AI/system routes、memory_layered、researcher；本轮验证：backend 662 passed / 5 skipped，frontend node tests 19 passed，Vite build 通过，`make verify` 通过。
-- M30.5/M30.6 首轮优化执行（2026-06-02）：Python 依赖已补上限并重锁 `uv.lock`，新增直接 `joblib` 依赖；`ruff check backend --select S301,S310,S324,S608` 已清零，S608 table/IN 查询改为白名单或 bind 参数，S324 保留为 cache/dedup/source_ref 精准 `noqa`，非 CLI 外部探测与 Bark 通知改用 `requests`，Qlib 模型持久化改为 `joblib`。前端新增 advisory `make frontend-lint` / `make frontend-format-check`，暂不并入 `make verify`。本轮验证：`make verify` 通过（backend 675 passed / 5 skipped，frontend node tests 19 passed，Vite build 通过），backend coverage snapshot 升至 64%。依赖审计仍有两项后置债务：`efinance -> retry -> py==1.11.0` 的 `PYSEC-2022-42969` 无 fix version；npm audit 指向 `vite/esbuild` moderate advisory，不能用 force 升到破坏性 Vite 8。
+- M30.5/M30.6 首轮优化执行（2026-06-02）：Python 依赖已补上限并重锁 `uv.lock`，新增直接 `joblib` 依赖；`ruff check backend --select S301,S310,S324,S608` 已清零，S608 table/IN 查询改为白名单或 bind 参数，S324 保留为 cache/dedup/source_ref 精准 `noqa`，非 CLI 外部探测与 Bark 通知改用 `requests`，Qlib 模型持久化改为 `joblib`。前端新增 advisory `make frontend-lint` / `make frontend-format-check`，暂不并入 `make verify`。本轮验证：`make verify` 通过（backend 675 passed / 5 skipped，frontend node tests 19 passed，Vite build 通过），backend coverage snapshot 升至 64%。
+- M30.5 dependency audit 收口（2026-06-02）：`efinance` 已从默认依赖移到 optional extra，CN 日线与指数 provider 仅在安装后注册；默认环境不再带入 `retry -> py`，`pytest` 升至 9.0.3，`uv.lock` 已重锁，`make python-lock-check` 与 `make dependency-audit` 通过且无已知漏洞。剩余 audit 债务为 `vite/esbuild` npm advisory，后续按 Vite 6 升级计划处理，不能用 force 跳 Vite 8。
 
 **新对话接手目标（2026-06-01，M29）**
 - 先读本节和 `docs/ROADMAP.md § M29`，再看 `git status --short`；当前预期未提交变更包含 M27/M29/M30 交付文件，不要回滚 M27/M29 工具、测试和 M30 工程质量更新。

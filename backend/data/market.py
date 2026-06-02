@@ -1,5 +1,6 @@
 """行情数据拉取：A股多源 fallback，美股用 yfinance."""
 import functools
+import importlib.util
 import json
 import logging
 import subprocess
@@ -100,6 +101,11 @@ def cn_tushare_ts_code(symbol: str) -> str:
     else:
         suffix = "SZ"
     return f"{symbol}.{suffix}"
+
+
+def _efinance_available() -> bool:
+    """Return whether the optional efinance fallback dependency is installed."""
+    return importlib.util.find_spec("efinance") is not None
 
 
 def _normalize_ohlcv(df: pd.DataFrame) -> pd.DataFrame:
@@ -312,7 +318,8 @@ def fetch_daily(symbol: str, market: str, days: int = 365) -> pd.DataFrame:
     if settings.tickflow_enabled and settings.tickflow_api_key:
         register_daily_provider("tickflow_cn", {"CN"}, fetch_cn_daily_tickflow, priority=-10, cooldown_seconds=30)
     register_daily_provider("akshare_sina_cn", {"CN"}, fetch_cn_daily_akshare_sina, priority=0, cooldown_seconds=30)
-    register_daily_provider("efinance_cn", {"CN"}, fetch_cn_daily_efinance, priority=10, cooldown_seconds=60)
+    if _efinance_available():
+        register_daily_provider("efinance_cn", {"CN"}, fetch_cn_daily_efinance, priority=10, cooldown_seconds=60)
     register_daily_provider("eastmoney_cn", {"CN"}, fetch_cn_daily, priority=20, cooldown_seconds=60)
     register_daily_provider("akshare_em_cn", {"CN"}, fetch_cn_daily_akshare_em, priority=30, cooldown_seconds=60)
     if settings.tushare_qfq_enabled and settings.tushare_token:
@@ -416,7 +423,8 @@ def fetch_cn_index(index_symbol: str = "sh000300", days: int = 365) -> pd.DataFr
     """
     register_index_provider("akshare_index_cn", fetch_cn_index_akshare, priority=0, cooldown_seconds=60)
     register_index_provider("eastmoney_index_cn", fetch_cn_index_eastmoney, priority=10, cooldown_seconds=60)
-    register_index_provider("efinance_index_cn", fetch_cn_index_efinance, priority=20, cooldown_seconds=60)
+    if _efinance_available():
+        register_index_provider("efinance_index_cn", fetch_cn_index_efinance, priority=20, cooldown_seconds=60)
     register_index_provider("yfinance_index_cn", fetch_cn_index_yfinance, priority=90, cooldown_seconds=120)
     df, provider = fetch_index_with_fallback(index_symbol, days)
     _attach_provenance_attrs(

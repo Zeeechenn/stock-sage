@@ -6,6 +6,7 @@ def test_cn_daily_registry_excludes_unadjusted_tushare(monkeypatch):
 
     providers.reset_provider_registry()
     monkeypatch.setattr(market.settings, "tushare_token", "fake-token")
+    monkeypatch.setattr(market, "_efinance_available", lambda: True)
     monkeypatch.setattr(
         market,
         "fetch_daily_with_fallback",
@@ -29,6 +30,7 @@ def test_cn_daily_registry_keeps_tushare_qfq_opt_in(monkeypatch):
     providers.reset_provider_registry()
     monkeypatch.setattr(market.settings, "tushare_token", "fake-token")
     monkeypatch.setattr(market.settings, "tushare_qfq_enabled", True)
+    monkeypatch.setattr(market, "_efinance_available", lambda: True)
     monkeypatch.setattr(
         market,
         "fetch_daily_with_fallback",
@@ -51,6 +53,7 @@ def test_cn_daily_registry_excludes_hfq_yfinance(monkeypatch):
     from backend.data import market, providers
 
     providers.reset_provider_registry()
+    monkeypatch.setattr(market, "_efinance_available", lambda: True)
     monkeypatch.setattr(
         market,
         "fetch_daily_with_fallback",
@@ -74,6 +77,7 @@ def test_cn_daily_registry_prioritizes_tickflow_when_enabled(monkeypatch):
     providers.reset_provider_registry()
     monkeypatch.setattr(market.settings, "tickflow_enabled", True)
     monkeypatch.setattr(market.settings, "tickflow_api_key", "fake-key")
+    monkeypatch.setattr(market, "_efinance_available", lambda: True)
     monkeypatch.setattr(
         market,
         "fetch_daily_with_fallback",
