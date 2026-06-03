@@ -155,6 +155,9 @@ class Settings(BaseSettings):
     # M39 Forward Thesis Beta
     forward_thesis_enabled: bool = True
 
+    # M40 Gate-B prospective tracker (experiment only — does NOT affect decisions)
+    gate_b_tracker_enabled: bool = False
+
     # M4.3 Portfolio Manager（组合层仓位统筹）
     portfolio_manager_enabled: bool = True
 
