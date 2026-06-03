@@ -149,3 +149,36 @@ is not a meaningful integrity signal here.
 **Status:** Stage-1 jump-contamination gate PASSES (0 flagged). Whole-series-hfq
 enumeration + M38 snapshot population are the remaining Stage-1 sub-steps before
 the Stage-2 IC gate.
+
+---
+
+## Result — Stage 2 IC gate (2022 fold): **REJECT** (2026-06-03)
+
+Ran on the cleaned work DB (`m43_work.db`), system Python 3.11 + lightgbm 4.6.0,
+bounded to `date <= 2022-12-31` (2023+/2025 untouched). HFQ exclusions applied
+(600601, 600602, **600519 贵州茅台** — its series is hfq-scaled in this DB).
+
+| metric | value |
+|---|---|
+| train_rows (date & label_realized < 2022-01-01) | 50,253 |
+| eval rows (2022) | 158,952 |
+| stride ICIR (stride=5, score vs label_5d) | **−0.1116** |
+| ic_mean | −0.0268 |
+| ic_days / ic_positive_rate | 49 / 0.469 |
+
+**Verdict: REJECT.** Per the frozen §6 rule, `ICIR ≤ 0` at the Stage-2 gate
+stops the experiment — Stages 3–5 are NOT run. The M27 top-decile LightGBM
+overlay (`top_decile_entry_timing_retrospective_v1`, frozen hyperparams) carries
+**no positive forward-predictive information** on the 2022 OOS fold; the IC is in
+fact slightly negative.
+
+**Interpretation.** This is a clean pre-registered negative result, not a bug:
+the overlay does not generalise out-of-sample, corroborating the project's
+production stance of `weight_quant = 0.0`. It does NOT get wired into decisions.
+
+**Follow-ups (each a SEPARATE, independently pre-registered experiment — not run):**
+- M43.2: candidates 2–4 (sector-relative-strength, Amihud-liquidity filter,
+  12-1 reversal), Bonferroni α/4, same harness.
+- Data: 600519/600601/600602 carry hfq-scaled price series in production
+  (absolute prices wrong, returns internally consistent) — a separate
+  data-remediation item beyond M42's jump-contamination scope.
