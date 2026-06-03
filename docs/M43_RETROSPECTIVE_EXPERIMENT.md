@@ -113,3 +113,39 @@ powered PROMOTE/REJECT on real history — but only on clean prices (M42) and on
 under this frozen protocol. A PROMOTE here is the first ATLAS capability with a
 statistically-grounded claim to influence decisions; even then it enters behind a
 flag via the M29 evidence gate, never as a wholesale replacement.
+
+---
+
+## Amendment 1 — Stage-1 pre-flight finding (2026-06-03)
+
+Made **before any fold was run** (no outcome data observed); the hypothesis,
+metrics, and decision rule in §2/§5/§6 are **unchanged**. Only the §8 data-quality
+precondition is corrected, because Stage-1 revealed it was based on a wrong
+assumption about the data.
+
+**Finding.** On the cleaned production DB, `Price.adjustment` is NULL for
+99.94% of rows and **0.00% in the 2021-2024 window** — provenance was never
+recorded historically. M42 *deletes* jump-contaminated rows (so they re-fetch as
+qfq); it does **not** retroactively tag the `adjustment` column. Therefore the
+original §8 gate `price_adjustment_pct >= 0.95` is **structurally unmeetable** and
+is not a meaningful integrity signal here.
+
+**Correction (supersedes the §8 `adjustment_pct` gate):**
+1. **Jump-contamination gate (replaces adjustment_pct):** the eval window must
+   have **zero** rows where `close > 3 × median(preceding 10 closes)` (the M42
+   predicate). Verified satisfied on the cleaned live DB (0 flagged) after the
+   M42 remediation deleted 84 rows on 2026-05-25/26.
+2. **Whole-series-hfq exclusion:** a handful of symbols (e.g. 600601 ≈ ¥142,000)
+   carry an entire price series on hfq basis — wrong absolute level but
+   internally consistent (entry and exit share the basis, so *returns* are
+   correct). These do not cause the artifact returns M42 fixed, but to be safe
+   M43 **excludes symbols whose max close in the window exceeds ¥10,000** (a
+   level impossible for a genuine qfq A-share; legitimately high names like
+   贵州茅台 ≈ ¥1,900 are well below). Enumerate + log the excluded set in
+   Stage-1; expected ≈ 8 symbols.
+3. The §5 **M42 contamination sentinel** (mean |gross_return| ∈ [0.001, 0.30] per
+   fold) remains as the run-time residual guard.
+
+**Status:** Stage-1 jump-contamination gate PASSES (0 flagged). Whole-series-hfq
+enumeration + M38 snapshot population are the remaining Stage-1 sub-steps before
+the Stage-2 IC gate.
