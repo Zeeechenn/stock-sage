@@ -136,6 +136,23 @@ def test_create_review_case_and_memory_candidate(test_db, sample_stocks):
     assert mc["source_trust"] == "pending"
 
 
+def test_review_case_without_payload_conforms_to_response_model(test_db, sample_stocks):
+    """Regression: a review case created without review_payload returns review_payload=None.
+    The ReviewCaseOut response_model must accept that (it was typed as a required dict,
+    causing a ResponseValidationError on the create/GET routes)."""
+    from backend.api.routes.research import create_review_case_endpoint
+    from backend.api.schemas import ReviewCaseCreateRequest, ReviewCaseOut
+
+    rc = create_review_case_endpoint(
+        symbol="600519",
+        request=ReviewCaseCreateRequest(symbol="600519", as_of="2026-02-02"),
+        db=test_db,
+    )
+    assert rc["review_payload"] is None
+    # The real guard: serializing through the response_model must not raise.
+    ReviewCaseOut(**rc)
+
+
 def test_memory_candidate_create_request_has_no_source_trust_field(test_db):
     """MemoryCandidateCreateRequest must not expose source_trust field."""
     from backend.api.schemas import MemoryCandidateCreateRequest

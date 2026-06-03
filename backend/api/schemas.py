@@ -434,7 +434,7 @@ class ReviewCaseOut(BaseModel):
     signal_id: int | None = None
     thesis_id: int | None = None
     research_case_as_of: str | None = None
-    review_payload: dict = {}
+    review_payload: dict | None = None
     created_at: str | None = None
 
 
