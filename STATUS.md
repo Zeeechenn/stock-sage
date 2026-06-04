@@ -63,12 +63,15 @@ Stop loss / take profit remain ATR-derived project rules, not LLM predictions.
 | M43 Architecture Boundary Hardening | complete | compatibility facades, behavior-characterization tests, and AST architecture guards are in place |
 | M44 Atlas Merge / L0-L4 Architecture | active: Phase 1 next | rebase Atlas onto `main` at `pre-atlas-m43-baseline`, preserve M31/M41/M42/M43 boundaries, then rerun Gate-A and focused parity checks |
 
-For detailed sequencing, read `docs/ROADMAP.md`. For historical milestone
-details, read `CHANGELOG.md`.
+For detailed sequencing, read `docs/ROADMAP.md`; for the Atlas/M44 detailed
+checklist, read `docs/ATLAS_MERGE.md`. For historical milestone details, read
+`CHANGELOG.md`.
 
-M44 planning note (2026-06-04): `docs/ROADMAP.md` now treats Atlas as the
-next-generation main architecture candidate, not a permanent side project. Phase
-0 completed locally: M43 was merged into `main` at `4882d49`, tagged
+M44 planning note (2026-06-04): `docs/ROADMAP.md` now points to
+`docs/ATLAS_MERGE.md` for the detailed Atlas checklist and keeps only the active
+handoff. Atlas is the next-generation main architecture candidate, not a
+permanent side project. Phase 0 completed locally: M43 was merged into `main` at
+`4882d49`, tagged
 `pre-atlas-m43-baseline`, post-merge `make verify` passed, and fixed-end test2
 replay (`--end 2026-06-04`) stayed byte-for-byte equivalent by SHA-256. The next
 step is Phase 1 Atlas rebase/Gate-A. Atlas behavior must remain dormant until
