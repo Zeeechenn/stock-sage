@@ -23,6 +23,8 @@ maintenance. It does not place real trades or provide financial advice.
 | M31 | complete: cache policy, provider fallback observability, rhythm CLI (premarket/intraday/postmarket/weekend), postmarket export with evidence cards + position review |
 | M41 | complete: read-only A/HK/US seven-layer data/research facade; HK/US official signals remain observe-only |
 | M42 | complete: qfq/hfq price-contamination write guard and dry-run-first remediation CLI |
+| M43 | complete: architecture boundary hardening for market data, runtime schema, AI chat routes, and scheduler jobs |
+| M44 / Atlas merge | active: M43 -> main baseline first; Atlas remains dormant architecture candidate until engineering parity gates pass |
 | remote agent mode | opt-in only; read-only by default |
 
 Daily/batch post-market signals do not enable multi-agent research by default,
@@ -58,9 +60,18 @@ Stop loss / take profit remain ATR-derived project rules, not LLM predictions.
 | M32 Forward Hypothesis Bridge | design stance set | start only after review data is thick enough |
 | M41 A/HK/US Global Data/Research Buildout | complete | read-only three-market data facade, health ledger, normalization/PIT contracts, UX boundary, and CN-only production guardrails |
 | M42 qfq/hfq Price-Contamination Guard | complete | write-time jump guard, dry-run-first remediation CLI, 33 hermetic tests; legacy full-series hfq rows remain a separate data cleanup item |
+| M43 Architecture Boundary Hardening | complete | compatibility facades, behavior-characterization tests, and AST architecture guards are in place |
+| M44 Atlas Merge / L0-L4 Architecture | active: Phase 0 | run M43 `make verify`, fixed-end test2 replay zero diff, local merge to `main`, baseline tag; then rebase Atlas |
 
 For detailed sequencing, read `docs/ROADMAP.md`. For historical milestone
 details, read `CHANGELOG.md`.
+
+M44 planning note (2026-06-04): `docs/ROADMAP.md` now treats Atlas as the
+next-generation main architecture candidate, not a permanent side project. The
+first execution step is still conservative: land M43 on `main`, pin a
+`pre-atlas-m43-baseline`, verify test2 replay parity, and only then rebase
+Atlas. Atlas behavior must remain dormant until engineering parity gates pass;
+any investment-impact promotion requires later shadow/test4 evidence.
 
 M31 completion note (2026-06-02): `backend.data.cache_policy` defines L1/L2/L3
 and the intraday zero-network contract; `/api/system/data-coverage` exposes
@@ -139,6 +150,21 @@ backup-protected sqlite remediation path for the 2026-05-25/26 hfq rows found
 in ATLAS follow-up analysis. The production decision layer is unchanged:
 `WEIGHT_QUANT=0.0`, CN-only official signals, and HK/US observe-only boundaries
 all remain intact.
+
+M43 completion note (2026-06-04): architecture hardening split the thick
+market-data, runtime-schema, AI chat, and scheduler modules into focused helpers
+while preserving compatibility facades. `backend.data.market` remains the public
+market entrypoint but delegates provider helpers and DB writes to
+`market_utils`, `market_sources`, and `market_persistence`; `database.py` keeps
+ORM/session/init entrypoints while `schema_runtime.py` and `seed.py` own startup
+patches and seed routines; `api/routes/ai.py` delegates action parsing, chat
+storage, and deterministic response building; `scheduler.py` delegates job
+workflows to `backend.jobs.*`. `tests/test_architecture_boundaries.py` now
+guards top-level import cycles, API/provider layering, and facade size limits.
+M43 verification passed with ruff, mypy, 759 backend tests, 19 frontend node
+tests, and Vite build; the first integrated `make verify` run reached Vite build
+and then hit a sandbox-only `frontend/node_modules/.vite-temp` write `EPERM`, so
+the build step was rerun under normal filesystem permissions and passed.
 
 ## Validation Snapshot
 
