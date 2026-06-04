@@ -229,6 +229,22 @@
 
 ---
 
+## M43 架构边界硬化与行为等价重构【complete】🧱
+
+> 来源：2026-06-04 代码架构复盘。项目整体不是单文件式“屎山”，但 `market.py`、`database.py`、`api/routes/ai.py`、`scheduler.py` 已经开始变厚；M43 采用兼容 facade + characterization tests，而不是推倒重写或拆微服务。
+
+- [x] Market facade：`backend.data.market` 保留 public imports、provider 注册顺序、fallback、adjustment attrs、M42 写入 guard；实际 helper 拆到 `market_utils.py`、`market_sources.py`、`market_persistence.py`。
+- [x] Runtime schema / seed：`database.py` 保留 ORM models、session、`get_db`、`init_db` 与兼容私有入口；启动时 schema patch 和默认 seed 分别落到 `schema_runtime.py` / `seed.py`。
+- [x] News cycle cleanup：`RawNews` 迁到 `news_models.py`，`news.py` 与 `news_audit.py` 不再形成真实双向依赖。
+- [x] AI route split：`api/routes/ai.py` 保留 HTTP/SSE、pending/confirm 和旧测试 wrapper；自然语言 action 解析、chat store、确定性回答构建分别落到 `agent/action_parser.py`、`memory/chat_store.py`、`agent/chat_responder.py`。
+- [x] Scheduler split：`scheduler.py` 保留 scheduler 生命周期、job state、tracked jobs、kill-switch guard、cron schedule 与旧 monkeypatch 接缝；实际 job workflows 拆到 `backend/jobs/`。
+- [x] Architecture guard：新增 AST 级 `tests/test_architecture_boundaries.py`，硬门禁只检查顶层 backend import graph、API routes 顶层 heavy-provider imports、核心 facade 行数，避免误伤有意 lazy import。
+
+> 2026-06-04 M43 完成：`market.py` 从约 659 行降到 179 行，`api/routes/ai.py` 从约 657 行降到 344 行，`scheduler.py` 从约 858 行降到 352 行，`database.py` 从约 718 行降到 452 行。生产信号、provider 优先级、API URL/response、SSE 顺序、scheduler job id/时间表、`WEIGHT_QUANT=0.0` 均未改变。
+> 验证：ruff、mypy、759 个 backend tests、19 个 frontend node tests 通过；集成 `make verify` 到 Vite build 步骤时因沙盒无法写 `frontend/node_modules/.vite-temp` 报 `EPERM`，随后在正常文件权限下单独 rerun `npm --prefix frontend run build` 通过。
+
+---
+
 ## M41 A/HK/US Global Data/Research Buildout【complete】🌐
 
 > 来源：2026-06-03 评估“Global Stock Data / 港美市场数据 Agent Skill”参考视频。视频的可借鉴点不是单一接口，而是把分散入口封装成 agent 可调用的数据能力：quote / kline / fundamental / capital / options / filings / fallback，并明确数据源边界、字段与失效策略。本项目先接 daily price seed，不把未验证的 fundamentals/options/filings 直接并入研究或生产信号。

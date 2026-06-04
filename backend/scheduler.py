@@ -1,5 +1,4 @@
-"""定时任务：盘前更新数据，盘后生成信号"""
-import json
+"""定时任务：scheduler 生命周期、job state、tracked job 与兼容入口。"""
 import logging
 from copy import deepcopy
 from datetime import UTC, datetime
@@ -18,7 +17,6 @@ logger = logging.getLogger(__name__)
 scheduler = BackgroundScheduler(timezone="Asia/Shanghai")
 
 JOB_STATE: dict[str, dict] = {}
-
 
 
 def reset_job_state() -> None:
@@ -95,13 +93,6 @@ def tracked_job(job_name: str):
     return decorator
 
 
-def _use_multi_agent_decision() -> bool:
-    """Return True if the current signal profile uses multi-agent aggregation."""
-    from backend.config import active_signal_weights
-
-    return active_signal_weights().use_multi_agent
-
-
 def _kill_switch_guard(job_name: str) -> bool:
     """job 入口防线：熔断态返回 True 表示应跳过。"""
     try:
@@ -115,51 +106,28 @@ def _kill_switch_guard(job_name: str) -> bool:
     return False
 
 
-def _recent_signal_returns(db, limit: int = 20) -> list[float]:
-    """最近正向信号的次日收益，用于 kill switch 连亏检测。"""
-    from backend.data.database import Price, Signal
-    from backend.decision.signal_policy import entry_recommendations
+def _postmarket_jobs():
+    from backend.jobs import postmarket
 
-    recent_signals = (
-        db.query(Signal)
-        .filter(Signal.recommendation.in_(entry_recommendations(include_legacy=True)))
-        .order_by(Signal.date.desc())
-        .limit(limit)
-        .all()
-    )
-    returns = []
-    for sig in reversed(recent_signals):
-        sig_price = (
-            db.query(Price.close)
-            .filter(Price.symbol == sig.symbol, Price.date == sig.date)
-            .first()
-        )
-        next_price = (
-            db.query(Price.close)
-            .filter(Price.symbol == sig.symbol, Price.date > sig.date)
-            .order_by(Price.date.asc())
-            .first()
-        )
-        if sig_price and next_price and sig_price[0]:
-            returns.append((next_price[0] - sig_price[0]) / sig_price[0])
-    return returns
+    return postmarket
+
+
+def _use_multi_agent_decision() -> bool:
+    """Compatibility wrapper for postmarket signal aggregation mode."""
+    return _postmarket_jobs()._use_multi_agent_decision()
+
+
+def _recent_signal_returns(db, limit: int = 20) -> list[float]:
+    """Compatibility wrapper for postmarket kill-switch return sampling."""
+    return _postmarket_jobs()._recent_signal_returns(db, limit=limit)
 
 
 def _run_kill_switch_checks(db) -> None:
-    """盘后自动安全检查：连亏 + 数据新鲜度。"""
-    try:
-        from backend.data.database import Price
-        from backend.ops import kill_switch
-
-        latest = db.query(Price.date).order_by(Price.date.desc()).first()
-        state = kill_switch.run_all_checks(
-            trade_returns=_recent_signal_returns(db),
-            latest_price_date=latest[0] if latest else None,
-        )
-        if state:
-            logger.warning("🛑 kill switch 自动检查触发：%s", state.reason)
-    except Exception as e:
-        logger.error("kill_switch auto checks failed: %s", e)
+    """Compatibility wrapper for postmarket kill-switch checks."""
+    return _postmarket_jobs()._run_kill_switch_checks(
+        db,
+        recent_signal_returns=_recent_signal_returns,
+    )
 
 
 @tracked_job("premarket")
@@ -167,427 +135,93 @@ def job_premarket() -> None:
     """盘前任务：同步行情 + 个股新闻 + 沪深300指数"""
     if _kill_switch_guard("premarket"):
         return
-    from backend.data.database import SessionLocal, Stock
-    from backend.data.market import backfill_if_needed, sync_index_to_db
-    from backend.data.news import fetch_stock_news_cn, save_news_to_db
+    from backend.jobs.premarket import run_premarket
 
-    db = SessionLocal()
-    try:
-        stocks = db.query(Stock).filter(Stock.active).all()
-        price_rows, news_rows = 0, 0
-
-        for stock in stocks:
-            # 行情回填
-            try:
-                price_rows += backfill_if_needed(stock.symbol, stock.market, db, refresh_today=True)
-            except Exception as e:
-                logger.error("backfill failed %s: %s", stock.symbol, e)
-
-            # 个股新闻（仅A股，美股 Phase 7）
-            if stock.market == "CN":
-                try:
-                    news = fetch_stock_news_cn(stock.symbol)
-                    news_rows += save_news_to_db(news, db)
-                except Exception as e:
-                    logger.error("news fetch failed %s: %s", stock.symbol, e)
-
-        try:
-            sync_index_to_db(db)
-        except Exception as e:
-            logger.error("index sync failed: %s", e)
-
-        logger.info("pre-market done: %d stocks, %d price rows, %d news items",
-                    len(stocks), price_rows, news_rows)
-    finally:
-        db.close()
+    return run_premarket()
 
 
 def _build_regime(db, stocks):
-    """阶段A: 一次性构建大盘+板块 regime（盘后所有股票共用）"""
-    import pandas as pd
-
-    from backend.analysis.timing.regime import market_regime
-    from backend.data.database import Price
-
-    # HS300 OHLC — 没有真实 high/low 时不合成，RSRS 保持中性。
-    index_df = None
-
-    # 板块扩散：用自选股池近30日价格
-    sector_dfs = {}
-    for s in stocks:
-        prc = (db.query(Price.date, Price.close)
-               .filter(Price.symbol == s.symbol)
-               .order_by(Price.date.desc()).limit(40).all())
-        if len(prc) >= 25:
-            sector_dfs[s.symbol] = pd.DataFrame(
-                [(r.date, r.close) for r in reversed(prc)],
-                columns=["date", "close"],
-            ).set_index("date")
-
-    return market_regime(index_df, sector_dfs)
+    """Compatibility wrapper for postmarket regime construction."""
+    return _postmarket_jobs()._build_regime(db, stocks)
 
 
 def _load_postmarket_context(db, stocks) -> dict:
-    """Load cross-stock context once for the whole post-market batch."""
-    from backend.config import settings
-
-    regime = None
-    if settings.regime_filter_enabled:
-        try:
-            regime = _build_regime(db, stocks)
-            logger.info("regime: %s", regime.reason)
-        except Exception as e:
-            logger.warning("regime 构建失败: %s", e)
-
-    long_term_labels = {}
-    if settings.long_term_team_enabled:
-        try:
-            from backend.agents.long_term.storage import bulk_get_labels
-            long_term_labels = bulk_get_labels([s.symbol for s in stocks], db)
-            logger.info("long_term labels loaded: %d/%d", len(long_term_labels), len(stocks))
-        except Exception as e:
-            logger.warning("long_term labels 读取失败: %s", e)
-
-    return {"regime": regime, "long_term_labels": long_term_labels}
+    """Compatibility wrapper for postmarket batch context loading."""
+    return _postmarket_jobs()._load_postmarket_context(
+        db,
+        stocks,
+        build_regime=_build_regime,
+    )
 
 
 def _postmarket_news_sentiment(stock, db) -> dict:
-    from backend.analysis.sentiment import analyze_news
-    from backend.config import settings
-    from backend.data.news import (
-        fetch_titles_ifind,
-        fetch_titles_tavily,
-        get_recent_news_items,
-    )
-    from backend.data.news_audit import audited_titles
-
-    news_items = get_recent_news_items(stock.symbol, db, hours=24)
-    titles, news_audits = audited_titles(news_items)
-    db_title_count = len(titles)
-    if settings.ifind_mcp_enabled and len(titles) < settings.tavily_supplement_threshold:
-        ifind_titles = fetch_titles_ifind(stock.symbol, stock.name)
-        if ifind_titles:
-            titles = titles + ifind_titles
-            logger.info("iFinD补充 %s: +%d条 (DB=%d条)",
-                        stock.symbol, len(ifind_titles), db_title_count)
-    if settings.tavily_api_key and len(titles) < settings.tavily_supplement_threshold:
-        tavily_titles = fetch_titles_tavily(stock.symbol, stock.name)
-        if tavily_titles:
-            titles = titles + tavily_titles
-            logger.info("Tavily补充 %s: +%d条 (DB=%d条)",
-                        stock.symbol, len(tavily_titles), len(titles) - len(tavily_titles))
-
-    sentiment_result = analyze_news(titles, symbol=stock.symbol)
-    sentiment_result["news_audit"] = [
-        {
-            "title": audit.title,
-            "score": audit.score,
-            "usable": audit.usable,
-            "risk_flags": audit.risk_flags,
-            "source": audit.news.source,
-            "url": audit.news.url,
-        }
-        for audit in news_audits[:10]
-    ]
-    return sentiment_result
+    """Compatibility wrapper for postmarket news sentiment."""
+    return _postmarket_jobs()._postmarket_news_sentiment(stock, db)
 
 
 def _should_record_memory_usage(context: dict) -> bool:
-    if context.get("read_only") or context.get("memory_read_only"):
-        return False
-    if context.get("record_memory_usage") is False:
-        return False
-    return True
+    """Compatibility wrapper for postmarket memory usage policy."""
+    return _postmarket_jobs()._should_record_memory_usage(context)
 
 
-def _analyze_postmarket_stock(stock, db, context: dict, as_of_date: str | None = None) -> dict | None:
-    from backend.analysis.qlib_engine import qlib_score
-    from backend.analysis.technical import technical_score
-    from backend.data.market import load_price_df
-    from backend.decision.aggregator import aggregate, aggregate_v2
-    from backend.memory.stock_memory import build_memory_context, list_stock_memories
-
-    df = load_price_df(stock.symbol, db, days=200)
-    if as_of_date:
-        df = df[df.index <= as_of_date]
-    if len(df) < 60:
-        logger.warning("not enough data for %s (%d rows), skipping", stock.symbol, len(df))
-        return None
-
-    tech = technical_score(df, market=stock.market, symbol=stock.symbol)
-    close = tech["latest"]["close"]
-    atr = tech["latest"]["atr14"] or 0.0
-    date_str = df.index[-1]
-    quant_result = qlib_score(df, symbol=stock.symbol, db=db)
-    sentiment_result = _postmarket_news_sentiment(stock, db)
-    memory_context = build_memory_context(
+def _analyze_postmarket_stock(
+    stock,
+    db,
+    context: dict,
+    as_of_date: str | None = None,
+) -> dict | None:
+    """Compatibility wrapper for per-stock postmarket analysis."""
+    return _postmarket_jobs()._analyze_postmarket_stock(
+        stock,
         db,
-        symbol=stock.symbol,
-        query=f"{stock.symbol} {stock.name}",
-        task_type="postmarket_signal",
-        record_usage=_should_record_memory_usage(context),
+        context,
+        as_of_date=as_of_date,
+        postmarket_news_sentiment=_postmarket_news_sentiment,
+        use_multi_agent_decision=_use_multi_agent_decision,
     )
-    try:
-        research_pointers = list_stock_memories(
-            db,
-            symbol=stock.symbol,
-            memory_type="research_pointer",
-            limit=5,
-        )
-    except Exception as exc:
-        logger.warning("research pointer context unavailable %s: %s", stock.symbol, exc)
-        research_pointers = []
-    if research_pointers:
-        sentiment_result["research_context"] = research_pointers
-    reflection = memory_context.get("text", "")
-    lt_label = context["long_term_labels"].get(stock.symbol)
-
-    if _use_multi_agent_decision():
-        result = aggregate_v2(
-            quant_result=quant_result,
-            technical_result=tech,
-            sentiment_result=sentiment_result,
-            close=close,
-            atr=atr,
-            regime=context.get("regime"),
-            reflection_context=reflection,
-            long_term_label=lt_label,
-        )
-    else:
-        result = aggregate(
-            quant_score=quant_result["score"],
-            technical_result=tech,
-            sentiment_score=sentiment_result["sentiment"],
-            close=close,
-            atr=atr,
-            sentiment_result=sentiment_result,
-            reflection_context=reflection,
-            long_term_label=lt_label,
-            memory_context=memory_context,
-        )
-    result["news_audit"] = sentiment_result.get("news_audit", [])
-    return {
-        "date": date_str,
-        "result": result,
-        "quant_result": quant_result,
-        "technical_result": tech,
-        "sentiment_result": sentiment_result,
-    }
 
 
 def _persist_postmarket_stock(stock, analysis: dict, db) -> None:
-    from backend.config import settings
-    from backend.decision.aggregator import save_signal
-    from backend.decision.decision_memory import save_decision
-    from backend.decision.memory_layered import save_decision_layered
-
-    date_str = analysis["date"]
-    result = analysis["result"]
-    save_signal(stock.symbol, date_str, result, db)
-    save_decision(stock.symbol, date_str, result)
-    if settings.layered_memory_enabled:
-        save_decision_layered(stock.symbol, date_str, result, db=db)
-
-    try:
-        from backend.decision.harness import review_latest_signal
-        review_latest_signal(db, stock.symbol)
-    except Exception as e:
-        logger.warning("auto review failed %s: %s", stock.symbol, e)
+    """Compatibility wrapper for postmarket signal persistence."""
+    return _postmarket_jobs()._persist_postmarket_stock(stock, analysis, db)
 
 
 def _maybe_send_postmarket_alert(stock, result: dict) -> bool:
-    from backend.decision.signal_policy import should_send_signal_alert
-
-    if not should_send_signal_alert(result["recommendation"]):
-        return False
-    from backend.notification.bark import send_signal_alert
-    return send_signal_alert(
-        symbol=stock.symbol,
-        name=stock.name,
-        recommendation=result["recommendation"],
-        score=result["composite_score"],
-        stop_loss=result["stop_loss"],
-        take_profit=result["take_profit"],
-        position_pct=result.get("position_pct"),
-    )
+    """Compatibility wrapper for postmarket Bark signal alerts."""
+    return _postmarket_jobs()._maybe_send_postmarket_alert(stock, result)
 
 
 def _open_position_weights(db) -> dict[str, float]:
-    """Best-effort CN holding weights for PortfolioManager input."""
-    from backend.data.database import Position, Price, Stock
-    from backend.decision.market_policy import is_production_signal_market
-
-    try:
-        positions = (
-            db.query(Position)
-            .outerjoin(Stock, Stock.symbol == Position.symbol)
-            .filter(Position.status == "open")
-            .all()
-        )
-    except Exception as e:
-        logger.warning("portfolio position load failed: %s", e)
-        return {}
-
-    values: dict[str, float] = {}
-    for pos in positions:
-        market = getattr(pos, "market", None)
-        if not market:
-            stock = db.query(Stock).filter(Stock.symbol == pos.symbol).first()
-            market = getattr(stock, "market", None)
-        if not is_production_signal_market(market):
-            continue
-        quantity = float(getattr(pos, "quantity", 0) or 0)
-        if quantity <= 0:
-            continue
-        latest = None
-        try:
-            latest = (
-                db.query(Price.close)
-                .filter(Price.symbol == pos.symbol)
-                .order_by(Price.date.desc())
-                .first()
-            )
-        except Exception:
-            latest = None
-        close = float(latest[0]) if latest else float(getattr(pos, "avg_cost", 0) or 0)
-        if close > 0:
-            values[pos.symbol] = values.get(pos.symbol, 0.0) + quantity * close
-
-    total_value = sum(values.values())
-    if total_value <= 0:
-        return {}
-    scale = min(1.0, float(settings.max_total_equity_pct or 1.0))
-    return {symbol: round(value / total_value * scale, 4) for symbol, value in values.items()}
+    """Compatibility wrapper for PortfolioManager input weights."""
+    return _postmarket_jobs()._open_position_weights(db)
 
 
 def _apply_portfolio_decision(batch_items: list[tuple[Any, dict]], db) -> int:
-    """Apply batch-level PortfolioManager targets to per-stock signal results."""
-    if not batch_items:
-        return 0
-
-    from backend.agents.portfolio_manager import (
-        PortfolioCandidate,
-        decision_to_dict,
-        manage,
+    """Compatibility wrapper for batch-level portfolio decisions."""
+    return _postmarket_jobs()._apply_portfolio_decision(
+        batch_items,
+        db,
+        open_position_weights=_open_position_weights,
     )
-
-    current_weights = _open_position_weights(db)
-    candidates = []
-    for stock, analysis in batch_items:
-        result = analysis["result"]
-        current = current_weights.get(stock.symbol, 0.0)
-        risk_position_pct = float(result.get("risk_position_pct", result.get("position_pct")) or 0.0)
-        candidates.append(PortfolioCandidate(
-            symbol=stock.symbol,
-            sector=getattr(stock, "industry", None) or "未分类",
-            composite_score=float(result.get("composite_score") or 0.0),
-            recommendation=result.get("recommendation") or "观望",
-            confidence=result.get("confidence") or "低",
-            suggested_position_pct=risk_position_pct,
-            is_existing=current > 0,
-            current_position_pct=current,
-        ))
-
-    decision = manage(candidates)
-    batch_decision = decision_to_dict(decision)
-    by_symbol = {a["symbol"]: a for a in batch_decision["allocations"]}
-    for stock, analysis in batch_items:
-        result = analysis["result"]
-        allocation = by_symbol.get(stock.symbol)
-        if allocation is None:
-            continue
-        risk_position_pct = float(result.get("risk_position_pct", result.get("position_pct")) or 0.0)
-        result.setdefault("trader_position_pct", risk_position_pct)
-        result["risk_position_pct"] = risk_position_pct
-        result["position_pct"] = allocation["target_position_pct"]
-        result["allocation_rationale"] = allocation["rationale"]
-        result["portfolio_decision"] = {
-            **allocation,
-            "available_capital_pct": batch_decision["available_capital_pct"],
-            "sector_usage": batch_decision["sector_usage"],
-            "rejected": batch_decision["rejected"],
-            "notes": batch_decision["notes"],
-        }
-    return len(by_symbol)
 
 
 def load_universe_symbols(path: str | Path) -> list[str]:
-    """Load symbols from a paper-trading universe JSON file."""
-    payload = json.loads(Path(path).read_text(encoding="utf-8"))
-    rows = payload.get("stocks", payload) if isinstance(payload, dict) else payload
-    symbols: list[str] = []
-    for row in rows:
-        symbol = row.get("symbol") if isinstance(row, dict) else row
-        if symbol:
-            symbols.append(str(symbol).zfill(6))
-    return symbols
+    """Compatibility wrapper for paper-trading universe JSON loading."""
+    return _postmarket_jobs().load_universe_symbols(path)
 
 
 def run_postmarket_batch(db, universe_symbols: list[str] | None = None) -> dict:
     """Run post-market analysis for active stocks or an explicit universe."""
-    from backend.data.database import Stock
-    from backend.decision.market_policy import is_production_signal_eligible_stock
-
-    if universe_symbols is None:
-        candidates = db.query(Stock).filter(Stock.active).all()
-    else:
-        candidates = db.query(Stock).filter(Stock.symbol.in_(universe_symbols)).all()
-    stocks = [stock for stock in candidates if is_production_signal_eligible_stock(stock)]
-    context = _load_postmarket_context(db, stocks)
-    stats = {
-        "stocks": len(stocks),
-        "input_stocks": len(candidates),
-        "market_skipped": len(candidates) - len(stocks),
-        "universe_filter": len(universe_symbols) if universe_symbols is not None else 0,
-        "processed": 0,
-        "saved": 0,
-        "skipped": 0,
-        "errors": 0,
-        "alerts": 0,
-        "portfolio_allocated": 0,
-    }
-    batch_items: list[tuple[Any, dict]] = []
-    for stock in stocks:
-        try:
-            analysis = _analyze_postmarket_stock(stock, db, context)
-            if analysis is None:
-                stats["skipped"] += 1
-                continue
-            batch_items.append((stock, analysis))
-            stats["processed"] += 1
-        except Exception as e:
-            stats["errors"] += 1
-            logger.error("postmarket failed %s: %s", stock.symbol, e)
-
-    try:
-        stats["portfolio_allocated"] = _apply_portfolio_decision(batch_items, db)
-    except Exception as e:
-        logger.warning("portfolio manager batch decision failed: %s", e)
-
-    for stock, analysis in batch_items:
-        try:
-            _persist_postmarket_stock(stock, analysis, db)
-            result = analysis["result"]
-            stats["saved"] += 1
-            if _maybe_send_postmarket_alert(stock, result):
-                stats["alerts"] += 1
-            logger.info(
-                "signal saved: %s %s %s(%.0f) quant=%.1f tech=%.1f sentiment=%.2f model=%s",
-                stock.symbol,
-                analysis["date"],
-                result["recommendation"],
-                result["composite_score"],
-                analysis["quant_result"]["score"],
-                analysis["technical_result"].get("score", 0),
-                analysis["sentiment_result"]["sentiment"],
-                analysis["quant_result"].get("model", "?"),
-            )
-        except Exception as e:
-            stats["errors"] += 1
-            logger.error("postmarket failed %s: %s", stock.symbol, e)
-    logger.info("post-market done: %d stocks processed", stats["processed"])
-    _run_kill_switch_checks(db)
-    return stats
+    return _postmarket_jobs().run_postmarket_batch(
+        db,
+        universe_symbols,
+        load_context=_load_postmarket_context,
+        analyze_stock=_analyze_postmarket_stock,
+        apply_portfolio_decision=_apply_portfolio_decision,
+        persist_stock=_persist_postmarket_stock,
+        send_alert=_maybe_send_postmarket_alert,
+        run_kill_switch_checks=_run_kill_switch_checks,
+    )
 
 
 @tracked_job("postmarket")
@@ -603,195 +237,55 @@ def job_postmarket() -> dict:
     finally:
         db.close()
 
+
 @tracked_job("stoploss_check")
 def job_stoploss_check() -> None:
-    """
-    盘中止损预警（每天 14:30 运行）：
-    取最近一次正向信号，比对当日最新价是否触及止损线，
-    触及则发送 Bark 推送。
-    """
+    """盘中止损预警（每天 14:30 运行）。"""
     if _kill_switch_guard("stoploss_check"):
         return
-    from backend.data.database import Price, SessionLocal, Signal, Stock
-    from backend.decision.market_policy import is_production_signal_eligible_stock
-    from backend.decision.signal_policy import entry_recommendations
-    from backend.notification.bark import send_stoploss_alert
+    from backend.jobs.intraday import run_stoploss_check
 
-    db = SessionLocal()
-    try:
-        stocks = [
-            stock
-            for stock in db.query(Stock).filter(Stock.active).all()
-            if is_production_signal_eligible_stock(stock)
-        ]
-        for stock in stocks:
-            try:
-                sig = (
-                    db.query(Signal)
-                    .filter(
-                        Signal.symbol == stock.symbol,
-                        Signal.recommendation.in_(entry_recommendations(include_legacy=True)),
-                        Signal.stop_loss.isnot(None),
-                    )
-                    .order_by(Signal.date.desc())
-                    .first()
-                )
-                if not sig:
-                    continue
-
-                latest_price = (
-                    db.query(Price.close)
-                    .filter(Price.symbol == stock.symbol)
-                    .order_by(Price.date.desc())
-                    .first()
-                )
-                if not latest_price:
-                    continue
-
-                current = float(latest_price[0])
-                if sig.stop_loss is not None and current <= sig.stop_loss:
-                    logger.warning("止损触发: %s 当前%.2f ≤ 止损%.2f (信号%s)",
-                                   stock.symbol, current, sig.stop_loss, sig.date)
-                    send_stoploss_alert(
-                        symbol=stock.symbol,
-                        name=stock.name,
-                        current_price=current,
-                        stop_loss=sig.stop_loss,
-                        signal_date=sig.date,
-                    )
-            except Exception as e:
-                logger.error("stoploss check failed %s: %s", stock.symbol, e)
-    finally:
-        db.close()
+    return run_stoploss_check()
 
 
 @tracked_job("train_model")
 def job_train_model() -> None:
     """每周六重训 LightGBM Alpha 模型（数据不足时自动跳过）"""
-    from backend.analysis.qlib_engine import train
-    from backend.data.database import SessionLocal
+    from backend.jobs.weekend import run_train_model
 
-    db = SessionLocal()
-    try:
-        ok = train(db)
-        if ok:
-            logger.info("weekly model training succeeded")
-        else:
-            logger.warning("weekly model training skipped (insufficient data)")
-    except Exception as e:
-        logger.error("weekly model training failed: %s", e)
-    finally:
-        db.close()
+    return run_train_model()
 
 
 @tracked_job("weekly_longterm")
 def job_weekly_longterm() -> None:
-    """
-    长期分析师团 first batch：每周日 11:00
-    同步 industry + 5 年财报 → 跑 LongTermTeam → save_label
-    """
-    from backend.agents.long_term.storage import save_label
-    from backend.agents.long_term.team import LongTermTeam
-    from backend.data.database import SessionLocal, Stock
-    from backend.data.fundamentals import (
-        sync_disclosure_dates,
-        sync_financial_metrics,
-        sync_industry,
-    )
+    """长期分析师团 first batch：同步基本面并运行 LongTermTeam。"""
+    from backend.jobs.weekend import run_weekly_longterm
 
-    if not settings.long_term_team_enabled:
-        logger.info("long_term team disabled, skipping weekly job")
-        return
-
-    db = SessionLocal()
-    try:
-        # 1. 同步基本面（industry 已有则跳过，财报幂等）
-        try:
-            n = sync_industry(db)
-            logger.info("industry synced: %d updated", n)
-        except Exception as e:
-            logger.warning("sync_industry failed: %s", e)
-
-        stocks = db.query(Stock).filter(Stock.active, Stock.market == "CN").all()
-        for s in stocks:
-            try:
-                inserted = sync_financial_metrics(s.symbol, db, years=settings.financial_backfill_years)
-                if inserted:
-                    logger.info("financials %s: +%d rows", s.symbol, inserted)
-            except Exception as e:
-                logger.error("sync_financial_metrics %s failed: %s", s.symbol, e)
-
-        try:
-            n = sync_disclosure_dates(db, years=settings.financial_backfill_years)
-            logger.info("disclosure dates synced: %d updated", n)
-        except Exception as e:
-            logger.warning("sync_disclosure_dates failed: %s", e)
-
-        # 2. 跑团
-        team = LongTermTeam()
-        for s in stocks:
-            try:
-                label = team.run(s.symbol, s.name, db)
-                save_label(label, db)
-                logger.info("long-term %s = %s (score=%.0f)",
-                            s.symbol, label.label, label.score)
-            except Exception as e:
-                logger.error("long-term team %s failed: %s", s.symbol, e)
-    finally:
-        db.close()
+    return run_weekly_longterm()
 
 
 @tracked_job("weekly_long_term_reflect")
 def job_weekly_long_term_reflect() -> dict:
     """Weekly long-term decision reflection into layered memory."""
-    from backend.data.database import SessionLocal
-    from backend.decision.memory_layered import weekly_long_term_reflect
+    from backend.jobs.weekend import run_weekly_long_term_reflect
 
-    db = SessionLocal()
-    try:
-        reflection = weekly_long_term_reflect(db)
-        return {"status": "ok", "reflection": reflection}
-    finally:
-        db.close()
+    return run_weekly_long_term_reflect()
 
 
 @tracked_job("daily_memory_backup")
 def job_daily_memory_backup() -> None:
     """Daily dump of ai_memory to ~/.stock-sage/memory/backups/ (M9.横向)."""
-    from backend.data.database import SessionLocal
-    from backend.memory.backup import run_daily_backup
-    db = SessionLocal()
-    try:
-        path = run_daily_backup(db)
-        logger.info("memory backup written: %s", path)
-    except Exception as e:
-        logger.error("memory backup failed: %s", e)
-    finally:
-        db.close()
+    from backend.jobs.weekend import run_daily_memory_backup
+
+    return run_daily_memory_backup()
 
 
 @tracked_job("daily_memory_expire")
 def job_daily_memory_expire() -> None:
     """Daily cleanup of expired memory rows and stock-memory outcomes."""
-    from backend.data.database import SessionLocal
-    from backend.memory.ai_memory import expire_stale_memories
-    from backend.memory.audit_log import cleanup_audit_log
-    from backend.memory.stock_memory import update_judgment_outcomes
-    db = SessionLocal()
-    try:
-        removed = expire_stale_memories(db)
-        if removed:
-            logger.info("memory expire: removed %d stale rows", removed)
-        outcomes = update_judgment_outcomes(db)
-        if outcomes:
-            logger.info("stock memory outcomes: wrote %d rows", outcomes)
-        audit_removed = cleanup_audit_log(db)
-        if audit_removed:
-            logger.info("audit log cleanup: removed %d old rows", audit_removed)
-    except Exception as e:
-        logger.error("memory expire failed: %s", e)
-    finally:
-        db.close()
+    from backend.jobs.weekend import run_daily_memory_expire
+
+    return run_daily_memory_expire()
 
 
 def start() -> None:

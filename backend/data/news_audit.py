@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from urllib.parse import urlparse
 
-from backend.data.news import RawNews
+from backend.data.news_models import RawNews
 
 STRONG_SOURCES = {
     "上交所", "深交所", "巨潮资讯", "证监会", "交易所",

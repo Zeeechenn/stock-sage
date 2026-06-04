@@ -56,8 +56,13 @@ non-promoting.
 
 ```
 backend/config.py                            配置入口（环境变量、路径、调度时间、Bark、双 profile）
-backend/data/database.py                     数据库模型 + 轻量幂等迁移
-backend/data/market.py                       行情数据拉取（A 股多源 fallback，HK/US yfinance daily，Tushare qfq 可选后置）
+backend/data/database.py                     数据库模型 + session/init 兼容入口
+backend/data/schema_runtime.py               启动时轻量幂等 schema patch
+backend/data/seed.py                         默认 memory seed + 本地 memory migration gate
+backend/data/market.py                       行情 facade（provider 注册/fetch/DB wrapper 兼容入口）
+backend/data/market_utils.py                 行情调整口径、symbol mapper、OHLCV normalize、provenance attrs
+backend/data/market_sources.py               A/HK/US daily 与 CN index provider adapters
+backend/data/market_persistence.py           Price / IndexPrice 读写、backfill、M42 write guard 接入
 backend/data/cache_policy.py                 M31 L1/L2/L3 缓存层、盘中零网络与 freshness contract
 backend/data/market_capabilities.py          A/HK/US 七层市场数据能力目录（metadata-only）
 backend/data/global_data.py                  M41 只读 global-data envelope、canonical schema/PIT gate、probe health ledger 聚合
@@ -89,8 +94,11 @@ backend/notification/bark.py                 Bark iOS 推送
 backend/api/routes/                          REST API 路由（含 health / kill-switch）
 backend/api/schemas.py                       Pydantic response schemas
 backend/agent/                               Codex / Claude Code 本地 agent 上下文与 MCP 工具桥
+backend/agent/action_parser.py               AI chat 自然语言 action candidate 解析（不执行 action）
+backend/agent/chat_responder.py              AI chat 确定性项目上下文回答构建
 backend/main.py                              FastAPI 应用入口
-backend/scheduler.py                         定时任务（盘前/盘中/盘后/周训练 + M3.4 guard）
+backend/scheduler.py                         scheduler 生命周期、job state、cron 注册与兼容入口
+backend/jobs/                                盘前/盘中/盘后/周末 job workflow 实现
 backend/agents/long_term/                    长期分析师团（M1.3）
 backend/agents/pipeline.py                   多 Agent 决策流水线（M4 编排器，含 Director hook）
 backend/agents/risk_manager.py               风险经理（M4.0 前置）

@@ -3,9 +3,10 @@ import functools
 import hashlib
 import logging
 import time
-from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from urllib.parse import urlparse
+
+from backend.data.news_models import RawNews
 
 # M19.4 时区常量：东财 API 返回 CST（UTC+8）naive 时间字符串
 _CST_OFFSET = timedelta(hours=8)
@@ -38,15 +39,6 @@ def _retry(max_attempts: int = 3, delay: float = 1.0):
                     time.sleep(wait)
         return wrapper
     return decorator
-
-
-@dataclass
-class RawNews:
-    title: str
-    url: str
-    published_at: datetime
-    source: str
-    symbol: str | None = None
 
 
 ANSPIRE_SEARCH_URL = "https://plugin.anspire.cn/api/ntsearch/search"
