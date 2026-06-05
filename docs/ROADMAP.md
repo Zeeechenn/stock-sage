@@ -7,7 +7,7 @@
 
 | 工作线 | 当前状态 | 第一动作 | 停止条件 |
 |---|---|---|---|
-| M44 Atlas 合并 | Phase 0 已本地完成；详细计划见 `docs/ATLAS_MERGE.md` | 在 Atlas worktree rebase 到 `pre-atlas-m43-baseline` 后的 `main`，保护 M31/M41/M42/M43 主线能力 | 任何 official signal/test2/scheduler/shared-infra 漂移先停下归因 |
+| M44 Atlas 合并 | 本地 Phase 5 readiness pack 已在 `1f198f1` 完成；详细计划见 `docs/ATLAS_MERGE.md` | 等待用户合并决策；若 `main` 前进则先重新 final re-sync + Phase 5 parity pack | 任何 official signal/test2/scheduler/shared-infra 漂移先停下归因 |
 | M29 Forward Evidence | fresh forward coverage 尚未 ready；所有 alpha 证据仍 non-promoting | 先跑 `backend.tools.m29_forward_readiness --db-url ...`，ready 后再追加 1d/3d/5d forward shadow | 会恢复 quant、改 production profile、接 checkpoint、写真实 sentiment_cache 或调额外付费服务时先确认 |
 | 历史完成项 | M30/M31/M41/M42/M43/M27/M28 仅保留执行边界摘要 | 需要细节时看 `CHANGELOG.md` / 对应工具 artifact | 不从历史摘要推出新的生产行为 |
 
@@ -112,22 +112,24 @@
 
 ---
 
-## M44 Atlas 合并与 L0-L4 主架构升级【active / Phase 1 next】🧭
+## M44 Atlas 合并与 L0-L4 主架构升级【active / Phase 5 next】🧭
 
 > 详细执行清单、验收标准、停止条件和回滚 runbook 见 `docs/ATLAS_MERGE.md`。ROADMAP 只保留当前状态和下一步入口。
 
 当前状态：
 
 - Phase 0 已本地完成：M43 已合入 `main`，本地 tag `pre-atlas-m43-baseline` 指向 merge commit `4882d49`。
-- Phase 0 验证已完成：M43 分支与 post-merge `main` 的 `make verify` 均通过；test2 replay 固定 `--end 2026-06-04` 与 `paper_trading/test2_ab_state.json` 零 diff。
-- 生产边界保持：active profile `new_framework`，`WEIGHT_QUANT=0.0`，Kronos off，official signal markets 仍为 `CN`，HK/US observe-only。
+- Phase 1/2 已完成：Atlas 已重放到当前 `main`，L0-L4 作为未来主架构的 dormant merge contract 已写入项目文档。
+- Phase 3-min 已完成：L0 memory contract、trust-state 分层、legacy pending 边界、M37 memory-promotion gate、remote trusted-write guard、valid_from/valid_to/ttl/refuted/archived active recall 过滤已验证。
+- Phase 4 minimal adapter review 已完成：现有 dossier 被接为 `dossier_readonly_v0`，可输出 read-only L1 EvidenceCard 映射、L2 ResearchCase、L0 memory-candidate preview；promotion 仍只走既有本地人工 gate。
+- Phase 5 readiness pack 已在 `1f198f1` 本地完成：`main...HEAD = 0 / 35`，`merge-tree` 无冲突输出，`make verify`、test2 raw zero diff、DB copy-smoke 和 dormant-context guard 通过。
+- 生产边界保持：active profile `new_framework`，`WEIGHT_QUANT=0.0`，Kronos off，official signal markets 仍为 `CN`，HK/US observe-only；test2 fixed-end raw parity 在 `--end 2026-06-05` 为零 diff。
 
 下一步：
 
-- [ ] 在 `/Users/zeeechenn/Documents/项目s/atlas` 将 `codex/atlas` rebase/重放到当前 `main`。
-- [ ] 保护 M31/M41/M42/M43 主线能力，不用 Atlas tip 覆盖目标树。
-- [ ] 重做 Gate-A merge-safety；旧 `ATLAS_MERGE_SAFETY.md` 只能作历史参考。
-- [ ] 跑 migration focused tests、M43 reproduction focused tests 和 `make verify`。
+- [ ] 继续保护 M31/M41/M42/M43 主线能力，不用 Atlas tip 覆盖目标树。
+- [ ] 等待用户明确合并决策；如果当时 `main` 已前进，先重新 final re-sync 到当时的 `main`，并重跑 Phase 5 parity pack。
+- [ ] Phase 3-full 后置：完整 legacy adapters/backfill、A-teacher/long-term/topic reports 接入、native ResearchCase / ActionProposal L0 wiring。
 
 停止条件：任何 official signal、test2、test3、标的1、scheduler/postmarket、migration、dependency/lockfile 或 shared helper 漂移，先停下归因；Atlas 投资效果只能走后续 shadow/test4 gate。
 

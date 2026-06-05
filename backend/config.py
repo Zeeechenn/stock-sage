@@ -137,6 +137,31 @@ class Settings(BaseSettings):
     research_director_enabled: bool = True
     director_min_confidence: float = 0.25     # 平均置信度低于此值发出"数据不足"警告
 
+    # Atlas research architecture total dormant switch. Default false keeps
+    # M33-M40/Atlas routes dormant while legacy research routes stay live.
+    atlas_enabled: bool = False
+
+    # M34 Evidence-Bounded Stress Test
+    stress_test_enabled: bool = True
+
+    # M35 Thesis Ledger
+    thesis_ledger_enabled: bool = True
+
+    # M36 Theme Hypothesis Engine
+    theme_engine_enabled: bool = True
+
+    # M37 ReviewCase / 回顾归因循环
+    review_loop_enabled: bool = True
+
+    # M38 Dynamic Universe / Survivorship Guard
+    universe_guard_enabled: bool = True
+
+    # M39 Forward Thesis Beta
+    forward_thesis_enabled: bool = True
+
+    # M40 Gate-B prospective tracker (experiment only — does NOT affect decisions)
+    gate_b_tracker_enabled: bool = False
+
     # M4.3 Portfolio Manager（组合层仓位统筹）
     portfolio_manager_enabled: bool = True
 
