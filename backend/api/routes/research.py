@@ -711,7 +711,11 @@ def create_memory_candidate_endpoint(
 @router.post(
     "/research/memory-candidates/{candidate_id}/promote",
     response_model=MemoryCandidateOut,
-    dependencies=[Depends(local_human_memory_gate), Depends(atlas_dormant_guard)],
+    dependencies=[
+        Depends(local_human_memory_gate),
+        Depends(agent_write_guard("research.memory.promote")),
+        Depends(atlas_dormant_guard),
+    ],
 )
 def promote_memory_candidate(
     candidate_id: int,
@@ -738,7 +742,11 @@ def promote_memory_candidate(
 @router.post(
     "/research/memory-candidates/{candidate_id}/reject",
     response_model=MemoryCandidateOut,
-    dependencies=[Depends(local_human_memory_gate), Depends(atlas_dormant_guard)],
+    dependencies=[
+        Depends(local_human_memory_gate),
+        Depends(agent_write_guard("research.memory.reject")),
+        Depends(atlas_dormant_guard),
+    ],
 )
 def reject_memory_candidate_endpoint(
     candidate_id: int,

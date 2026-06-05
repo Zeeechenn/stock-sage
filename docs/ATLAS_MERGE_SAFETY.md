@@ -6,13 +6,15 @@
 > Question answered: can the rebased Atlas candidate proceed to architecture
 > review without production/test2/scheduler drift?
 
-Current answer: **CLEARED FOR ARCHITECTURE REVIEW AND LOCAL PHASE 5 PARITY
-PACK; NOT CLEARED FOR DIRECT MERGE WITHOUT USER APPROVAL.** Atlas is now based
-on current local `main`, focused parity checks passed, and the first local Phase
-5 pack passed on 2026-06-04. `ATLAS_ENABLED=false` /
-`settings.atlas_enabled=False` is wired and tested as the Atlas total dormant
-switch for Atlas-only HTTP/API routes/features. Direct merge still requires a
-final re-sync check and explicit user approval.
+Current answer: **CLEARED FOR ARCHITECTURE REVIEW AND PHASE 3-MIN L0 MEMORY
+CONTRACT; NOT CLEARED FOR DIRECT MERGE WITHOUT A FRESH PHASE 5 PACK AND USER
+APPROVAL.** Atlas is based on current local `main`, the first local Phase 5 pack
+passed on 2026-06-04, and Phase 3-min L0 hardening passed on 2026-06-05.
+`ATLAS_ENABLED=false` / `settings.atlas_enabled=False` is wired and tested as
+the Atlas total dormant switch for Atlas-only HTTP/API routes/features. Because
+the 2026-06-04 Phase 5 parity pack predates the L0 implementation, direct merge
+still requires final re-sync, a fresh Phase 5 parity pack, and explicit user
+approval.
 
 ## Snapshot
 
@@ -152,6 +154,35 @@ Review notes from the architecture and infra pass:
   unique indexes, so it is not purely additive in implementation mechanics. The
   `/private/tmp` copy-smoke is the merge-day guard for duplicate normalized keys
   or startup blocking.
+
+## Phase 3 L0 Memory Update
+
+Additional local checks run on 2026-06-05 after the L0 memory implementation and
+Phase 3-min guard hardening:
+
+- `backend.memory.l0_memory` now filters active recall by `refuted`, `archived`,
+  `ttl_days`, `valid_from`, and `valid_to`; invalid timestamps remain visible
+  rather than being silently dropped.
+- M37 `/research/memory-candidates/{id}/promote|reject` now keeps the local
+  human gate and also carries standard `agent_write_guard` dependencies for
+  `research.memory.promote` and `research.memory.reject`.
+- Focused Phase 3 regression passed: `141 passed, 1 warning`.
+- Official-signal and scheduler/postmarket focused smoke passed:
+  `23 passed, 1 warning`.
+- Test2 fixed-end replay used `--end 2026-06-05`; raw JSON diff against
+  `/Users/zeeechenn/stock-sage/paper_trading/test2_ab_state.json` was zero.
+- Live DB copy-smoke used
+  `/private/tmp/stocksage_phase3_l0_copy_20260605_afterguard.db`; `init_db()`
+  completed, `memory_atoms`, `memory_scenarios`, and `memory_profiles` existed,
+  `memory_promotion_candidates.memory_atom_id` existed, `PRAGMA integrity_check`
+  returned `ok`, and protected `stocks` / `signals` row counts were stable.
+- Full `make verify` passed after Phase 3-min hardening: ruff passed, mypy
+  passed on 204 source files, backend pytest `1045 passed, 5 skipped`, frontend
+  node tests `19 passed`, and Vite build passed.
+
+This update clears the Phase 3-min memory contract. It does not clear a direct
+merge by itself; Phase 4 minimal adapter review and a fresh Phase 5 parity pack
+remain required.
 
 ## Remaining Blockers Before Direct Merge
 

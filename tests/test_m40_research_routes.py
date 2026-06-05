@@ -387,6 +387,22 @@ _LOCAL_HUMAN_M40_ROUTES = [
 ]
 
 
+_MEMORY_TRUST_WRITE_ROUTES = [
+    (
+        "backend.api.routes.research",
+        "/research/memory-candidates/{candidate_id}/promote",
+        "POST",
+        "research.memory.promote",
+    ),
+    (
+        "backend.api.routes.research",
+        "/research/memory-candidates/{candidate_id}/reject",
+        "POST",
+        "research.memory.reject",
+    ),
+]
+
+
 _ATLAS_DORMANT_ROUTES = [
     ("backend.api.routes.research", "/research/{symbol}/stress-test", "POST"),
     ("backend.api.routes.research", "/research/{symbol}/theses", "GET"),
@@ -470,6 +486,32 @@ def test_m40_write_route_passes_in_local_mode(monkeypatch, module, path, method,
     router = importlib.import_module(module).router
     guards = _route_guards(router, path, method)
     guards[0](_FakeRequest())
+
+
+@pytest.mark.parametrize("module,path,method,action", _MEMORY_TRUST_WRITE_ROUTES)
+def test_m40_memory_trust_routes_have_standard_write_guard(monkeypatch, module, path, method, action):
+    router = importlib.import_module(module).router
+    guards = _route_guards(router, path, method)
+    write_guard = next(
+        (
+            guard for guard in guards
+            if getattr(guard, "__qualname__", "").startswith("agent_write_guard.")
+        ),
+        None,
+    )
+    assert write_guard is not None, f"{path} is missing agent_write_guard"
+
+    monkeypatch.setenv("STOCKSAGE_AGENT_MODE", "remote")
+    monkeypatch.setenv("STOCKSAGE_AGENT_API_KEY", "secret")
+    monkeypatch.setenv("STOCKSAGE_AGENT_REMOTE_WRITE_ENABLED", "true")
+    headers = {"x-stocksage-agent-api-key": "secret"}
+    monkeypatch.setenv("STOCKSAGE_AGENT_REMOTE_WRITE_ACTIONS", "watchlist.add")
+    with pytest.raises(HTTPException) as exc:
+        write_guard(_FakeRequest(headers))
+    assert exc.value.status_code == 403
+
+    monkeypatch.setenv("STOCKSAGE_AGENT_REMOTE_WRITE_ACTIONS", action)
+    write_guard(_FakeRequest(headers))
 
 
 @pytest.mark.parametrize("module,path,method", _LOCAL_HUMAN_M40_ROUTES)

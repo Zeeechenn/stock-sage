@@ -71,6 +71,21 @@ def _iso(value: Any) -> str | None:
     return str(value)
 
 
+def _parse_datetime(value: Any) -> datetime | None:
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        parsed = value
+    else:
+        try:
+            parsed = datetime.fromisoformat(str(value))
+        except (TypeError, ValueError):
+            return None
+    if parsed.tzinfo is not None:
+        parsed = parsed.astimezone(UTC).replace(tzinfo=None)
+    return parsed
+
+
 def _validate(scope_type: str | None = None, trust_state: str | None = None) -> None:
     if scope_type is not None and scope_type not in SCOPE_TYPES:
         raise ValueError(f"unsupported scope_type: {scope_type}")
@@ -161,11 +176,16 @@ def _ensure_schema(db) -> None:
 def _active(row, now: datetime) -> bool:
     if row.trust_state == "archived":
         return False
+    valid_from = _parse_datetime(row.valid_from)
+    if valid_from is not None and valid_from > now:
+        return False
+    valid_to = _parse_datetime(row.valid_to)
+    if valid_to is not None and valid_to < now:
+        return False
     if row.ttl_days is None:
         return True
-    try:
-        updated_at = datetime.fromisoformat(str(row.updated_at))
-    except (TypeError, ValueError):
+    updated_at = _parse_datetime(row.updated_at)
+    if updated_at is None:
         return True
     return updated_at + timedelta(days=int(row.ttl_days)) >= now
 

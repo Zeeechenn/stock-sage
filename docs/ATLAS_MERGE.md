@@ -6,7 +6,7 @@
 
 | Item | Status |
 |---|---|
-| Current phase | Phase 2 architecture contract complete; Phase 5 parity pack in progress before any direct merge decision |
+| Current phase | Phase 3-min L0 memory contract complete; next is Phase 4 minimal adapter review, then a fresh Phase 5 parity pack before any direct merge decision |
 | Main baseline | Phase 0 completed locally; `main` includes M43 at merge commit `4882d49` |
 | Baseline marker | local tag `pre-atlas-m43-baseline` points to `4882d49` |
 | Atlas worktree | `/Users/zeeechenn/Documents/项目s/atlas` on `codex/atlas` |
@@ -116,26 +116,51 @@ Acceptance:
 
 Goal: build a safe memory foundation before connecting more research or proposal behavior.
 
-- [ ] Review L0 design before irreversible schema decisions.
-- [ ] Inventory memory sources: `stock_memory_items`, `decision_memory_layered`, research memory, A-teacher skill, long-term reports, topic reports, ReviewCase candidates, and user-explicit rules/preferences.
-- [ ] Define memory scope: stock, theme, sector, market/global, user preference, methodology/skill.
-- [ ] Define trust state: raw, pending, trusted, refuted, archived, legacy_import_pending.
-- [ ] Define legacy backfill: old `stock_memory_items`, `decision_memory_layered`, and research memory do not become trusted by default.
-- [ ] Default unverifiable legacy rows to pending / legacy_import_pending.
-- [ ] Allow LLM to generate raw/pending only.
-- [ ] Require human gate or ReviewCase promotion for trusted memory.
-- [ ] Prevent remote agent from promoting trusted memory.
-- [ ] Ensure ResearchCase and ActionProposal recall trusted and pending memory separately.
-- [ ] Add expiration / refutation policy for thesis-like memory.
+Merge-safety scope: Phase 3-min is the required pre-Phase-4 slice. It creates
+the L0 storage, trust-state, recall, and promotion guardrails needed before a
+minimal adapter is wired. Phase 3-full productization remains separate.
+
+- [x] Review L0 design before irreversible schema decisions.
+- [x] Inventory memory sources: `stock_memory_items`, `decision_memory_layered`, research memory, A-teacher skill, long-term reports, topic reports, ReviewCase candidates, and user-explicit rules/preferences.
+- [x] Define memory scope: stock, theme, sector, market/global, user preference, methodology/skill.
+- [x] Define trust state: raw, pending, trusted, refuted, archived, legacy_import_pending.
+- [x] Define legacy backfill policy: legacy rows do not become trusted by default.
+- [x] Default current legacy adapter rows to pending / legacy_import_pending.
+- [x] Allow LLM/tool callers to generate raw/pending/legacy_import_pending only.
+- [x] Require human gate or ReviewCase promotion for trusted memory.
+- [x] Prevent remote agent from promoting trusted memory, including M37 memory-candidate promote/reject routes.
+- [x] Expose current L0 recall with trusted and pending/raw memory separated for existing memory context and review-loop promotion surfaces.
+- [x] Add expiration / refutation policy for thesis-like memory: refuted, archived, ttl_days, valid_from, and valid_to are excluded from active recall.
+- [ ] Phase 3-full: implement full legacy adapters/backfill for `decision_memory_layered`, research memory, A-teacher skill, long-term reports, and topic reports.
+- [ ] Phase 3-full: wire native ResearchCase and future ActionProposal recall to L0 instead of only the current context/review-loop bridge.
 
 Acceptance:
 
-- [ ] L0 supports stock/theme/sector/global research.
-- [ ] L0 distinguishes pending from trusted.
-- [ ] L0 serves ResearchCase and ActionProposal.
-- [ ] Legacy memory is not accidentally trusted.
-- [ ] LLM cannot automatically write trusted memory.
-- [ ] L0 does not change official signal or test2 behavior.
+- [x] L0 supports stock/theme/sector/global research.
+- [x] L0 distinguishes pending from trusted.
+- [x] L0 serves the current memory context and ReviewCase / memory-candidate promotion bridge.
+- [ ] Phase 3-full: L0 serves native ResearchCase and ActionProposal adapters.
+- [x] Legacy memory is not accidentally trusted.
+- [x] LLM cannot automatically write trusted memory.
+- [x] L0 does not change official signal or test2 behavior.
+
+Evidence:
+
+- Base L0 implementation: `5008699 feat(atlas): add l0 memory system`.
+- Phase 3-min hardening on 2026-06-05 added M37 standard `agent_write_guard`
+  coverage for trusted/refuted memory writes and `valid_from` / `valid_to`
+  active-recall filtering.
+- Focused Phase 3 regression: `141 passed, 1 warning`.
+- Official signal / scheduler smoke: `23 passed, 1 warning`.
+- Live DB copy-smoke on `/private/tmp/stocksage_phase3_l0_copy_20260605_afterguard.db`:
+  `memory_atoms`, `memory_scenarios`, and `memory_profiles` exist,
+  `memory_promotion_candidates.memory_atom_id` exists, `PRAGMA integrity_check`
+  returned `ok`, and protected row counts for `stocks` and `signals` were stable.
+- Test2 fixed-end replay used `--end 2026-06-05`; raw JSON diff against
+  `/Users/zeeechenn/stock-sage/paper_trading/test2_ab_state.json` was zero.
+- Full gate after Phase 3-min hardening: ruff passed, mypy passed on 204 source
+  files, backend pytest `1045 passed, 5 skipped`, frontend node tests
+  `19 passed`, and Vite build passed.
 
 ## Phase 4: Minimal Core Adapter
 

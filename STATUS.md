@@ -24,7 +24,7 @@ maintenance. It does not place real trades or provide financial advice.
 | M41 | complete: read-only A/HK/US seven-layer data/research facade; HK/US official signals remain observe-only |
 | M42 | complete: qfq/hfq price-contamination write guard and dry-run-first remediation CLI |
 | M43 | complete: architecture boundary hardening for market data, runtime schema, AI chat routes, and scheduler jobs |
-| M44 / Atlas merge | active: Phase 0 complete locally; `main` has M43 baseline and Atlas remains dormant architecture candidate until engineering parity gates pass |
+| M44 / Atlas merge | active: Phase 3-min L0 memory contract complete; Atlas remains dormant architecture candidate until Phase 4 review and fresh Phase 5 parity gates pass |
 | remote agent mode | opt-in only; read-only by default |
 
 Daily/batch post-market signals do not enable multi-agent research by default,
@@ -61,24 +61,25 @@ Stop loss / take profit remain ATR-derived project rules, not LLM predictions.
 | M41 A/HK/US Global Data/Research Buildout | complete | read-only three-market data facade, health ledger, normalization/PIT contracts, UX boundary, and CN-only production guardrails |
 | M42 qfq/hfq Price-Contamination Guard | complete | write-time jump guard, dry-run-first remediation CLI, 33 hermetic tests; legacy full-series hfq rows remain a separate data cleanup item |
 | M43 Architecture Boundary Hardening | complete | compatibility facades, behavior-characterization tests, and AST architecture guards are in place |
-| M44 Atlas Merge / L0-L4 Architecture | active: Phase 1 complete; dormant switch wired | run Phase 5 parity pack and architecture-owner review before any direct merge |
+| M44 Atlas Merge / L0-L4 Architecture | active: Phase 3-min complete; L0 trust, recall, migration, and memory-promotion guardrails verified | run Phase 4 minimal adapter review, then fresh final re-sync and Phase 5 parity pack before any direct merge |
 
 For detailed sequencing, read `docs/ROADMAP.md`; for the Atlas/M44 detailed
 checklist, read `docs/ATLAS_MERGE.md`. For historical milestone details, read
 `CHANGELOG.md`.
 
-M44 planning note (2026-06-04): `docs/ROADMAP.md` now points to
-`docs/ATLAS_MERGE.md` for the detailed Atlas checklist and keeps only the active
-handoff. Atlas is the next-generation main architecture candidate, not a
-permanent side project. Phase 0 completed locally: M43 was merged into `main` at
-`4882d49`, tagged
-`pre-atlas-m43-baseline`, post-merge `make verify` passed, and fixed-end test2
-replay (`--end 2026-06-04`) stayed byte-for-byte equivalent by SHA-256. Phase 1
-Atlas rebase/Gate-A is complete, and `ATLAS_ENABLED=false` /
-`settings.atlas_enabled=False` is wired as the Atlas total dormant switch for
-Atlas-only routes/features while preserving legacy research routes. Atlas
-behavior must remain dormant until engineering parity gates pass; any
-investment-impact promotion requires later shadow/test4 evidence.
+M44 update (2026-06-05): `docs/ATLAS_MERGE.md` remains the detailed Atlas
+checklist. Phase 0/1/2 are complete, and Phase 3-min is now complete: L0 memory
+atoms/scenarios/profiles, scope and trust-state contracts, legacy
+`legacy_import_pending` boundaries, ReviewCase / memory-candidate promotion
+bridge, remote trusted-write guards, and active-recall filtering for refuted,
+archived, ttl_days, valid_from, and valid_to are in place. Verification after
+the Phase 3-min hardening passed focused Phase 3 tests, official
+signal/scheduler smoke, live DB copy-smoke, test2 raw parity for
+`--end 2026-06-05`, and full `make verify`. Phase 3-full productization remains
+separate: complete legacy adapters/backfill and native ResearchCase /
+ActionProposal L0 wiring are not yet required for the minimal merge-safety
+slice. Atlas behavior must remain dormant until engineering parity gates pass;
+any investment-impact promotion requires later shadow/test4 evidence.
 
 M31 completion note (2026-06-02): `backend.data.cache_policy` defines L1/L2/L3
 and the intraday zero-network contract; `/api/system/data-coverage` exposes
@@ -184,9 +185,9 @@ MYPY_CACHE_DIR=/private/tmp/stocksage_mypy_cache \
 make verify PYTEST='.venv/bin/python -m pytest -p no:cacheprovider'
 ```
 
-Recorded result: ruff passed, mypy passed, backend pytest passed, frontend node
-tests passed, and Vite build passed after using a sandbox-compatible writable
-path.
+Recorded result after M44 Phase 3-min hardening: ruff passed, mypy passed on
+204 source files, backend pytest `1045 passed, 5 skipped`, frontend node tests
+`19 passed`, and Vite build passed.
 
 M41 verification update (2026-06-03): full `make verify` passed with ruff,
 mypy, 714 backend tests, 19 frontend node tests, and Vite build. A read-only

@@ -285,6 +285,28 @@ def test_build_l0_context_filters_archived_refuted_expired_and_marks_usage(test_
         text("UPDATE memory_atoms SET updated_at=:old WHERE id=:id"),
         {"old": old, "id": expired["id"]},
     )
+    future_valid = create_memory_atom(
+        test_db,
+        scope_type="stock",
+        scope_key="300308",
+        memory_type="event",
+        summary="尚未生效",
+        source_type="test",
+        source_ref="future-valid",
+        trust_state="pending",
+        valid_from=(datetime.utcnow() + timedelta(days=1)).isoformat(timespec="seconds"),
+    )
+    past_valid = create_memory_atom(
+        test_db,
+        scope_type="stock",
+        scope_key="300308",
+        memory_type="event",
+        summary="有效期已结束",
+        source_type="test",
+        source_ref="past-valid",
+        trust_state="pending",
+        valid_to=(datetime.utcnow() - timedelta(days=1)).isoformat(timespec="seconds"),
+    )
     test_db.commit()
 
     ctx = build_l0_context(test_db, scope_type="stock", scope_key="300308", limit=5)
@@ -294,11 +316,80 @@ def test_build_l0_context_filters_archived_refuted_expired_and_marks_usage(test_
     assert "已经被否定" not in ctx["text"]
     assert "已经归档" not in ctx["text"]
     assert "已经过期" not in ctx["text"]
+    assert "尚未生效" not in ctx["text"]
+    assert "有效期已结束" not in ctx["text"]
     used = test_db.execute(
         text("SELECT last_used_at FROM memory_atoms WHERE id=:id"),
         {"id": kept["id"]},
     ).scalar()
     assert used is not None
+    for atom_id in (future_valid["id"], past_valid["id"]):
+        used = test_db.execute(
+            text("SELECT last_used_at FROM memory_atoms WHERE id=:id"),
+            {"id": atom_id},
+        ).scalar()
+        assert used is None
+
+
+def test_build_l0_context_supports_non_stock_scopes(test_db):
+    from backend.memory.l0_memory import build_l0_context, create_memory_atom, promote_atom
+
+    theme = create_memory_atom(
+        test_db,
+        scope_type="theme",
+        scope_key="ai_infra",
+        memory_type="thesis",
+        summary="AI infra theme pending lesson",
+        source_type="test",
+        source_ref="theme-l0",
+        trust_state="pending",
+    )
+    sector = create_memory_atom(
+        test_db,
+        scope_type="sector",
+        scope_key="semiconductor",
+        memory_type="risk",
+        summary="Semiconductor trusted cycle risk",
+        source_type="test",
+        source_ref="sector-l0",
+        trust_state="pending",
+    )
+    promote_atom(test_db, sector["id"], confirmed_by="tester")
+    create_memory_atom(
+        test_db,
+        scope_type="global",
+        scope_key=None,
+        memory_type="method",
+        summary="Global process memory",
+        source_type="test",
+        source_ref="global-l0",
+        trust_state="pending",
+    )
+
+    theme_ctx = build_l0_context(
+        test_db,
+        scope_type="theme",
+        scope_key="ai_infra",
+        include_legacy=False,
+        record_usage=False,
+    )
+    sector_ctx = build_l0_context(
+        test_db,
+        scope_type="sector",
+        scope_key="semiconductor",
+        include_legacy=False,
+        record_usage=False,
+    )
+    global_ctx = build_l0_context(
+        test_db,
+        scope_type="global",
+        include_legacy=False,
+        record_usage=False,
+    )
+
+    assert [row["id"] for row in theme_ctx["pending_memory"]] == [theme["id"]]
+    assert [row["id"] for row in sector_ctx["trusted_memory"]] == [sector["id"]]
+    assert global_ctx["pending_memory"][0]["summary"] == "Global process memory"
 
 
 def test_build_l0_context_can_be_read_only(test_db):
