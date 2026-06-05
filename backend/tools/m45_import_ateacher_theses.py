@@ -45,6 +45,7 @@ SAFETY_FLAGS = {
 }
 
 CALLER_MUTABLE_MEMORY_STATES = {"raw", "pending", "legacy_import_pending"}
+SOURCE_KINDS = {"direct_source", "handoff_context", "derived_summary"}
 
 
 @dataclass(frozen=True)
@@ -62,6 +63,10 @@ class ATeacherThesisInput:
     source_ref: str | None = None
     source_url: str | None = None
     source_note: str | None = None
+    source_kind: str = "handoff_context"
+    source_verified: bool = False
+    source_verified_by: str | None = None
+    source_verified_at: str | None = None
     confidence_low: float | None = None
     confidence_high: float | None = None
 
@@ -117,6 +122,15 @@ def _optional_float(raw: dict[str, Any], field: str) -> float | None:
     return float(value)
 
 
+def _optional_bool(raw: dict[str, Any], field: str) -> bool:
+    value = raw.get(field)
+    if value is None:
+        return False
+    if not isinstance(value, bool):
+        raise ValueError(f"{field} must be a boolean")
+    return value
+
+
 def _stable_source_ref(item: ATeacherThesisInput) -> str:
     if item.source_ref:
         return item.source_ref
@@ -168,11 +182,19 @@ def normalize_item(raw: dict[str, Any]) -> ATeacherThesisInput:
         source_ref=_optional_str(raw, "source_ref"),
         source_url=_optional_str(raw, "source_url"),
         source_note=_optional_str(raw, "source_note"),
+        source_kind=_optional_str(raw, "source_kind") or "handoff_context",
+        source_verified=_optional_bool(raw, "source_verified"),
+        source_verified_by=_optional_str(raw, "source_verified_by"),
+        source_verified_at=_optional_str(raw, "source_verified_at"),
         confidence_low=_optional_float(raw, "confidence_low"),
         confidence_high=_optional_float(raw, "confidence_high"),
     )
     if normalized.review_cadence_days is None:
         raise ValueError("review_cadence_days is required")
+    if normalized.source_kind not in SOURCE_KINDS:
+        raise ValueError(
+            f"source_kind must be one of {sorted(SOURCE_KINDS)}"
+        )
     return normalized
 
 
@@ -226,6 +248,10 @@ def _memory_atom_args(item: ATeacherThesisInput, source_ref: str, thesis_id: int
         "source_ref": source_ref,
         "source_url": item.source_url,
         "source_note": item.source_note,
+        "source_kind": item.source_kind,
+        "source_verified": item.source_verified,
+        "source_verified_by": item.source_verified_by,
+        "source_verified_at": item.source_verified_at,
         "as_of": item.as_of,
         "statement": item.statement,
         "invalidation_conditions": item.invalidation_conditions,
@@ -251,15 +277,54 @@ def _memory_atom_args(item: ATeacherThesisInput, source_ref: str, thesis_id: int
     }
 
 
-def _memory_trust_state_by_source_ref(db, source_ref: str) -> str | None:
+def _memory_atom_by_source_ref(db, source_ref: str):
     from backend.memory import l0_memory
 
     l0_memory._ensure_schema(db)
-    row = db.execute(
-        text("SELECT trust_state FROM memory_atoms WHERE source_ref = :source_ref LIMIT 1"),
+    return db.execute(
+        text("""
+            SELECT scope_type, scope_key, memory_type, summary, source_type, trust_state
+            FROM memory_atoms
+            WHERE source_ref = :source_ref
+            LIMIT 1
+        """),
         {"source_ref": source_ref},
     ).first()
-    return str(row.trust_state) if row is not None else None
+
+
+def _source_fidelity_blockers(item: ATeacherThesisInput) -> list[str]:
+    blockers: list[str] = []
+    if not item.source_verified:
+        blockers.append("source_not_verified")
+    if item.source_kind != "direct_source":
+        blockers.append("source_kind_not_direct_source")
+    if not item.source_verified_by:
+        blockers.append("missing_source_verified_by")
+    if not item.source_ref:
+        blockers.append("missing_explicit_source_ref")
+    if not item.source_url and not item.source_note:
+        blockers.append("missing_source_locator")
+    return blockers
+
+
+def _assert_existing_atom_matches_item(existing, item: ATeacherThesisInput, source_ref: str) -> None:
+    expected = {
+        "source_type": "a_teacher_import",
+        "scope_type": item.scope_type,
+        "scope_key": item.scope_key,
+        "memory_type": "imported_human_thesis",
+        "summary": item.statement,
+    }
+    actual = {key: getattr(existing, key) for key in expected}
+    mismatches = sorted(
+        key for key, value in expected.items()
+        if (actual[key] or "") != (value or "")
+    )
+    if mismatches:
+        raise ValueError(
+            f"source_ref {source_ref!r} already exists with different "
+            f"M45 identity fields: {', '.join(mismatches)}"
+        )
 
 
 def _preflight_execute(db, items: list[ATeacherThesisInput]) -> None:
@@ -267,12 +332,21 @@ def _preflight_execute(db, items: list[ATeacherThesisInput]) -> None:
         raise ValueError("forward_thesis_enabled must be true before M45 import execute")
     for item in items:
         source_ref = _stable_source_ref(item)
-        trust_state = _memory_trust_state_by_source_ref(db, source_ref)
+        blockers = _source_fidelity_blockers(item)
+        if blockers:
+            raise ValueError(
+                f"source_ref {source_ref!r} is not execute-ready: "
+                + ", ".join(blockers)
+            )
+        existing_atom = _memory_atom_by_source_ref(db, source_ref)
+        trust_state = str(existing_atom.trust_state) if existing_atom is not None else None
         if trust_state is not None and trust_state not in CALLER_MUTABLE_MEMORY_STATES:
             raise ValueError(
                 f"source_ref {source_ref!r} already has protected L0 trust_state "
                 f"{trust_state!r}; refusing partial import"
             )
+        if existing_atom is not None:
+            _assert_existing_atom_matches_item(existing_atom, item, source_ref)
 
 
 def _ensure_manifest_contains_source(db, thesis: dict[str, Any], item: ATeacherThesisInput, source_ref: str) -> dict[str, Any]:
@@ -295,9 +369,18 @@ def preview_import(items: list[ATeacherThesisInput]) -> dict[str, Any]:
     planned: list[dict[str, Any]] = []
     for item in items:
         source_ref = _stable_source_ref(item)
+        execute_blockers = _source_fidelity_blockers(item)
         planned.append({
             "source_ref": source_ref,
             "scope": {"type": item.scope_type, "key": item.scope_key},
+            "source_fidelity": {
+                "source_kind": item.source_kind,
+                "source_verified": item.source_verified,
+                "source_verified_by": item.source_verified_by,
+                "source_verified_at": item.source_verified_at,
+                "execute_ready": not execute_blockers,
+                "execute_blockers": execute_blockers,
+            },
             "forward_thesis": _forward_thesis_args(item, source_ref),
             "l0_memory_atom": _memory_atom_args(item, source_ref, thesis_id=None),
         })

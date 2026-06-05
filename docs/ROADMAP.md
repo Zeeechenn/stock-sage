@@ -35,6 +35,7 @@ Boundaries:
 - [x] Define and implement a dry-run-first import contract in `backend/tools/m45_import_ateacher_theses.py`: source, as_of, symbol/theme, statement, invalidation conditions, follow-up metrics, review cadence, decision_owner=`human`, trust=`pending`.
 - [x] Store the thesis layer through existing Atlas-safe surfaces: `ForwardThesis` for statement / invalidation / evidence manifest plus L0 pending atom for memory context.
 - [x] Prepared a local seed input and dry-run output under `/private/tmp/stocksage_m45_ateacher_seed_20260605*.json`; no DB writes were made.
+- [x] Add execute-time source fidelity guard: `--execute` requires `source_kind=direct_source`, `source_verified=true`, `source_verified_by`, explicit `source_ref`, and source locator; dry-run surfaces `source_fidelity.execute_blockers`.
 - [ ] Review the seed's source fidelity before execute: it is derived from local M45 handoff context, not a direct A-teacher transcript.
 - [ ] Execute import only after reviewing dry-run output; imported rows remain draft/pending and do not become trusted automatically.
 - [ ] Use `backend/research/thesis_ledger.py` only where its thinner `symbol/title/kill_conditions/status` shape is sufficient, or extend it deliberately after tests.
