@@ -7,9 +7,53 @@
 
 | 工作线 | 当前状态 | 第一动作 | 停止条件 |
 |---|---|---|---|
-| M44 Atlas 合并 | 本地 Phase 5 readiness pack 已在 `1f198f1` 完成；详细计划见 `docs/ATLAS_MERGE.md` | 等待用户合并决策；若 `main` 前进则先重新 final re-sync + Phase 5 parity pack | 任何 official signal/test2/scheduler/shared-infra 漂移先停下归因 |
+| M44 Atlas 合并 | ✅ 已休眠合并入本地 `main`（`9820143`，未 push）；make verify / test2 零 diff / DB copy-smoke / 官方信号 fixture 全过；详见 `docs/ATLAS_MERGE.md` | 保持 `ATLAS_ENABLED=false` 休眠；push 待用户单独授权 | 任何 official signal/test2/scheduler/shared-infra 漂移先停下归因或 revert merge |
+| M45 研究定位落地 | 新方向，依据 ADR 0001 + test4（`docs/ATLAS_TEST4_EXPERIMENT.md`）：可回测信号无历史 edge | ① 把 A老师等"进口"判断落成 Atlas L2 结构化 Thesis（带失效条件） | 不复活 quant、不改 production profile、不让未过门的 alpha 影响真实决策 |
 | M29 Forward Evidence | fresh forward coverage 尚未 ready；所有 alpha 证据仍 non-promoting | 先跑 `backend.tools.m29_forward_readiness --db-url ...`，ready 后再追加 1d/3d/5d forward shadow | 会恢复 quant、改 production profile、接 checkpoint、写真实 sentiment_cache 或调额外付费服务时先确认 |
 | 历史完成项 | M30/M31/M41/M42/M43/M27/M28 仅保留执行边界摘要 | 需要细节时看 `CHANGELOG.md` / 对应工具 artifact | 不从历史摘要推出新的生产行为 |
+
+---
+
+## 🧭 M45 研究定位落地：放大器为主、源受门控【P1，承接 M44 合并后】
+
+> 决策依据：ADR 0001（`docs/adr/0001-amplifier-primary-source-gated.md`）。test4 Stage 1/2a
+> （`docs/ATLAS_TEST4_EXPERIMENT.md`）证明可回测信号组件**无历史 edge**（technical IC 平/负、
+> 跨行情符号反转；quant 早已 `WEIGHT_QUANT=0.0`；test2 样本小）。
+>
+> 结论：**进攻（alpha）来自人类判断**，主要靠"进口"A老师级操盘者，本人做过滤/否决/仓位；
+> **AI 是广度 + 证伪 + 短线风控的放大器，不是预言家**；AI 的 alpha 尝试与 trusted 记忆晋升
+> 都必须过**前向证伪门（outcome-gated，test4 级）**。Atlas L0-L4 是这套
+> import→record→falsify→learn 闭环的实现。这也意味着 M29 的 quant-alpha reset 在 ADR 0001 下
+> 从"北极星"降级为"一个未证实输入"，不再是主方向。
+
+边界：Atlas 保持 `ATLAS_ENABLED=false` 休眠；本里程碑全部为研究/影子层，不改 official signal、
+test2、scheduler、生产 profile；不 push，除非用户授权。
+
+### M45.1 进口通道结构化（offense，第一动作）
+- [ ] 把 A老师当前主线论点（光模块双雄旭创/新易盛、存储兆易、Marvell 连接升维、博通锚点）
+  落成 Atlas L2 `ResearchCase`/`Thesis`，每条带：来源、`as_of`、**失效条件（invalidation）**、
+  决策人=人、`trust=pending`。
+- [ ] 复用 `backend/research/thesis_ledger.py` / `case.py`；数据进 L0 记忆按 pending，不自动 trusted。
+- [ ] A老师 hook 更新后，新论点 / 论点变化要进 ledger，而不只是 markdown 备忘。
+
+### M45.2 放大器证伪记分牌（可证伪的成功指标）
+- [ ] 台账 1：**证伪命中率** —— 持有论点失效时，告警是否在亏损兑现前触发（pre-loss vs missed）。
+- [ ] 台账 2：**防守价值** —— 系统开/关的回撤、亏损率对比（短线线按防守考核，**非 IC**）。
+- [ ] 广度命中（AI 捞出、人采纳、跑对的论点）记录但为慢/次要指标。
+- [ ] 接入 Atlas L4 review/calibration，使复盘真正驱动 trusted 晋升（outcome-gated）。
+
+### M45.3 模块三连分诊
+- [ ] 把现有分散模块归类：广度 / 证伪 / 短线风控；对不上号的标记候选删除。
+- [ ] A老师 / 景气 / Piotroski skills 明确为"进口"一等通道。
+
+### M45.4 Stage 2b 前向 shadow（唯一投资证据路，慢）
+- [ ] 预注册 test4 Stage 2b（arms：`test2_baseline` / `atlas_signal_overlay` /
+  `atlas_exit_overlay` / `atlas_entry_exit_overlay`；指标；失效条件；样本窗）。
+- [ ] 以 M45.1 的 thesis 为 shadow 对象，前向累积；先验保持怀疑；test2 冻结不动。
+- [ ] 晋升只在 Stage 2b 通过且用户确认后；test4 永不单独改官方信号。
+
+### M45 待办（非现在）
+- [ ] 把本地 `main`（含 Atlas 合并）push 到 origin —— 等用户单独授权。
 
 ---
 
