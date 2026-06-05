@@ -24,7 +24,8 @@ maintenance. It does not place real trades or provide financial advice.
 | M41 | complete: read-only A/HK/US seven-layer data/research facade; HK/US official signals remain observe-only |
 | M42 | complete: qfq/hfq price-contamination write guard and dry-run-first remediation CLI |
 | M43 | complete: architecture boundary hardening for market data, runtime schema, AI chat routes, and scheduler jobs |
-| M44 / Atlas merge | active: local Phase 5 readiness pack complete at `1f198f1`; Atlas remains dormant architecture candidate pending user review / merge decision after confirming no `main` advance |
+| M44 / Atlas merge | complete (local): dormant `--no-ff` merge landed at `9820143`, `ATLAS_ENABLED=false` default; make verify / test2 zero-diff / DB copy-smoke / official-signal fixture all passed; not pushed |
+| M45 / research positioning | active: amplifier-primary, source-gated (see `docs/adr/0001`); test4 found no historical edge in backtestable signal — offense = imported human judgment, AI = breadth+falsification+risk amplifier |
 | remote agent mode | opt-in only; read-only by default |
 
 Daily/batch post-market signals do not enable multi-agent research by default,
@@ -61,7 +62,8 @@ Stop loss / take profit remain ATR-derived project rules, not LLM predictions.
 | M41 A/HK/US Global Data/Research Buildout | complete | read-only three-market data facade, health ledger, normalization/PIT contracts, UX boundary, and CN-only production guardrails |
 | M42 qfq/hfq Price-Contamination Guard | complete | write-time jump guard, dry-run-first remediation CLI, 33 hermetic tests; legacy full-series hfq rows remain a separate data cleanup item |
 | M43 Architecture Boundary Hardening | complete | compatibility facades, behavior-characterization tests, and AST architecture guards are in place |
-| M44 Atlas Merge / L0-L4 Architecture | active: Phase 5 readiness pack complete at `1f198f1`; L0 trust, recall, migration, memory-promotion guardrails, and read-only adapter wiring verified | Phase 5 readiness pack complete locally; awaiting user review / merge decision after confirming no `main` advance |
+| M44 Atlas Merge / L0-L4 Architecture | complete (local, dormant): merged at `9820143`, not pushed | Atlas stays `ATLAS_ENABLED=false`; push awaits explicit user authorization; revert on any official-signal/test2/scheduler/shared-infra drift |
+| M45 Research Positioning (amplifier-primary, source-gated) | active: ADR 0001 + test4 | M45.1 structure A-teacher-class imports into Atlas L2 theses (with invalidation), then falsification scorecard, module triage, Stage 2b forward shadow — see `docs/ROADMAP.md` |
 
 For detailed sequencing, read `docs/ROADMAP.md`; for the Atlas/M44 detailed
 checklist, read `docs/ATLAS_MERGE.md`. For historical milestone details, read
