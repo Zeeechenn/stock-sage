@@ -35,6 +35,8 @@ REVIEW-*.md
 # Generated research and review reports
 docs/reviews/*.md
 docs/research/*.md
+# 本地战略决策记录（ADR），本地保留、不上传到 GitHub
+docs/adr/*.md
 
 # Internal planning drafts already summarized in ROADMAP / CHANGELOG
 docs/MEMORY_SYSTEM_PLAN.md

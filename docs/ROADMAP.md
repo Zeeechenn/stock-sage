@@ -16,7 +16,7 @@
 
 ## 🧭 M45 研究定位落地：放大器为主、源受门控【P1，承接 M44 合并后】
 
-> 决策依据：ADR 0001（`docs/adr/0001-amplifier-primary-source-gated.md`）。test4 Stage 1/2a
+> 决策依据：ADR 0001（`docs/adr/0001-amplifier-primary-source-gated.md`，**本地文档、已 git-ignore、不入库**）。test4 Stage 1/2a
 > （`docs/ATLAS_TEST4_EXPERIMENT.md`）证明可回测信号组件**无历史 edge**（technical IC 平/负、
 > 跨行情符号反转；quant 早已 `WEIGHT_QUANT=0.0`；test2 样本小）。
 >
