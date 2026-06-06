@@ -258,7 +258,7 @@ def test_agent_cli_remote_mode_requires_api_key(tmp_path):
     )
 
     assert denied.returncode != 0
-    assert "invalid StockSage agent API key" in denied.stderr
+    assert "invalid MingCang agent API key" in denied.stderr
 
     allowed = _run_cli(
         repo,

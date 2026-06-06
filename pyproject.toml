@@ -3,9 +3,9 @@ requires = ["setuptools>=70", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "stock-sage"
+name = "mingcang"
 version = "0.2.3"
-description = "A股辅助决策工具——量化信号 + LLM 情感分析 + 多 Agent 风控"
+description = "明仓 / MingCang：本地优先的个人 A 股持仓研究镜头"
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
@@ -49,8 +49,8 @@ test = [
     "pytest-cov>=5.0.0,<8.0.0",
 ]
 dev = [
-    "stock-sage[test]",
-    "stock-sage[agent]",
+    "mingcang[test]",
+    "mingcang[agent]",
     "ruff>=0.4.0,<1.0.0",
     "mypy>=1.10.0,<2.0.0",
     "pre-commit>=3.7.0,<5.0.0",

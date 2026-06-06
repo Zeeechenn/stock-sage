@@ -21,7 +21,7 @@ function Navbar({ theme, onToggleTheme }) {
       <div className="mx-auto flex max-w-[1500px] flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex min-w-0 items-center gap-4">
           <Link to="/" className="shrink-0 text-base font-semibold tracking-wide text-slate-950 hover:text-cyan-700 dark:text-slate-100 dark:hover:text-cyan-300">
-            StockSage
+            MingCang
           </Link>
           <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto pb-1 text-xs font-semibold">
             {NAV_ITEMS.map(([to, label, hint]) => (
@@ -64,13 +64,17 @@ function Navbar({ theme, onToggleTheme }) {
   )
 }
 
+const THEME_STORAGE_KEY = 'mingcang-theme'
+const LEGACY_THEME_STORAGE_KEY = 'stock-sage-theme'
+
 export default function App() {
-  const [theme, setTheme] = useState(() => localStorage.getItem('stock-sage-theme') || 'dark')
+  const [theme, setTheme] = useState(() => localStorage.getItem(THEME_STORAGE_KEY) || localStorage.getItem(LEGACY_THEME_STORAGE_KEY) || 'dark')
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark')
     document.documentElement.dataset.theme = theme
-    localStorage.setItem('stock-sage-theme', theme)
+    localStorage.setItem(THEME_STORAGE_KEY, theme)
+    localStorage.removeItem(LEGACY_THEME_STORAGE_KEY)
   }, [theme])
 
   return (

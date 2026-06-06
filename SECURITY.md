@@ -7,7 +7,7 @@ default branch. Only the latest commit is supported for security fixes.
 
 ## Reporting a Vulnerability
 
-If you believe you have found a security issue in StockSage, please **do not
+If you believe you have found a security issue in MingCang, please **do not
 open a public GitHub issue**.
 
 Instead, report it privately through GitHub Security Advisories:
@@ -37,4 +37,4 @@ Out of scope:
 - Findings against third-party data providers (Tushare, Tavily, Anspire,
   Eastmoney, AkShare, etc.); please report those upstream
 - Findings against personal trading decisions or paper-trading results;
-  StockSage does not place real orders and is not investment advice
+  MingCang does not place real orders and is not investment advice

@@ -217,7 +217,7 @@ def _postmarket_review_html(db: Session, day: str) -> str:
 <html>
 <head>
   <meta charset="utf-8">
-  <title>StockSage 盘后复盘 - {html.escape(day)}</title>
+  <title>MingCang 盘后复盘 - {html.escape(day)}</title>
   <style>
     body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #111827; }}
     h1, h2 {{ margin: 0 0 12px; }}
@@ -234,7 +234,7 @@ def _postmarket_review_html(db: Session, day: str) -> str:
   </style>
 </head>
 <body>
-  <h1>StockSage 盘后复盘 - {html.escape(day)}</h1>
+  <h1>MingCang 盘后复盘 - {html.escape(day)}</h1>
   <p class="notice">{_POSTMARKET_DISCLAIMER}</p>
   <section>
     <h2>版本</h2>

@@ -1,4 +1,4 @@
-"""Print the current StockSage data coverage snapshot as JSON."""
+"""Print the current MingCang data coverage snapshot as JSON."""
 
 from __future__ import annotations
 

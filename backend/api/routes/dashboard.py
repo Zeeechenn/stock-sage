@@ -55,7 +55,7 @@ def _market_overview(db: Session) -> dict:
 
 @router.get("/dashboard/summary")
 def dashboard_summary(as_of: str | None = None, db: Session = Depends(get_db)):
-    """Return a read-only dashboard snapshot for the StockSage cockpit."""
+    """Return a read-only dashboard snapshot for the MingCang cockpit."""
     from backend.config import active_signal_weights, settings
     from backend.data.quality import build_data_coverage_report
     from backend.ops import kill_switch

@@ -2,16 +2,16 @@
 """Prepare M27.4 Kronos Path A fine-tuning data.
 
 The tool builds an index-backed sliding-window dataset from the local
-StockSage SQLite price table. It intentionally does not materialize every
+MingCang SQLite price table. It intentionally does not materialize every
 400-bar tensor by default; instead it writes:
 
-- train_data.pkl / valid_data.pkl: trusted StockSage-generated OHLCV panels for Kronos loaders.
+- train_data.pkl / valid_data.pkl: trusted MingCang-generated OHLCV panels for Kronos loaders.
 - windows.csv: every valid sliding window and its forward return label.
 - coverage_report.json: explicit data coverage, warnings, and pass/fail status.
 
 Usage:
     PYTHONPATH=. python3 -m backend.tools.m27_kronos_finetune_data
-    PYTHONPATH=. python3 -m backend.tools.m27_kronos_finetune_data --output-dir ~/.stock-sage/kronos_m27
+    PYTHONPATH=. python3 -m backend.tools.m27_kronos_finetune_data --output-dir ~/.mingcang/kronos_m27
     PYTHONPATH=. python3 -m backend.tools.m27_kronos_finetune_data --write-complete-universe /private/tmp/reviewed_complete_symbols.json
 """
 from __future__ import annotations
@@ -27,9 +27,11 @@ from typing import Any
 
 import pandas as pd
 
+from backend.config import default_sqlite_path
+
 _REPO_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_DB_PATH = _REPO_ROOT / "stock-sage.db"
-DEFAULT_OUTPUT_DIR = Path.home() / ".stock-sage" / "m27_kronos_finetune_data"
+DEFAULT_DB_PATH = default_sqlite_path()
+DEFAULT_OUTPUT_DIR = Path.home() / ".mingcang" / "m27_kronos_finetune_data"
 
 DEFAULT_CONTEXT = 400
 DEFAULT_PRED_LEN = 5

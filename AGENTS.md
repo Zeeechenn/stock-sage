@@ -1,8 +1,8 @@
-# StockSage Agent Instructions
+# MingCang Agent Instructions
 
 ## Project Identity
 
-StockSage is a personal A-share research and decision-support system. It is
+MingCang is a personal A-share research and decision-support system. It is
 allowed to assist with research, tests, local validation analysis, configuration
 review, and code changes. It must not place real trades or present output as
 financial advice.
@@ -21,7 +21,7 @@ mode, agents may directly:
 - run tests, local validation checks, data coverage snapshots, and verification
   commands;
 - call the paid data or LLM APIs already configured in the local `.env` when the
-  requested StockSage workflow needs them;
+  requested MingCang workflow needs them;
 - trigger project research, reviews, backfills, and local validation analysis.
 
 Do not add extra confirmation gates for normal local development or validation
@@ -38,18 +38,18 @@ Hard local boundaries:
 ## Remote Agent Mode
 
 Remote exposure is opt-in only. Use remote mode only when the environment
-explicitly sets `STOCKSAGE_AGENT_MODE=remote`.
+explicitly sets `MINGCANG_AGENT_MODE=remote`.
 
-Remote mode must require `STOCKSAGE_AGENT_API_KEY` at the hosting/API layer.
+Remote mode must require `MINGCANG_AGENT_API_KEY` at the hosting/API layer.
 Remote tools are read-only by default. Mutating remote tools require an explicit
-allowlist and `STOCKSAGE_AGENT_REMOTE_WRITE_ENABLED=true`.
-HTTP writes accept `X-StockSage-Agent-API-Key` or `Authorization: Bearer ...`;
-when `STOCKSAGE_AGENT_REMOTE_WRITE_ACTIONS` is non-empty, the action name must
+allowlist and `MINGCANG_AGENT_REMOTE_WRITE_ENABLED=true`.
+HTTP writes accept `X-MingCang-Agent-API-Key` or `Authorization: Bearer ...`;
+when `MINGCANG_AGENT_REMOTE_WRITE_ACTIONS` is non-empty, the action name must
 also be listed, for example `watchlist.add,memory.write,config.update`.
 
 For the bundled stdio MCP bridge, remote-mode tool calls must pass the same key
 as the optional `api_key` argument, for example
-`stock_sage_health(api_key="...")`. Local mode does not require this argument.
+`mingcang_health(api_key="...")`. Local mode does not require this argument.
 If a future HTTP/SSE transport validates the `Authorization` header before
 forwarding requests, keep that gateway check equivalent to
 `backend.agent.security.require_agent_access()`.
@@ -59,14 +59,14 @@ Keep real keys out of Git. `.env.example` may contain placeholders only.
 ## LLM/API Boundary
 
 Codex and Claude Code use their own model access for development assistance.
-That does not consume StockSage `.env` LLM keys.
+That does not consume MingCang `.env` LLM keys.
 
-StockSage `.env` keys such as `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`,
+MingCang `.env` keys such as `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`,
 `TAVILY_API_KEY`, and `ANSPIRE_API_KEY` are project runtime keys. They are used
-only when running StockSage workflows that call the internal LLM, search, or data
+only when running MingCang workflows that call the internal LLM, search, or data
 provider chains.
 
-For local agent development, cloud LLM keys are optional. To let StockSage's
+For local agent development, cloud LLM keys are optional. To let MingCang's
 internal LLM workflows run through local Claude Code CLI instead, set
 `AI_PROVIDER=local_cli` and ensure `claude -p` works in the shell. Only
 `AI_PROVIDER=anthropic` or `AI_PROVIDER=openai` requires and consumes the
@@ -86,12 +86,12 @@ needs them:
 | planning, continuation, milestone sequencing, "what next" | `docs/ROADMAP.md` |
 | release notes, version history, historical verification | `CHANGELOG.md` |
 
-For StockSage trading, testing, review, or research decisions, prefer
+For MingCang trading, testing, review, or research decisions, prefer
 project-owned runtime truth over assistant-only chat memory:
 
 1. current SQLite state: positions, watchlist, signals, labels, reviews
 2. `ai_memory` rows for rules, preferences, research indexes, and risk notes
-3. `decision_memory_layered` and `~/.stock-sage/memory/*.md`
+3. `decision_memory_layered` and `~/.mingcang/memory/*.md`
 4. recent `audit_log_fts` entries
 
 ## Single-Stock Research Output
@@ -153,11 +153,11 @@ focused on agent rules and task routing.
 
 ## Memory Write Policy
 
-Write to project memory when the user explicitly says to remember a StockSage
+Write to project memory when the user explicitly says to remember a MingCang
 rule, risk preference, holding/test state, or durable research fact.
 
 Do not write one-off questions, transient discussion, or normal coding
-preferences into StockSage memory. Those belong in the local assistant context,
+preferences into MingCang memory. Those belong in the local assistant context,
 not the trading system.
 
 ## Documentation Workflow

@@ -2,7 +2,7 @@
 
 The legacy Tushare daily fetcher intentionally stays out of the production
 fallback chain because ``pro.daily`` returns unadjusted prices.  This module
-combines daily bars with ``adj_factor`` and emits StockSage's qfq-compatible
+combines daily bars with ``adj_factor`` and emits MingCang's qfq-compatible
 OHLCV shape.
 """
 from __future__ import annotations

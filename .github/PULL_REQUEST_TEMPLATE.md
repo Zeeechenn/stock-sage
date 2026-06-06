@@ -1,4 +1,4 @@
-<!-- Thanks for contributing to StockSage. Please fill out the sections below. -->
+<!-- Thanks for contributing to MingCang. Please fill out the sections below. -->
 
 ## Summary
 

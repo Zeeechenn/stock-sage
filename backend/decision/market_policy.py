@@ -1,4 +1,4 @@
-"""Market eligibility policy for official StockSage signal workflows."""
+"""Market eligibility policy for official MingCang signal workflows."""
 from __future__ import annotations
 
 PRODUCTION_SIGNAL_MARKETS = frozenset({"CN"})

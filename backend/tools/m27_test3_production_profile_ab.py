@@ -35,8 +35,8 @@ from backend.tools.m27_top_decile_filter_ab import (
 )
 
 DEFAULT_UNIVERSE_PATH = Path("paper_trading/test3_universe.json")
-DEFAULT_JSON_OUTPUT = Path.home() / ".stock-sage" / "m27_test3_production_profile_ab_report.json"
-DEFAULT_MARKDOWN_OUTPUT = Path.home() / ".stock-sage" / "m27_test3_production_profile_ab_report.md"
+DEFAULT_JSON_OUTPUT = Path.home() / ".mingcang" / "m27_test3_production_profile_ab_report.json"
+DEFAULT_MARKDOWN_OUTPUT = Path.home() / ".mingcang" / "m27_test3_production_profile_ab_report.md"
 DEFAULT_START = "2025-11-01"
 DEFAULT_END = "2026-05-14"
 

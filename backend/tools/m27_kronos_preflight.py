@@ -12,12 +12,12 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-DEFAULT_DATA_DIR = Path.home() / ".stock-sage" / "m27_kronos_reviewed_data"
+DEFAULT_DATA_DIR = Path.home() / ".mingcang" / "m27_kronos_reviewed_data"
 DEFAULT_COVERAGE_REPORT = DEFAULT_DATA_DIR / "coverage_report.json"
-DEFAULT_UNIVERSE_PATH = Path.home() / ".stock-sage" / "m27_kronos_reviewed_complete_universe.json"
-DEFAULT_CHECKPOINT_DIR = Path.home() / ".stock-sage" / "models" / "kronos_finetuned"
-DEFAULT_JSON_OUTPUT = Path.home() / ".stock-sage" / "m27_kronos_preflight_report.json"
-DEFAULT_MARKDOWN_OUTPUT = Path.home() / ".stock-sage" / "m27_kronos_preflight_report.md"
+DEFAULT_UNIVERSE_PATH = Path.home() / ".mingcang" / "m27_kronos_reviewed_complete_universe.json"
+DEFAULT_CHECKPOINT_DIR = Path.home() / ".mingcang" / "models" / "kronos_finetuned"
+DEFAULT_JSON_OUTPUT = Path.home() / ".mingcang" / "m27_kronos_preflight_report.json"
+DEFAULT_MARKDOWN_OUTPUT = Path.home() / ".mingcang" / "m27_kronos_preflight_report.md"
 
 REQUIRED_DATA_FILES = ["train_data.pkl", "valid_data.pkl", "windows.csv", "coverage_report.json"]
 

@@ -1,4 +1,4 @@
-# StockSage 常用命令封装
+# MingCang 常用命令封装
 # 用法：make <target>，例如 `make test`、`make dev`
 
 PYTHON ?= $(shell test -x .venv/bin/python && echo .venv/bin/python || echo python3)
@@ -9,18 +9,18 @@ MYPY ?= $(PYTHON) -m mypy
 PRE_COMMIT ?= $(PYTHON) -m pre_commit
 UV ?= uv
 PIP_AUDIT ?= $(PYTHON) -m pip_audit
-UV_CACHE_DIR ?= /tmp/stocksage-uv-cache
-RUFF_CACHE_DIR ?= /tmp/stocksage-ruff-cache
-MYPY_CACHE_DIR ?= /tmp/stocksage-mypy-cache
-PYTEST_CACHE_DIR ?= /tmp/stocksage-pytest-cache
-COVERAGE_FILE ?= /tmp/stocksage-coverage
+UV_CACHE_DIR ?= /tmp/mingcang-uv-cache
+RUFF_CACHE_DIR ?= /tmp/mingcang-ruff-cache
+MYPY_CACHE_DIR ?= /tmp/mingcang-mypy-cache
+PYTEST_CACHE_DIR ?= /tmp/mingcang-pytest-cache
+COVERAGE_FILE ?= /tmp/mingcang-coverage
 COVERAGE_XML ?= coverage.xml
-PIP_AUDIT_CACHE_DIR ?= /tmp/stocksage-pip-audit-cache
+PIP_AUDIT_CACHE_DIR ?= /tmp/mingcang-pip-audit-cache
 
 .PHONY: help install python-sync python-lock python-lock-check precommit-install test coverage frontend-test frontend-lint frontend-format-check lint security dependency-audit fmt typecheck check verify dev build coverage-snapshot agent-setup agent agent-dev agent-mcp agent-mcp-config clean docker-build docker-up docker-down
 
 help:
-	@echo "StockSage Makefile commands:"
+	@echo "MingCang Makefile commands:"
 	@echo "  install      安装依赖（含 dev 工具链）"
 	@echo "  python-sync  按 uv.lock 同步 Python dev 环境"
 	@echo "  python-lock  更新 uv.lock"
@@ -39,10 +39,10 @@ help:
 	@echo "  check        lint + typecheck + test 一键全跑（PR 前用）"
 	@echo "  verify       后端/前端/构建全量验证"
 	@echo "  coverage-snapshot 输出当前数据覆盖快照"
-	@echo "  agent-setup  配置 StockSage 原生 Pi/agent 本地运行环境"
-	@echo "  agent        启动 StockSage 原生 Pi 研究型终端 agent"
-	@echo "  agent-dev    启动 StockSage 原生 Pi 开发型终端 agent"
-	@echo "  agent-mcp    启动 StockSage MCP stdio 工具桥"
+	@echo "  agent-setup  配置 MingCang 原生 Pi/agent 本地运行环境"
+	@echo "  agent        启动 MingCang 原生 Pi 研究型终端 agent"
+	@echo "  agent-dev    启动 MingCang 原生 Pi 开发型终端 agent"
+	@echo "  agent-mcp    启动 MingCang MCP stdio 工具桥"
 	@echo "  agent-mcp-config 输出 MCP 客户端配置片段"
 	@echo "  dev          启动后端 dev server (uvicorn --reload)"
 	@echo "  build        前端 vite 构建"

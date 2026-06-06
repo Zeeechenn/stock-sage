@@ -305,7 +305,7 @@ def system_health(db: Session = Depends(get_db)):
             try:
                 from backend.notification.bark import send_result
                 send_result(
-                    title="StockSage LLM 日预算超限",
+                    title="MingCang LLM 日预算超限",
                     body=(
                         f"今日 LLM 成本 ¥{llm_budget_alert['today_cny']:.4f}"
                         f"，预算 ¥{llm_budget_alert['budget_cny']:.2f}"

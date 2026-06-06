@@ -3,7 +3,7 @@
 
 运行环境：.venv_kronos（含 torch, einops, huggingface_hub, safetensors, scipy）
 
-用法（从 stock-sage 根目录）:
+用法（从 MingCang 根目录）:
     .venv_kronos/bin/python backend/tools/m26_kronos_eval.py
     .venv_kronos/bin/python backend/tools/m26_kronos_eval.py --model kronos-mini
     .venv_kronos/bin/python backend/tools/m26_kronos_eval.py --context 400 --pred-len 5
@@ -23,6 +23,8 @@ from typing import Any
 import numpy as np
 import pandas as pd
 from scipy import stats
+
+from backend.config import default_sqlite_path
 
 # ── Kronos import (需从 repo 根或 vendor/kronos 跑) ──────────────────────────
 _REPO_ROOT = Path(__file__).parent.parent.parent
@@ -51,7 +53,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # ── 常量 ─────────────────────────────────────────────────────────────────────
-DB_PATH = _REPO_ROOT / "stock-sage.db"
+DB_PATH = default_sqlite_path()
 UNIVERSE_PATH = _REPO_ROOT / "paper_trading" / "test2_universe.json"
 
 # 与 M26.0 保持一致的验证窗口
@@ -60,7 +62,7 @@ EVAL_END = "2026-05-14"
 EVERY_N_DAYS = 5          # 每 5 个交易日评估一次
 PRED_LEN = 5              # 预测未来 5 个交易日
 
-OUTPUT_DIR = Path.home() / ".stock-sage"
+OUTPUT_DIR = Path.home() / ".mingcang"
 OUTPUT_JSON = OUTPUT_DIR / "m26_kronos_report.json"
 OUTPUT_MD = OUTPUT_DIR / "m26_kronos_report.md"
 
@@ -81,9 +83,16 @@ def load_universe() -> list[str]:
     return [r.get("symbol", r) if isinstance(r, dict) else str(r) for r in rows]
 
 
+def _connect_readonly(db_path: Path = DB_PATH) -> sqlite3.Connection:
+    db_path = db_path.expanduser().resolve()
+    if not db_path.exists():
+        raise FileNotFoundError(f"database does not exist: {db_path}")
+    return sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
+
+
 def load_prices(symbols: list[str], start: str, end: str) -> dict[str, pd.DataFrame]:
     """从 SQLite 读取 OHLCV，返回 {symbol: df(index=date_str)}。"""
-    con = sqlite3.connect(DB_PATH)
+    con = _connect_readonly(DB_PATH)
     placeholders = ",".join("?" * len(symbols))
     sql = f"""
         SELECT symbol, date, open, high, low, close, volume
@@ -135,7 +144,7 @@ def _resolve_finetuned_checkpoint(model_path: Path) -> Path:
             raise RuntimeError(f"Finetuned Kronos checkpoint manifest is invalid: {manifest}") from exc
         if payload.get("checkpoint_kind") == "stocksage_path_a_smoke_model":
             raise RuntimeError(
-                f"Finetuned Kronos checkpoint is only a StockSage Path A smoke artifact: {resolved}. "
+                f"Finetuned Kronos checkpoint is only a MingCang Path A smoke artifact: {resolved}. "
                 "Run real M27.4 Kronos-small fine-tuning before m26_kronos_eval."
             )
     return resolved
@@ -154,7 +163,7 @@ def resolve_model_spec(
     }
     if model_name == "kronos-finetuned":
         checkpoint = _resolve_finetuned_checkpoint(
-            finetuned_model_path or Path.home() / ".stock-sage" / "models" / "kronos_finetuned"
+            finetuned_model_path or Path.home() / ".mingcang" / "models" / "kronos_finetuned"
         )
         if tokenizer_path is not None:
             tok_id: str | Path = tokenizer_path
@@ -513,7 +522,7 @@ def main():
                         choices=["kronos-mini", "kronos-small", "kronos-base", "kronos-finetuned"],
                         help="Kronos 模型变体（默认 kronos-small）")
     parser.add_argument("--finetuned-model-path", type=Path,
-                        default=Path.home() / ".stock-sage" / "models" / "kronos_finetuned",
+                        default=Path.home() / ".mingcang" / "models" / "kronos_finetuned",
                         help="--model kronos-finetuned 时的本地模型目录")
     parser.add_argument("--tokenizer-path", type=Path, default=None,
                         help="可选本地 tokenizer 目录")

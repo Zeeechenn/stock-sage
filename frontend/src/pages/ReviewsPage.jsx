@@ -19,7 +19,7 @@ const DEMO_REVIEWS = {
       ['规避', '1'],
     ],
     highlights: ['中际旭创动量延续，仓位建议保持小仓。', '大盘仍处中性区，新增仓位控制在规则上限内。'],
-    content: `# StockSage 每日复盘 — 示例
+    content: `# MingCang 每日复盘 — 示例
 
 ## 摘要
 - 当日信号：6 条
@@ -86,7 +86,7 @@ const DEMO_REVIEWS = {
       ['规避', '1'],
     ],
     highlights: ['财务质量评分稳定，现金流和 ROE 是主要支撑。', '估值分位偏高的股票仅保留观察，不主动加仓。'],
-    content: `# StockSage 长期复盘 — 示例
+    content: `# MingCang 长期复盘 — 示例
 
 ## 长期研究团队摘要
 - 值得持有：2
@@ -151,7 +151,7 @@ const DEMO_HISTORY = [
       ['规避', '2'],
     ],
     highlights: ['300394 天孚通信强度保持，但与 300308 暴露高度重叠。', '消费白马短线分数改善，仍缺少成交确认。'],
-    content: `# StockSage 每日复盘 — 2026-05-17 示例
+    content: `# MingCang 每日复盘 — 2026-05-17 示例
 
 ## 摘要
 - 当日信号：5 条
@@ -195,7 +195,7 @@ const DEMO_HISTORY = [
       ['规避', '3'],
     ],
     highlights: ['总仓位建议下调到观察区间。', '新闻热度升高但价格没有确认，避免追题材。'],
-    content: `# StockSage 每日复盘 — 2026-05-16 示例
+    content: `# MingCang 每日复盘 — 2026-05-16 示例
 
 ## 摘要
 - 当日信号：4 条
@@ -234,7 +234,7 @@ const DEMO_HISTORY = [
       ['冲突', '2'],
     ],
     highlights: ['长期标签用于限制短线仓位，而不是替代短线信号。', '高估值强趋势案例进入下周重点跟踪。'],
-    content: `# StockSage 长期复盘 — 2026-W20 示例
+    content: `# MingCang 长期复盘 — 2026-W20 示例
 
 ## 本周长期结论
 - 值得持有：2
@@ -273,7 +273,7 @@ const DEMO_HISTORY = [
       ['规避', '1'],
     ],
     highlights: ['长期仓位不因单日反弹上调。', '规避标签主要来自盈利下修和技术破位共振。'],
-    content: `# StockSage 长期复盘 — 2026-W19 示例
+    content: `# MingCang 长期复盘 — 2026-W19 示例
 
 ## 组合判断
 - 基本面没有系统性恶化。
@@ -305,7 +305,7 @@ const DEMO_HISTORY = [
       ['观察', '5'],
     ],
     highlights: ['低位修复扩散，但强度仍弱于主线。', '适合把观察池更新完整，不适合扩大试错数量。'],
-    content: `# StockSage 每日复盘 — 2026-05-15 示例
+    content: `# MingCang 每日复盘 — 2026-05-15 示例
 
 ## 摘要
 - 当日信号：7 条
@@ -339,7 +339,7 @@ const DEMO_HISTORY = [
       ['记忆', '2'],
     ],
     highlights: ['突破后量能不足的案例已写入复盘记忆。', '新闻分较高但技术确认失败，后续需要降低权重。'],
-    content: `# StockSage 每日复盘 — 2026-05-14 示例
+    content: `# MingCang 每日复盘 — 2026-05-14 示例
 
 ## 摘要
 - 当日信号：3 条

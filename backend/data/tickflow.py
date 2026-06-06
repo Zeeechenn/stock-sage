@@ -14,7 +14,7 @@ from backend.config import settings
 
 
 def tickflow_symbol(symbol: str, market: str) -> str:
-    """Map a StockSage symbol/market pair to TickFlow's exchange suffix format."""
+    """Map a MingCang symbol/market pair to TickFlow's exchange suffix format."""
     normalized = str(symbol).strip().upper()
     if "." in normalized:
         return normalized

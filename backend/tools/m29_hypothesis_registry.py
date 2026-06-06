@@ -1,7 +1,7 @@
 """Build a read-only M29 alpha hypothesis registry.
 
 The registry pre-registers research hypotheses before another experiment is
-run. It writes only JSON/Markdown artifacts and never opens the StockSage DB,
+run. It writes only JSON/Markdown artifacts and never opens the MingCang DB,
 calls LLM/API services, saves models, or changes production configuration.
 """
 from __future__ import annotations
@@ -14,8 +14,8 @@ from typing import Any
 
 from backend.config import settings
 
-DEFAULT_JSON_OUTPUT = Path.home() / ".stock-sage" / "m29_hypothesis_registry.json"
-DEFAULT_MARKDOWN_OUTPUT = Path.home() / ".stock-sage" / "m29_hypothesis_registry.md"
+DEFAULT_JSON_OUTPUT = Path.home() / ".mingcang" / "m29_hypothesis_registry.json"
+DEFAULT_MARKDOWN_OUTPUT = Path.home() / ".mingcang" / "m29_hypothesis_registry.md"
 REQUIRED_HYPOTHESIS_FIELDS = {
     "hypothesis_id",
     "status",

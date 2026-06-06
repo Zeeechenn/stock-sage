@@ -1,8 +1,8 @@
-"""Guarded M27.4 StockSage Path A launch config and smoke training runner.
+"""Guarded M27.4 MingCang Path A launch config and smoke training runner.
 
 This tool turns the reviewed Kronos dataset into a machine-readable launch
 config and training plan. When explicitly requested, it can also run a small
-StockSage-owned Path A smoke loop over the reviewed dataset and write a local
+MingCang-owned Path A smoke loop over the reviewed dataset and write a local
 checkpoint without using ignored vendor code as the delivery entrypoint.
 """
 from __future__ import annotations
@@ -21,10 +21,10 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-DEFAULT_DATASET_DIR = Path.home() / ".stock-sage" / "m27_kronos_reviewed_data"
-DEFAULT_FINETUNED_OUTPUT_DIR = Path.home() / ".stock-sage" / "models" / "kronos_finetuned"
-DEFAULT_OUTPUT_DIR = Path.home() / ".stock-sage" / "models" / "kronos_path_a_smoke"
-DEFAULT_LOG_DIR = Path.home() / ".stock-sage" / "logs" / "m27_kronos_path_a"
+DEFAULT_DATASET_DIR = Path.home() / ".mingcang" / "m27_kronos_reviewed_data"
+DEFAULT_FINETUNED_OUTPUT_DIR = Path.home() / ".mingcang" / "models" / "kronos_finetuned"
+DEFAULT_OUTPUT_DIR = Path.home() / ".mingcang" / "models" / "kronos_path_a_smoke"
+DEFAULT_LOG_DIR = Path.home() / ".mingcang" / "logs" / "m27_kronos_path_a"
 DEFAULT_CONFIG_NAME = "stocksage_path_a_launch_config.json"
 DEFAULT_PLAN_NAME = "stocksage_path_a_training_plan.json"
 DEFAULT_LOG_NAME = "stocksage_path_a_training_log.jsonl"
@@ -329,7 +329,7 @@ def _time_features(index: pd.DatetimeIndex) -> np.ndarray:
 def _load_training_frames(dataset_dir: Path) -> tuple[dict[str, pd.DataFrame], pd.DataFrame]:
     dataset_dir = dataset_dir.expanduser()
     with (dataset_dir / "train_data.pkl").open("rb") as fh:
-        raw_panels = pickle.load(fh)  # noqa: S301 - trusted StockSage-generated training data.
+        raw_panels = pickle.load(fh)  # noqa: S301 - trusted MingCang-generated training data.
     if not isinstance(raw_panels, dict):
         raise ValueError("train_data.pkl must contain a symbol -> DataFrame mapping")
 

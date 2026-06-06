@@ -2,7 +2,7 @@
 
 This local-only tool tests whether changing the alpha label or objective is
 more promising than adding more factors. It never promotes a model and writes
-candidate reports under ``~/.stock-sage``.
+candidate reports under ``~/.mingcang``.
 """
 from __future__ import annotations
 
@@ -24,9 +24,9 @@ from backend.data.database import SessionLocal
 from backend.data.qlib_data import FEATURE_COLS, build_training_data
 from backend.tools.m27_alpha_diagnostic import add_horizon_labels, add_volatility_regime
 
-DEFAULT_JSON_OUTPUT = Path.home() / ".stock-sage" / "m27_label_objective_eval_report.json"
-DEFAULT_MARKDOWN_OUTPUT = Path.home() / ".stock-sage" / "m27_label_objective_eval_report.md"
-DEFAULT_CACHE_DIR = Path.home() / ".stock-sage" / "cache"
+DEFAULT_JSON_OUTPUT = Path.home() / ".mingcang" / "m27_label_objective_eval_report.json"
+DEFAULT_MARKDOWN_OUTPUT = Path.home() / ".mingcang" / "m27_label_objective_eval_report.md"
+DEFAULT_CACHE_DIR = Path.home() / ".mingcang" / "cache"
 DEFAULT_HORIZON = 20
 TOP_DECILE_PCT = 0.10
 DEFAULT_SEGMENT_MIN_ROWS = 250

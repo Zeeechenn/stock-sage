@@ -3,9 +3,9 @@ FinMem 风格分层决策记忆（阶段C）
 
 三层记忆：
   • short_term: 当日所有股票的 Signal（运行时字典）
-  • medium_term: ~/.stock-sage/memory/medium_{symbol}.md
+  • medium_term: ~/.mingcang/memory/medium_{symbol}.md
                  该股最近 5 笔信号 + 实际盈亏的 markdown 表
-  • long_term:  ~/.stock-sage/memory/long_term_reflection.md
+  • long_term:  ~/.mingcang/memory/long_term_reflection.md
                  每周末 LLM 自动总结系统的偏差和教训
 
 调用约定：
@@ -21,7 +21,13 @@ from pathlib import Path
 from backend.config import settings
 from backend.decision.signal_policy import entry_recommendations
 
-MEMORY_DIR = Path.home() / ".stock-sage" / "memory"
+_MINGCANG_MEMORY_DIR = Path.home() / ".mingcang" / "memory"
+_LEGACY_MEMORY_DIR = Path.home() / ".stock-sage" / "memory"
+MEMORY_DIR = (
+    _LEGACY_MEMORY_DIR
+    if _LEGACY_MEMORY_DIR.exists() and not _MINGCANG_MEMORY_DIR.exists()
+    else _MINGCANG_MEMORY_DIR
+)
 LONG_TERM_PATH = MEMORY_DIR / "long_term_reflection.md"
 
 _SHORT_TERM: dict[str, list[dict]] = {}  # symbol → list of recent decisions
@@ -179,7 +185,7 @@ def _upsert_layered_row(db, *, symbol: str | None, layer: str, content: str) -> 
 
 
 def migrate_layered_files_to_db(db) -> dict:
-    """One-shot ingest of `~/.stock-sage/memory/{medium_*.md, long_term_reflection.md}`
+    """One-shot ingest of `~/.mingcang/memory/{medium_*.md, long_term_reflection.md}`
     into `decision_memory_layered`. Idempotent (upsert). Returns counts dict."""
     counts = {"medium": 0, "long": 0}
     if not MEMORY_DIR.exists():

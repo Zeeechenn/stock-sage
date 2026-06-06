@@ -3,7 +3,7 @@
 This tool is local-only by default: it reads the production SQLite database,
 evaluates the current LightGBM quant model with the existing validation-report
 口径, runs a historical quant-on/quant-off profile comparison, and writes a
-human-readable report under ``~/.stock-sage``.
+human-readable report under ``~/.mingcang``.
 """
 from __future__ import annotations
 
@@ -26,8 +26,8 @@ from backend.data.database import Price, SessionLocal
 DEFAULT_M26_UNIVERSE_PATH = BASE_DIR / "paper_trading" / "test2_universe.json"
 M27_TEST3_UNIVERSE_PATH = BASE_DIR / "paper_trading" / "test3_universe.json"
 DEFAULT_UNIVERSE_PATH = DEFAULT_M26_UNIVERSE_PATH
-DEFAULT_JSON_OUTPUT = Path.home() / ".stock-sage" / "m26_quant_baseline_report.json"
-DEFAULT_MARKDOWN_OUTPUT = Path.home() / ".stock-sage" / "m26_quant_baseline_report.md"
+DEFAULT_JSON_OUTPUT = Path.home() / ".mingcang" / "m26_quant_baseline_report.json"
+DEFAULT_MARKDOWN_OUTPUT = Path.home() / ".mingcang" / "m26_quant_baseline_report.md"
 M26_DIAGNOSTIC_IC_FLOOR = 0.02
 M26_DIAGNOSTIC_ICIR_FLOOR = 0.15
 M26_DIAGNOSTIC_REQUIRE_MONOTONIC = False

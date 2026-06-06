@@ -12,7 +12,13 @@ from backend.agent.security import agent_mode
 from backend.data.database import LongTermLabel, Position, ResearchState, Signal, Stock
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_MEMORY_DIR = Path.home() / ".stock-sage" / "memory"
+_MINGCANG_MEMORY_DIR = Path.home() / ".mingcang" / "memory"
+_LEGACY_MEMORY_DIR = Path.home() / ".stock-sage" / "memory"
+DEFAULT_MEMORY_DIR = (
+    _LEGACY_MEMORY_DIR
+    if _LEGACY_MEMORY_DIR.exists() and not _MINGCANG_MEMORY_DIR.exists()
+    else _MINGCANG_MEMORY_DIR
+)
 _COUNT_TABLES = {
     "ai_memory",
     "stock_memory_items",
@@ -66,13 +72,13 @@ def _memory_files(memory_dir: Path) -> dict:
     }
 
 
-def stock_sage_memory_snapshot(
+def mingcang_memory_snapshot(
     db: Session,
     *,
     memory_dir: Path | str = DEFAULT_MEMORY_DIR,
     limit: int = 12,
 ) -> dict:
-    """Return a compact snapshot of StockSage's project-owned memory."""
+    """Return a compact snapshot of MingCang's project-owned memory."""
     memory_path = Path(memory_dir)
     ai_rows = _rows(
         db,
@@ -199,7 +205,7 @@ def _research_copilot(db: Session, symbol: str) -> dict | None:
         return None
 
 
-def stock_sage_stock_context(db: Session, symbol: str) -> dict:
+def mingcang_stock_context(db: Session, symbol: str) -> dict:
     """Return the project context most useful before discussing one stock."""
     try:
         from backend.memory.stock_memory import build_memory_context
@@ -289,14 +295,14 @@ def _watchlist(db: Session) -> dict:
     }
 
 
-def stock_sage_context(
+def mingcang_context(
     db: Session,
     *,
     symbol: str | None = None,
     memory_dir: Path | str = DEFAULT_MEMORY_DIR,
 ) -> dict:
     """Return the compact startup context coding agents should read first."""
-    memory = stock_sage_memory_snapshot(db, memory_dir=memory_dir)
+    memory = mingcang_memory_snapshot(db, memory_dir=memory_dir)
     try:
         from backend.memory.stock_memory import build_memory_context
         memory_context = build_memory_context(
@@ -330,11 +336,11 @@ def stock_sage_context(
         "watchlist": _watchlist(db),
     }
     if symbol:
-        context["symbol_context"] = stock_sage_stock_context(db, symbol)
+        context["symbol_context"] = mingcang_stock_context(db, symbol)
     return context
 
 
-def stock_sage_memory_context(
+def mingcang_memory_context(
     db: Session,
     *,
     symbol: str | None = None,
@@ -363,3 +369,10 @@ def stock_sage_memory_context(
             "used_memory_atom_ids": [],
             "l0_context": {},
         }
+
+
+# Legacy function names stay available for existing scripts and MCP clients.
+stock_sage_memory_snapshot = mingcang_memory_snapshot
+stock_sage_stock_context = mingcang_stock_context
+stock_sage_context = mingcang_context
+stock_sage_memory_context = mingcang_memory_context

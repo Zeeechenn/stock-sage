@@ -9,13 +9,13 @@ def main() -> int:
     root = Path(__file__).resolve().parents[1]
     payload = {
         "mcpServers": {
-            "stock-sage": {
+            "mingcang": {
                 "command": sys.executable,
                 "args": ["-m", "backend.agent.mcp_server"],
                 "cwd": str(root),
                 "env": {
                     "PYTHONPATH": str(root),
-                    "STOCKSAGE_AGENT_MODE": "local",
+                    "MINGCANG_AGENT_MODE": "local",
                 },
             }
         }

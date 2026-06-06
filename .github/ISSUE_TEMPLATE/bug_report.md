@@ -1,6 +1,6 @@
 ---
 name: Bug report
-about: Report a reproducible bug in StockSage
+about: Report a reproducible bug in MingCang
 title: "[Bug] "
 labels: bug
 ---
@@ -25,7 +25,7 @@ labels: bug
 
 ## Environment
 
-- StockSage commit / branch:
+- MingCang commit / branch:
 - OS:
 - Python version:
 - Node version (if frontend issue):

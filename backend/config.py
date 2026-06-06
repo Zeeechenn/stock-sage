@@ -1,11 +1,42 @@
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
+from urllib.parse import unquote
 
 from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BASE_DIR = Path(__file__).parent.parent
+_MINGCANG_DB_PATH = BASE_DIR / "mingcang.db"
+_LEGACY_STOCKSAGE_DB_PATH = BASE_DIR / "stock-sage.db"
+
+
+def _default_database_url() -> str:
+    """Prefer the MingCang DB name while keeping existing local checkouts usable."""
+    path = _MINGCANG_DB_PATH
+    if not path.exists() and _LEGACY_STOCKSAGE_DB_PATH.exists():
+        path = _LEGACY_STOCKSAGE_DB_PATH
+    return f"sqlite:///{path}"
+
+
+def sqlite_path_from_url(database_url: str) -> Path | None:
+    """Return a local SQLite file path from a SQLAlchemy URL, if applicable."""
+    prefix = "sqlite:///"
+    if not database_url.startswith(prefix):
+        return None
+    raw_path = unquote(database_url[len(prefix):])
+    if raw_path in {"", ":memory:"}:
+        return None
+    return Path(raw_path).expanduser()
+
+
+def default_sqlite_path() -> Path:
+    """Resolve the configured SQLite DB path using the MingCang legacy fallback."""
+    path = sqlite_path_from_url(settings.database_url)
+    if path is not None:
+        return path
+    return _MINGCANG_DB_PATH
+
 
 
 @dataclass(frozen=True)
@@ -46,7 +77,7 @@ class Settings(BaseSettings):
     qlib_train_icir_floor: float = 0.4
     qlib_train_require_monotonic: bool = True
 
-    database_url: str = f"sqlite:///{BASE_DIR}/stock-sage.db"
+    database_url: str = _default_database_url()
     schedule_premarket: str = "08:30"
     schedule_postmarket: str = "16:00"
     tushare_token: str = ""
@@ -232,7 +263,13 @@ class Settings(BaseSettings):
 
     # Agent local/remote guardrails. Local desktop use is trusted; remote writes
     # require an API key, explicit write enablement, and optional action allowlist.
-    stocksage_agent_mode: str = "local"
+    mingcang_agent_mode: str = "local"
+    mingcang_agent_api_key: str = ""
+    mingcang_agent_remote_write_enabled: bool = False
+    mingcang_agent_remote_write_actions: str = ""
+
+    # Legacy StockSage names remain accepted during the MingCang transition.
+    stocksage_agent_mode: str = ""
     stocksage_agent_api_key: str = ""
     stocksage_agent_remote_write_enabled: bool = False
     stocksage_agent_remote_write_actions: str = ""

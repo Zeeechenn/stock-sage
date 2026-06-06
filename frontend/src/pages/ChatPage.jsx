@@ -234,7 +234,7 @@ export default function ChatPage() {
           <div className="flex-1 space-y-4 overflow-y-auto p-4">
             {rows.length === 0 && (
               <div className="rounded-sm border border-cyan-700/30 bg-cyan-700/10 p-4 text-sm leading-relaxed text-cyan-900 dark:text-cyan-100">
-                每个窗口只继承本窗口上下文；窗口外历史不会进入对话记忆。AI 仍可调取 StockSage 的自选股、持仓、信号、复盘和研究资源。
+                每个窗口只继承本窗口上下文；窗口外历史不会进入对话记忆。AI 仍可调取 MingCang 的自选股、持仓、信号、复盘和研究资源。
               </div>
             )}
             {rows.map((row, index) => (
@@ -263,7 +263,7 @@ export default function ChatPage() {
           </div>
           <form onSubmit={send} className="border-t border-stone-300 p-4 dark:border-slate-700">
             <div className="flex gap-2">
-              <input value={message} onChange={(e) => setMessage(e.target.value)} placeholder={mode === 'long_term_team' ? '输入：研究 300308' : '向 StockSage 提问或下达项目操作'} className="flex-1 rounded-sm border border-stone-300 bg-[#fffaf0] px-3 py-2 text-sm outline-none focus:border-cyan-700 dark:border-slate-700 dark:bg-[#161b25] dark:text-slate-100" />
+              <input value={message} onChange={(e) => setMessage(e.target.value)} placeholder={mode === 'long_term_team' ? '输入：研究 300308' : '向 MingCang 提问或下达项目操作'} className="flex-1 rounded-sm border border-stone-300 bg-[#fffaf0] px-3 py-2 text-sm outline-none focus:border-cyan-700 dark:border-slate-700 dark:bg-[#161b25] dark:text-slate-100" />
               <button disabled={busy} className="rounded-sm bg-cyan-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">发送</button>
             </div>
           </form>

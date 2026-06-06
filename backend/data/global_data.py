@@ -1,7 +1,7 @@
 """Read-only global market data facade for M41.
 
 This module does not fetch remote providers by itself, write the database, or
-promote any HK/US dataset into StockSage scoring. It turns existing DB rows,
+promote any HK/US dataset into MingCang scoring. It turns existing DB rows,
 capability metadata, and explicit probe summaries into auditable envelopes.
 """
 from __future__ import annotations
@@ -167,7 +167,7 @@ def pit_gate_for_layer(layer: str, normalized_row: dict[str, Any] | None = None)
     schema = CANONICAL_SCHEMAS.get(layer, {})
     pit_field = schema.get("pit_date_field")
     if not schema or not pit_field:
-        return GateResult("blocked", ["unknown_canonical_schema"], ["Layer has no StockSage schema contract."])
+        return GateResult("blocked", ["unknown_canonical_schema"], ["Layer has no MingCang schema contract."])
     if not normalized_row:
         return GateResult("observe_only", ["no_normalized_row"], ["No row was normalized for PIT evaluation."])
     value = normalized_row.get(pit_field)

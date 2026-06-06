@@ -1,4 +1,4 @@
-"""Daily trade review report built from existing StockSage evidence."""
+"""Daily trade review report built from existing MingCang evidence."""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -83,7 +83,7 @@ def _render_report(
     db,
 ) -> str:
     lines = [
-        f"# StockSage 每日复盘 — {day}",
+        f"# MingCang 每日复盘 — {day}",
         "",
         "## 摘要",
         f"- 当日信号：{len(signals)} 条",

@@ -1,6 +1,6 @@
-# StockSage — Project Index
+# MingCang — Project Index
 
-StockSage is a personal A-share research and decision-support application. This
+MingCang is a personal A-share research and decision-support application. This
 file is a compact public index for the repository; operational details live in
 the linked documents.
 
@@ -28,7 +28,7 @@ the linked documents.
 
 ## Agent-Ready Boundary
 
-StockSage can be used as regular software and as an agent-ready codebase. Public
+MingCang can be used as regular software and as an agent-ready codebase. Public
 agent instructions belong in `AGENTS.md`; private local notes, generated reports,
 runtime databases and personal trading records stay outside Git tracking.
 

@@ -20,8 +20,8 @@ from backend.tools.m27_sentiment_cache_backfill import (
     run_backfill,
 )
 
-DEFAULT_AUDIT_DIR = Path.home() / ".stock-sage" / "m27_sentiment_cache_backfill_batches"
-DEFAULT_SUMMARY_OUTPUT = Path.home() / ".stock-sage" / "m27_sentiment_cache_batch_runner_summary.json"
+DEFAULT_AUDIT_DIR = Path.home() / ".mingcang" / "m27_sentiment_cache_backfill_batches"
+DEFAULT_SUMMARY_OUTPUT = Path.home() / ".mingcang" / "m27_sentiment_cache_batch_runner_summary.json"
 
 
 def _timestamp() -> str:

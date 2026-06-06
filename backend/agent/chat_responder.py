@@ -66,11 +66,11 @@ def context_answer(
     *,
     chat_context_for_session,
 ) -> AIChatResponse:
-    """Deterministic fallback answer using internal StockSage resources."""
+    """Deterministic fallback answer using internal MingCang resources."""
     symbol = symbol_from_text(message)
     stocks = db.query(Stock).filter(Stock.active).limit(6).all()
     positions = db.query(Position).filter(Position.status == "open").limit(6).all()
-    parts = ["我会在 StockSage 项目内回答：已读取自选股、持仓、信号、复盘和研究记忆。"]
+    parts = ["我会在 MingCang 项目内回答：已读取自选股、持仓、信号、复盘和研究记忆。"]
     used_resources = ["stocks", "positions", "project_research"]
     if session_id:
         chat_context = chat_context_for_session(db, session_id)

@@ -38,6 +38,26 @@ def test_http_agent_write_guard_honors_allowlist(monkeypatch):
     assert exc.value.status_code == 403
 
 
+def test_http_agent_write_guard_accepts_mingcang_header_and_env(monkeypatch):
+    from backend.agent.http_guard import agent_write_guard
+
+    monkeypatch.setenv("MINGCANG_AGENT_MODE", "remote")
+    monkeypatch.setenv("MINGCANG_AGENT_API_KEY", "secret")
+    monkeypatch.setenv("MINGCANG_AGENT_REMOTE_WRITE_ENABLED", "true")
+
+    agent_write_guard("config.update")(FakeRequest({"x-mingcang-agent-api-key": "secret"}))
+
+
+def test_http_agent_write_guard_accepts_bearer_auth(monkeypatch):
+    from backend.agent.http_guard import agent_write_guard
+
+    monkeypatch.setenv("MINGCANG_AGENT_MODE", "remote")
+    monkeypatch.setenv("MINGCANG_AGENT_API_KEY", "secret")
+    monkeypatch.setenv("MINGCANG_AGENT_REMOTE_WRITE_ENABLED", "true")
+
+    agent_write_guard("config.update")(FakeRequest({"authorization": "Bearer secret"}))
+
+
 def test_sensitive_write_routes_are_registered_with_agent_guard():
     from fastapi.routing import APIRoute
 

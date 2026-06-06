@@ -2,6 +2,7 @@
 
 状态文件用 tmp_path 隔离，避免污染用户家目录。
 """
+import json
 from datetime import datetime
 
 import pytest
@@ -12,6 +13,7 @@ def isolated_state(tmp_path, monkeypatch):
     """每个测试用独立状态文件 + 默认不推 Bark"""
     from backend.ops import kill_switch
     monkeypatch.setattr(kill_switch, "STATE_PATH", tmp_path / "kill_switch.json")
+    monkeypatch.setattr(kill_switch, "LEGACY_STATE_PATH", tmp_path / "legacy" / "kill_switch.json")
     # 防止真实推 Bark
     from backend.notification import bark
     monkeypatch.setattr(bark, "send", lambda *a, **kw: False)
@@ -53,6 +55,45 @@ def test_corrupt_state_is_treated_as_active(tmp_path):
     state = kill_switch.current_state()
     assert state["active"] is True
     assert "读取失败" in state["reason"]
+
+
+def test_legacy_state_path_still_blocks_scheduler():
+    from backend.ops import kill_switch
+
+    kill_switch.LEGACY_STATE_PATH.parent.mkdir(parents=True)
+    kill_switch.LEGACY_STATE_PATH.write_text(
+        json.dumps({
+            "active": True,
+            "reason": "legacy manual stop",
+            "triggered_at": "2026-06-06T10:00:00",
+            "metadata": {"source": "legacy"},
+        }),
+        encoding="utf-8",
+    )
+
+    assert kill_switch.is_active() is True
+    state = kill_switch.current_state()
+    assert state["reason"] == "legacy manual stop"
+
+
+def test_reset_clears_legacy_state_too():
+    from backend.ops import kill_switch
+
+    kill_switch.LEGACY_STATE_PATH.parent.mkdir(parents=True)
+    kill_switch.LEGACY_STATE_PATH.write_text(
+        json.dumps({
+            "active": True,
+            "reason": "legacy manual stop",
+            "triggered_at": "2026-06-06T10:00:00",
+            "metadata": {},
+        }),
+        encoding="utf-8",
+    )
+
+    kill_switch.reset()
+
+    assert kill_switch.current_state() is None
+    assert not kill_switch.LEGACY_STATE_PATH.exists()
 
 
 def test_detect_consecutive_losses_counts_trailing_only():

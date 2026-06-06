@@ -40,7 +40,7 @@ CACHE_LAYERS: tuple[CacheLayer, ...] = (
     CacheLayer(
         id="L2",
         name="local_sqlite",
-        source="stock-sage.db persisted prices, signals, reviews, memories",
+        source="mingcang.db persisted prices, signals, reviews, memories",
         network_allowed=False,
         write_allowed=False,
         typical_use="intraday analysis, dashboards, exports, stop-loss checks",

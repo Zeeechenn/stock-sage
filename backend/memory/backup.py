@@ -1,12 +1,12 @@
 """Daily backup dump of ai_memory to a dated JSON file (M9.横向).
 
-Layered decision memory (`~/.stock-sage/memory/medium_*.md`,
+Layered decision memory (`~/.mingcang/memory/medium_*.md`,
 `long_term_reflection.md`) is **not** dumped here — those files are themselves
 the source of truth and live on disk. Once M9.1 migrates them into a DB
 table, extend `run_daily_backup` to dump that table as well.
 
 Layout:
-  ~/.stock-sage/memory/backups/ai_memory_{YYYY-MM-DD}.json
+  ~/.mingcang/memory/backups/ai_memory_{YYYY-MM-DD}.json
 
 Retention: drop backup files older than `keep_days` (default 30) on each run.
 """
@@ -19,7 +19,7 @@ from typing import Any
 
 from sqlalchemy import text
 
-DEFAULT_BACKUP_DIR = Path.home() / ".stock-sage" / "memory" / "backups"
+DEFAULT_BACKUP_DIR = Path.home() / ".mingcang" / "memory" / "backups"
 DEFAULT_KEEP_DAYS = 30
 SCHEMA_VERSION = 1
 

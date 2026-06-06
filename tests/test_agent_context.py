@@ -248,12 +248,80 @@ asyncio.run(main())
     data = json.loads(payload)
 
     assert data["tools"] == [
+        "mingcang_project_context",
+        "mingcang_memory_snapshot",
+        "mingcang_memory_context",
+        "mingcang_stock_context",
+        "mingcang_health",
         "stock_sage_project_context",
         "stock_sage_memory_snapshot",
         "stock_sage_memory_context",
         "stock_sage_stock_context",
         "stock_sage_health",
     ]
+    assert '"ok": true' in data["content"][0]
+
+
+def test_mcp_server_exposes_mingcang_tool_names(tmp_path):
+    db_path = tmp_path / f"agent-mingcang-{uuid.uuid4().hex}.db"
+    db_url = f"sqlite:///{db_path}"
+    repo = Path(__file__).resolve().parents[1]
+    script = """
+import asyncio
+import json
+import os
+import sys
+from pathlib import Path
+
+repo = Path(os.environ["PYTHONPATH"])
+
+from backend.data.database import init_db
+from mcp import ClientSession, StdioServerParameters
+from mcp.client.stdio import stdio_client
+
+init_db()
+
+async def main():
+    params = StdioServerParameters(
+        command=sys.executable,
+        args=["-m", "backend.agent.mcp_server"],
+        cwd=str(repo),
+        env=os.environ.copy(),
+    )
+    async with stdio_client(params) as (read, write):
+        async with ClientSession(read, write) as session:
+            await session.initialize()
+            tools = await session.list_tools()
+            result = await session.call_tool("mingcang_health", arguments={})
+            print(json.dumps({
+                "tools": [tool.name for tool in tools.tools],
+                "content": [getattr(item, "text", "") for item in result.content],
+            }, ensure_ascii=False))
+
+asyncio.run(main())
+"""
+
+    env = {
+        "DATABASE_URL": db_url,
+        "PYTHONPATH": str(repo),
+        "MINGCANG_AGENT_MODE": "local",
+    }
+    result = subprocess.run(
+        [sys.executable, "-c", script],
+        cwd=repo,
+        env=env,
+        text=True,
+        capture_output=True,
+        timeout=15,
+        check=True,
+    )
+
+    payload = result.stdout.strip().splitlines()[-1]
+    data = json.loads(payload)
+
+    assert "mingcang_project_context" in data["tools"]
+    assert "mingcang_health" in data["tools"]
+    assert "stock_sage_health" in data["tools"]
     assert '"ok": true' in data["content"][0]
 
 
@@ -313,5 +381,5 @@ asyncio.run(main())
 
     data = json.loads(result.stdout.strip().splitlines()[-1])
 
-    assert "invalid StockSage agent API key" in data["denied"][0]
+    assert "invalid MingCang agent API key" in data["denied"][0]
     assert '"ok": true' in data["allowed"][0]

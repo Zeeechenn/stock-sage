@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 def send_result(
     title: str,
     body: str,
-    group: str = "StockSage",
+    group: str = "MingCang",
     sound: str = "bark",
     retries: int = 1,
     backoff_seconds: float = 0.5,
@@ -70,7 +70,7 @@ def send_result(
 def send(
     title: str,
     body: str,
-    group: str = "StockSage",
+    group: str = "MingCang",
     sound: str = "bark",
     retries: int = 1,
 ) -> bool:

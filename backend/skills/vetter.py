@@ -51,7 +51,7 @@ def _flatten_text(payload: dict) -> str:
 
 def vet_skill_output(payload: dict) -> VetterReview:
     """
-    Check that a financial skill output stays inside StockSage safety bounds.
+    Check that a financial skill output stays inside MingCang safety bounds.
 
     The vetter is intentionally deterministic and conservative. It does not
     judge investment quality; it only blocks behaviors that violate project
@@ -70,7 +70,7 @@ def vet_skill_output(payload: dict) -> VetterReview:
     ):
         risk_flags.append("auto_trade_requested")
         blocked_actions.append("auto_trade")
-        notes.append("StockSage 只做辅助决策，不允许自动交易。")
+        notes.append("MingCang 只做辅助决策，不允许自动交易。")
 
     if any(term in text for term in PRICE_PREDICTION_TERMS):
         risk_flags.append("price_prediction")

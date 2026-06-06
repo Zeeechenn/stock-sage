@@ -65,6 +65,8 @@ def test_write_route_honors_action_allowlist(monkeypatch, module, path, action):
     # The route's own action on the allowlist is accepted.
     monkeypatch.setenv("STOCKSAGE_AGENT_REMOTE_WRITE_ACTIONS", action)
     guards[0](_FakeRequest(headers))
+    guards[0](_FakeRequest({"x-mingcang-agent-api-key": "secret"}))
+    guards[0](_FakeRequest({"authorization": "Bearer secret"}))
 
 
 @pytest.mark.parametrize("module, path, action", _GUARDED_ROUTES)

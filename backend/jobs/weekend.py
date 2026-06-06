@@ -94,7 +94,7 @@ def run_weekly_long_term_reflect() -> dict:
 
 
 def run_daily_memory_backup() -> None:
-    """Daily dump of ai_memory to ~/.stock-sage/memory/backups/ (M9.横向)."""
+    """Daily dump of ai_memory to ~/.mingcang/memory/backups/ (M9.横向)."""
     from backend.data.database import SessionLocal
     from backend.memory.backup import run_daily_backup
     db = SessionLocal()

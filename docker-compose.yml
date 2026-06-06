@@ -4,8 +4,8 @@ services:
       context: .
       target: backend
     volumes:
-      - ./stock-sage.db:/app/stock-sage.db
-      - ~/.stock-sage:/root/.stock-sage
+      - ./mingcang.db:/app/mingcang.db
+      - ~/.mingcang:/root/.mingcang
     env_file: .env
     ports:
       - "8000:8000"

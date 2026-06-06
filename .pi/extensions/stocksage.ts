@@ -15,7 +15,7 @@ function pythonFor(cwd: string): string {
   return process.env.PYTHON || "python3";
 }
 
-function runStockSage(cwd: string, args: string[], signal?: AbortSignal): Promise<CommandResult> {
+function runMingCang(cwd: string, args: string[], signal?: AbortSignal): Promise<CommandResult> {
   return new Promise((resolve, reject) => {
     const child = spawn(
       pythonFor(cwd),
@@ -25,7 +25,8 @@ function runStockSage(cwd: string, args: string[], signal?: AbortSignal): Promis
         env: {
           ...process.env,
           PYTHONPATH: cwd,
-          STOCKSAGE_AGENT_MODE: process.env.STOCKSAGE_AGENT_MODE || "local",
+          MINGCANG_AGENT_MODE: process.env.MINGCANG_AGENT_MODE || process.env.STOCKSAGE_AGENT_MODE || "local",
+          STOCKSAGE_AGENT_MODE: process.env.STOCKSAGE_AGENT_MODE || process.env.MINGCANG_AGENT_MODE || "local",
         },
         stdio: ["ignore", "pipe", "pipe"],
       },
@@ -45,7 +46,7 @@ function runStockSage(cwd: string, args: string[], signal?: AbortSignal): Promis
         resolve({ stdout, stderr });
         return;
       }
-      reject(new Error(stderr.trim() || `StockSage CLI exited with ${code}`));
+      reject(new Error(stderr.trim() || `MingCang CLI exited with ${code}`));
     });
   });
 }
@@ -57,114 +58,119 @@ function textResult(text: string, details: Record<string, unknown> = {}) {
   };
 }
 
-export default function (pi: ExtensionAPI) {
+function registerToolAliases(pi: ExtensionAPI, primary: string, legacy: string, spec: Parameters<ExtensionAPI["registerTool"]>[0]) {
+  pi.registerTool({ ...spec, name: primary });
   pi.registerTool({
-    name: "stocksage_health",
-    label: "StockSage Health",
-    description: "Read StockSage agent health, database counts, watchlist, positions, and memory counts.",
-    promptSnippet: "Use stocksage_health before answering StockSage runtime, setup, or health questions.",
+    ...spec,
+    name: legacy,
+    label: `${spec.label} (legacy)`,
+    description: `${spec.description} Legacy StockSage alias.`,
+  });
+}
+
+export default function (pi: ExtensionAPI) {
+  registerToolAliases(pi, "mingcang_health", "stocksage_health", {
+    name: "mingcang_health",
+    label: "MingCang Health",
+    description: "Read MingCang agent health, database counts, watchlist, positions, and memory counts.",
+    promptSnippet: "Use mingcang_health before answering MingCang runtime, setup, or health questions.",
     parameters: Type.Object({}),
     async execute(_toolCallId, _params, signal, _onUpdate, ctx) {
-      const result = await runStockSage(ctx.cwd, ["health", "--pretty"], signal);
+      const result = await runMingCang(ctx.cwd, ["health", "--pretty"], signal);
       return textResult(result.stdout, { command: "health" });
     },
   });
 
-  pi.registerTool({
-    name: "stocksage_project_context",
-    label: "StockSage Project Context",
-    description: "Read StockSage startup context, project memory summary, active watchlist, and positions.",
-    promptSnippet: "Use stocksage_project_context before project-level StockSage research or review.",
+  registerToolAliases(pi, "mingcang_project_context", "stocksage_project_context", {
+    name: "mingcang_project_context",
+    label: "MingCang Project Context",
+    description: "Read MingCang startup context, project memory summary, active watchlist, and positions.",
+    promptSnippet: "Use mingcang_project_context before project-level MingCang research or review.",
     parameters: Type.Object({
       symbol: Type.Optional(Type.String({ description: "Optional stock symbol to include focused context." })),
     }),
     async execute(_toolCallId, params, signal, _onUpdate, ctx) {
       const args = ["project-context", "--pretty"];
       if (params.symbol) args.push("--symbol", params.symbol);
-      const result = await runStockSage(ctx.cwd, args, signal);
+      const result = await runMingCang(ctx.cwd, args, signal);
       return textResult(result.stdout, { command: "project-context" });
     },
   });
 
-  pi.registerTool({
-    name: "stocksage_stock_context",
-    label: "StockSage Stock Context",
+  registerToolAliases(pi, "mingcang_stock_context", "stocksage_stock_context", {
+    name: "mingcang_stock_context",
+    label: "MingCang Stock Context",
     description: "Read one stock's latest signal, position, long-term label, copilot shadow opinion, and memory context.",
-    promptSnippet: "Use stocksage_stock_context before single-stock StockSage research.",
+    promptSnippet: "Use mingcang_stock_context before single-stock MingCang research.",
     parameters: Type.Object({
-      symbol: Type.String({ description: "Stock symbol, for example 300308." }),
+      symbol: Type.String({ description: "Stock symbol, for example 000001." }),
     }),
     async execute(_toolCallId, params, signal, _onUpdate, ctx) {
-      const result = await runStockSage(ctx.cwd, ["stock-context", params.symbol, "--pretty"], signal);
+      const result = await runMingCang(ctx.cwd, ["stock-context", params.symbol, "--pretty"], signal);
       return textResult(result.stdout, { command: "stock-context", symbol: params.symbol });
     },
   });
 
-  pi.registerTool({
-    name: "stocksage_memory_snapshot",
-    label: "StockSage Memory Snapshot",
-    description: "Read StockSage project-owned memory counts, recent memory rows, layered memory, and audit summaries.",
-    promptSnippet: "Use stocksage_memory_snapshot for memory-sensitive StockSage work.",
+  registerToolAliases(pi, "mingcang_memory_snapshot", "stocksage_memory_snapshot", {
+    name: "mingcang_memory_snapshot",
+    label: "MingCang Memory Snapshot",
+    description: "Read MingCang project-owned memory counts, recent memory rows, layered memory, and audit summaries.",
+    promptSnippet: "Use mingcang_memory_snapshot for memory-sensitive MingCang work.",
     parameters: Type.Object({}),
     async execute(_toolCallId, _params, signal, _onUpdate, ctx) {
-      const result = await runStockSage(ctx.cwd, ["memory-snapshot", "--pretty"], signal);
+      const result = await runMingCang(ctx.cwd, ["memory-snapshot", "--pretty"], signal);
       return textResult(result.stdout, { command: "memory-snapshot" });
     },
   });
 
-  pi.registerTool({
-    name: "stocksage_action_dry_run",
-    label: "StockSage Action Dry Run",
-    description: "Inspect a StockSage action schema, risk level, and payload without executing it.",
-    promptSnippet: "Use stocksage_action_dry_run before any StockSage mutation.",
+  registerToolAliases(pi, "mingcang_action_dry_run", "stocksage_action_dry_run", {
+    name: "mingcang_action_dry_run",
+    label: "MingCang Action Dry Run",
+    description: "Inspect a MingCang action schema, risk level, and payload without executing it.",
+    promptSnippet: "Use mingcang_action_dry_run before any MingCang mutation.",
     parameters: Type.Object({
       name: Type.String({ description: "Registered action name, for example watchlist.add." }),
       payloadJson: Type.String({ description: "Action payload as a JSON object string." }),
     }),
     async execute(_toolCallId, params, signal, _onUpdate, ctx) {
-      const result = await runStockSage(
-        ctx.cwd,
-        ["action", params.name, "--payload-json", params.payloadJson, "--pretty"],
-        signal,
-      );
+      const result = await runMingCang(ctx.cwd, ["action", params.name, "--payload-json", params.payloadJson, "--pretty"], signal);
       return textResult(result.stdout, { command: "action", action: params.name, dryRun: true });
     },
   });
 
-  pi.registerTool({
-    name: "stocksage_action_confirm",
-    label: "StockSage Confirmed Action",
-    description: "Execute a confirmed StockSage action. Use only after the user explicitly approves the exact payload.",
-    promptSnippet: "Use stocksage_action_confirm only after the user explicitly confirms a StockSage action payload.",
+  registerToolAliases(pi, "mingcang_action_confirm", "stocksage_action_confirm", {
+    name: "mingcang_action_confirm",
+    label: "MingCang Confirmed Action",
+    description: "Execute a confirmed MingCang action. Use only after the user explicitly approves the exact payload.",
+    promptSnippet: "Use mingcang_action_confirm only after the user explicitly confirms a MingCang action payload.",
     parameters: Type.Object({
       name: Type.String({ description: "Registered action name." }),
       payloadJson: Type.String({ description: "Action payload as a JSON object string." }),
       confirm: Type.Boolean({ description: "Must be true to execute." }),
     }),
     async execute(_toolCallId, params, signal, _onUpdate, ctx) {
-      if (!params.confirm) {
-        throw new Error("Set confirm=true only after explicit user approval.");
-      }
+      if (!params.confirm) throw new Error("Set confirm=true only after explicit user approval.");
       if (ctx.hasUI) {
-        const ok = await ctx.ui.confirm(
-          "Execute StockSage action?",
-          `${params.name}\n\n${params.payloadJson}`,
-        );
-        if (!ok) throw new Error("StockSage action was cancelled by the user.");
+        const ok = await ctx.ui.confirm("Execute MingCang action?", `${params.name}\n\n${params.payloadJson}`);
+        if (!ok) throw new Error("MingCang action was cancelled by the user.");
       }
-      const result = await runStockSage(
-        ctx.cwd,
-        ["action", params.name, "--payload-json", params.payloadJson, "--confirm", "--pretty"],
-        signal,
-      );
+      const result = await runMingCang(ctx.cwd, ["action", params.name, "--payload-json", params.payloadJson, "--confirm", "--pretty"], signal);
       return textResult(result.stdout, { command: "action", action: params.name, dryRun: false });
     },
   });
 
-  pi.registerCommand("stocksage-health", {
-    description: "Run StockSage health check.",
+  pi.registerCommand("mingcang-health", {
+    description: "Run MingCang health check.",
     handler: async (_args, ctx) => {
-      const result = await runStockSage(ctx.cwd, ["health", "--pretty"]);
+      const result = await runMingCang(ctx.cwd, ["health", "--pretty"]);
+      ctx.ui.notify(result.stdout.trim(), "info");
+    },
+  });
+
+  pi.registerCommand("stocksage-health", {
+    description: "Run MingCang health check through the legacy StockSage command alias.",
+    handler: async (_args, ctx) => {
+      const result = await runMingCang(ctx.cwd, ["health", "--pretty"]);
       ctx.ui.notify(result.stdout.trim(), "info");
     },
   });

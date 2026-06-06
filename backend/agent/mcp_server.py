@@ -1,27 +1,25 @@
-"""MCP server exposing StockSage as local-first agent tools.
+"""MCP server exposing MingCang as local-first agent tools.
 
 Run locally with:
     PYTHONPATH=. python -m backend.agent.mcp_server
 
-Remote stdio MCP calls should set STOCKSAGE_AGENT_MODE=remote and pass
-STOCKSAGE_AGENT_API_KEY as the tool ``api_key`` argument. A future HTTP/SSE
-transport should enforce the same check at the hosting layer before forwarding
-requests. The tools themselves keep remote writes disabled unless
-STOCKSAGE_AGENT_REMOTE_WRITE_ENABLED=true is set.
+Remote stdio MCP calls should set MINGCANG_AGENT_MODE=remote and pass
+MINGCANG_AGENT_API_KEY as the tool ``api_key`` argument. Legacy STOCKSAGE_*
+settings and stock_sage_* tool names remain available during the transition.
 """
 from __future__ import annotations
 
 from backend.agent.context import (
-    stock_sage_context as build_stock_sage_context,
+    mingcang_context as build_mingcang_context,
 )
 from backend.agent.context import (
-    stock_sage_memory_context as build_stock_sage_memory_context,
+    mingcang_memory_context as build_mingcang_memory_context,
 )
 from backend.agent.context import (
-    stock_sage_memory_snapshot as build_stock_sage_memory_snapshot,
+    mingcang_memory_snapshot as build_mingcang_memory_snapshot,
 )
 from backend.agent.context import (
-    stock_sage_stock_context as build_stock_sage_stock_context,
+    mingcang_stock_context as build_mingcang_stock_context,
 )
 from backend.agent.security import require_agent_access
 from backend.data.database import SessionLocal
@@ -34,7 +32,7 @@ except ImportError as exc:  # pragma: no cover - exercised only without optional
     ) from exc
 
 
-mcp = FastMCP("stock-sage")
+mcp = FastMCP("mingcang")
 
 
 def _with_db(fn):
@@ -45,30 +43,24 @@ def _with_db(fn):
         db.close()
 
 
-@mcp.tool()
-def stock_sage_project_context(symbol: str | None = None, api_key: str | None = None) -> dict:
-    """Read StockSage startup context, memory counts, watchlist, and positions."""
+def _project_context(symbol: str | None = None, api_key: str | None = None) -> dict:
     require_agent_access("read", api_key=api_key)
-    return _with_db(lambda db: build_stock_sage_context(db, symbol=symbol))
+    return _with_db(lambda db: build_mingcang_context(db, symbol=symbol))
 
 
-@mcp.tool()
-def stock_sage_memory_snapshot(api_key: str | None = None) -> dict:
-    """Read StockSage project-owned memory summary and recent entries."""
+def _memory_snapshot(api_key: str | None = None) -> dict:
     require_agent_access("read", api_key=api_key)
-    return _with_db(build_stock_sage_memory_snapshot)
+    return _with_db(build_mingcang_memory_snapshot)
 
 
-@mcp.tool()
-def stock_sage_memory_context(
+def _memory_context(
     symbol: str,
     task_type: str | None = None,
     query: str | None = None,
     api_key: str | None = None,
 ) -> dict:
-    """Read prompt-ready StockSage memory context for one stock."""
     require_agent_access("read", api_key=api_key)
-    return _with_db(lambda db: build_stock_sage_memory_context(
+    return _with_db(lambda db: build_mingcang_memory_context(
         db,
         symbol=symbol,
         query=query,
@@ -76,20 +68,16 @@ def stock_sage_memory_context(
     ))
 
 
-@mcp.tool()
-def stock_sage_stock_context(symbol: str, api_key: str | None = None) -> dict:
-    """Read signal, position, long-term label, and memory context for one stock."""
+def _stock_context(symbol: str, api_key: str | None = None) -> dict:
     require_agent_access("read", api_key=api_key)
-    return _with_db(lambda db: build_stock_sage_stock_context(db, symbol))
+    return _with_db(lambda db: build_mingcang_stock_context(db, symbol))
 
 
-@mcp.tool()
-def stock_sage_health(api_key: str | None = None) -> dict:
-    """Read basic database-backed agent health."""
+def _health(api_key: str | None = None) -> dict:
     require_agent_access("read", api_key=api_key)
 
-    def _health(db):
-        context = build_stock_sage_context(db)
+    def _read(db):
+        context = build_mingcang_context(db)
         return {
             "ok": True,
             "agent_mode": context["agent_mode"],
@@ -99,7 +87,77 @@ def stock_sage_health(api_key: str | None = None) -> dict:
             "watchlist": context["watchlist"],
         }
 
-    return _with_db(_health)
+    return _with_db(_read)
+
+
+@mcp.tool()
+def mingcang_project_context(symbol: str | None = None, api_key: str | None = None) -> dict:
+    """Read MingCang startup context, memory counts, watchlist, and positions."""
+    return _project_context(symbol=symbol, api_key=api_key)
+
+
+@mcp.tool()
+def mingcang_memory_snapshot(api_key: str | None = None) -> dict:
+    """Read MingCang project-owned memory summary and recent entries."""
+    return _memory_snapshot(api_key=api_key)
+
+
+@mcp.tool()
+def mingcang_memory_context(
+    symbol: str,
+    task_type: str | None = None,
+    query: str | None = None,
+    api_key: str | None = None,
+) -> dict:
+    """Read prompt-ready MingCang memory context for one stock."""
+    return _memory_context(symbol, task_type=task_type, query=query, api_key=api_key)
+
+
+@mcp.tool()
+def mingcang_stock_context(symbol: str, api_key: str | None = None) -> dict:
+    """Read signal, position, long-term label, and memory context for one stock."""
+    return _stock_context(symbol, api_key=api_key)
+
+
+@mcp.tool()
+def mingcang_health(api_key: str | None = None) -> dict:
+    """Read basic database-backed agent health."""
+    return _health(api_key=api_key)
+
+
+@mcp.tool()
+def stock_sage_project_context(symbol: str | None = None, api_key: str | None = None) -> dict:
+    """Legacy alias for ``mingcang_project_context``."""
+    return _project_context(symbol=symbol, api_key=api_key)
+
+
+@mcp.tool()
+def stock_sage_memory_snapshot(api_key: str | None = None) -> dict:
+    """Legacy alias for ``mingcang_memory_snapshot``."""
+    return _memory_snapshot(api_key=api_key)
+
+
+@mcp.tool()
+def stock_sage_memory_context(
+    symbol: str,
+    task_type: str | None = None,
+    query: str | None = None,
+    api_key: str | None = None,
+) -> dict:
+    """Legacy alias for ``mingcang_memory_context``."""
+    return _memory_context(symbol, task_type=task_type, query=query, api_key=api_key)
+
+
+@mcp.tool()
+def stock_sage_stock_context(symbol: str, api_key: str | None = None) -> dict:
+    """Legacy alias for ``mingcang_stock_context``."""
+    return _stock_context(symbol, api_key=api_key)
+
+
+@mcp.tool()
+def stock_sage_health(api_key: str | None = None) -> dict:
+    """Legacy alias for ``mingcang_health``."""
+    return _health(api_key=api_key)
 
 
 if __name__ == "__main__":

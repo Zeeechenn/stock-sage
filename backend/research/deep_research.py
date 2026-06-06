@@ -623,7 +623,7 @@ def _render_report(
         "- 是否存在政策、订单、客户集中度或估值拥挤风险？",
         "",
         "## 免责声明",
-        "本报告由 StockSage 手动深度研究流程生成，不构成投资建议，不自动触发买卖信号。",
+        "本报告由 MingCang 手动深度研究流程生成，不构成投资建议，不自动触发买卖信号。",
         "",
     ])
     return "\n".join(lines)
@@ -854,7 +854,7 @@ def _persist_report(db, report: DeepResearchReport, audits: list[NewsAudit]) -> 
 
 def main(argv: list[str] | None = None) -> int:
     """CLI entrypoint for manual deep research."""
-    parser = argparse.ArgumentParser(description="Run a manual StockSage deep research report")
+    parser = argparse.ArgumentParser(description="Run a manual MingCang deep research report")
     parser.add_argument("--topic", required=True, help="研究主题，例如：AI算力产业链")
     parser.add_argument("--symbols", default="", help="逗号分隔股票代码，例如：300308,300394")
     parser.add_argument("--as-of", default=None, help="研究日期 YYYY-MM-DD，默认今天")

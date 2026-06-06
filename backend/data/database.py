@@ -29,7 +29,7 @@ def _utcnow() -> datetime:
 
 engine = create_engine(settings.database_url, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(bind=engine)
-_DEFAULT_DB_PATH = (BASE_DIR / "stock-sage.db").resolve()
+_DEFAULT_DB_PATH = (BASE_DIR / "mingcang.db").resolve()
 _FORWARD_THESES_LEGACY_UNIQUE_RE = re.compile(
     r"\bunique\s*\(\s*statement\s*,\s*horizon_date\s*\)"
 )

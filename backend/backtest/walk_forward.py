@@ -170,7 +170,7 @@ def main(argv: list[str] | None = None) -> int:
     import argparse
     import json
 
-    ap = argparse.ArgumentParser(description="StockSage walk-forward / holdout runner")
+    ap = argparse.ArgumentParser(description="MingCang walk-forward / holdout runner")
     ap.add_argument("--mode", choices=("walk-forward", "holdout", "windows"),
                     default="walk-forward")
     ap.add_argument("--start", default="2024-01-01")

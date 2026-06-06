@@ -2,7 +2,7 @@
 
 The ledger is an artifact index, not a promotion engine. It reads existing JSON
 reports, normalizes their gate/sample/data-quality fields, and writes a JSON or
-Markdown summary. It does not open the StockSage DB, call an LLM/API, save a
+Markdown summary. It does not open the MingCang DB, call an LLM/API, save a
 model, or change production configuration.
 """
 from __future__ import annotations
@@ -18,9 +18,9 @@ from typing import Any
 from backend.config import settings
 
 DEFAULT_ARTIFACTS = [
-    Path.home() / ".stock-sage" / "m27_top_decile_forward_shadow_1d.json",
-    Path.home() / ".stock-sage" / "m27_top_decile_forward_shadow_3d.json",
-    Path.home() / ".stock-sage" / "m27_top_decile_forward_shadow_5d.json",
+    Path.home() / ".mingcang" / "m27_top_decile_forward_shadow_1d.json",
+    Path.home() / ".mingcang" / "m27_top_decile_forward_shadow_3d.json",
+    Path.home() / ".mingcang" / "m27_top_decile_forward_shadow_5d.json",
     Path("/private/tmp/m27_forward_shadow_rolling_20260401_20260529_1d.json"),
     Path("/private/tmp/m27_forward_shadow_rolling_20260401_20260529_3d.json"),
     Path("/private/tmp/m27_forward_shadow_rolling_20260401_20260529_5d.json"),
@@ -28,13 +28,13 @@ DEFAULT_ARTIFACTS = [
     Path("/private/tmp/m27_label_objective_eval_stage0_gate.json"),
     Path("/private/tmp/m27_label_objective_eval_m27_1d_multi_exit.json"),
     Path("/private/tmp/m27_label_objective_eval_include_inactive_m27_1d_multi_exit.json"),
-    Path.home() / ".stock-sage" / "m26_kronos_report.json",
+    Path.home() / ".mingcang" / "m26_kronos_report.json",
     Path("/private/tmp/m29_shadow_validation_top_decile_entry_timing_v1.json"),
     Path("/private/tmp/m29_shadow_validation_post_event_drift_pure_polarity_v1.json"),
     Path("/private/tmp/m29_quant_residual_attribution_v1.json"),
 ]
-DEFAULT_JSON_OUTPUT = Path.home() / ".stock-sage" / "m29_evidence_ledger.json"
-DEFAULT_MARKDOWN_OUTPUT = Path.home() / ".stock-sage" / "m29_evidence_ledger.md"
+DEFAULT_JSON_OUTPUT = Path.home() / ".mingcang" / "m29_evidence_ledger.json"
+DEFAULT_MARKDOWN_OUTPUT = Path.home() / ".mingcang" / "m29_evidence_ledger.md"
 DEFAULT_DYNAMIC_ARTIFACT_DIR = Path("/private/tmp")
 QUANT_RESIDUAL_NEXT_ACTION = "append_shadow_artifact_to_m29_ledger_and_wait_for_fresh_forward_coverage"
 M29_FORWARD_ARTIFACT_RE = re.compile(

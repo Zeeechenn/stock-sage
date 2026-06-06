@@ -10,13 +10,14 @@ if ! command -v pi >/dev/null 2>&1; then
 fi
 
 profile="${1:-research}"
+export MINGCANG_PI_PROFILE="$profile"
 export STOCKSAGE_PI_PROFILE="$profile"
 export PYTHONPATH="$ROOT${PYTHONPATH:+:$PYTHONPATH}"
 if [[ "$profile" == "dev" ]]; then
-  echo "Starting StockSage native Pi developer session. Read AGENTS.md before editing."
+  echo "Starting MingCang native Pi developer session. Read AGENTS.md before editing."
 else
-  echo "Starting StockSage native Pi research session. Confirm mutating actions before running them."
+  echo "Starting MingCang native Pi research session. Confirm mutating actions before running them."
 fi
-echo "Project .env stays private to StockSage Python runtime; it is not bulk-exported into Pi."
+echo "Project .env stays private to MingCang Python runtime; it is not bulk-exported into Pi."
 
 exec pi

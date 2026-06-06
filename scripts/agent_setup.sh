@@ -13,7 +13,7 @@ if [[ -z "$PYTHON_BIN" ]]; then
   fi
 fi
 
-echo "== StockSage agent setup =="
+echo "== MingCang agent setup =="
 echo "Project: $ROOT"
 
 if ! command -v "$PYTHON_BIN" >/dev/null 2>&1; then
@@ -29,7 +29,7 @@ fi
 if "$PYTHON_BIN" -m pip --version >/dev/null 2>&1; then
   "$PYTHON_BIN" -m pip install -e ".[agent]" >/dev/null
 elif command -v uv >/dev/null 2>&1; then
-  UV_CACHE_DIR="${UV_CACHE_DIR:-${TMPDIR:-/tmp}/stocksage-uv-cache}" \
+  UV_CACHE_DIR="${UV_CACHE_DIR:-${TMPDIR:-/tmp}/mingcang-uv-cache}" \
     uv pip install --python "$PYTHON_BIN" -e ".[agent]" >/dev/null
 else
   echo "Neither python -m pip nor uv is available. Install pip/uv, then rerun make agent-setup." >&2
@@ -67,7 +67,7 @@ else
 fi
 
 if ! grep -Eq '^AI_PROVIDER=(anthropic|openai|local_cli)' .env; then
-  printf "Choose StockSage runtime provider [local_cli/anthropic/openai] (default: local_cli): "
+  printf "Choose MingCang runtime provider [local_cli/anthropic/openai] (default: local_cli): "
   read -r provider
   provider="${provider:-local_cli}"
   printf "\nAI_PROVIDER=%s\n" "$provider" >> .env
@@ -78,7 +78,7 @@ case "$provider" in
   anthropic)
     current_key="$(grep -E '^ANTHROPIC_API_KEY=' .env | tail -n 1 | cut -d= -f2- || true)"
     if [[ -z "$current_key" || "$current_key" == your_* ]]; then
-      printf "Enter Anthropic API key for StockSage runtime (leave blank to skip): "
+      printf "Enter Anthropic API key for MingCang runtime (leave blank to skip): "
       read -rs key
       printf "\n"
       if [[ -n "$key" ]]; then
@@ -89,7 +89,7 @@ case "$provider" in
   openai)
     current_key="$(grep -E '^OPENAI_API_KEY=' .env | tail -n 1 | cut -d= -f2- || true)"
     if [[ -z "$current_key" || "$current_key" == your_* ]]; then
-      printf "Enter OpenAI/OpenAI-compatible API key for StockSage runtime (leave blank to skip): "
+      printf "Enter OpenAI/OpenAI-compatible API key for MingCang runtime (leave blank to skip): "
       read -rs key
       printf "\n"
       if [[ -n "$key" ]]; then
@@ -109,4 +109,4 @@ PYTHONPATH=. "$PYTHON_BIN" backend/data/database.py >/dev/null
 PYTHONPATH=. "$PYTHON_BIN" -m backend.agent.cli health --pretty
 
 echo "Setup complete. Run: make agent"
-echo "If installed through scripts/install.sh, you can also run: stocksage"
+echo "If installed through scripts/install.sh, you can also run: mingcang"

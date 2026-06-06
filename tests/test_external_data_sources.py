@@ -135,7 +135,7 @@ def test_ftshare_probe_uses_requests_with_timeout_and_size_guard(monkeypatch):
     assert calls == [
         (
             external_sources.FTSHARE_STOCK_LIST_URL,
-            {"User-Agent": "StockSage/1.0"},
+            {"User-Agent": "MingCang/1.0"},
             2.5,
         )
     ]

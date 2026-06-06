@@ -1,4 +1,4 @@
-# Contributing to StockSage
+# Contributing to MingCang
 
 > **注意**：本项目目前为个人量化研究工具，代码已 MIT 开源。欢迎 issue 反馈和 PR 贡献，但合并决策由维护者把关。
 
@@ -7,7 +7,7 @@
 ## 快速开始
 
 ```bash
-git clone <repo-url> && cd stock-sage
+git clone <repo-url> && cd mingcang
 pip install -e ".[dev]"        # 安装开发依赖（pytest + ruff + mypy）
 pre-commit install              # 安装 pre-commit hooks
 cp .env.example .env           # 填入 ANTHROPIC_API_KEY

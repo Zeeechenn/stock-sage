@@ -25,9 +25,9 @@ from backend.tools.m27_sentiment_cache_plan import (
     _sqlite_path_from_url,
 )
 
-DEFAULT_PLAN_PATH = Path("~/.stock-sage/m27_sentiment_cache_plan.json")
-DEFAULT_AUDIT_PATH = Path("~/.stock-sage/m27_sentiment_cache_backfill_audit.json")
-DEFAULT_ROLLBACK_PATH = Path("~/.stock-sage/m27_sentiment_cache_backfill_rollback.json")
+DEFAULT_PLAN_PATH = Path("~/.mingcang/m27_sentiment_cache_plan.json")
+DEFAULT_AUDIT_PATH = Path("~/.mingcang/m27_sentiment_cache_backfill_audit.json")
+DEFAULT_ROLLBACK_PATH = Path("~/.mingcang/m27_sentiment_cache_backfill_rollback.json")
 DEFAULT_BATCH_SIZE = 25
 DEFAULT_MAX_KEYS = 25
 DEFAULT_MAX_LLM_CALLS = 25

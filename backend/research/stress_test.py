@@ -204,7 +204,7 @@ def _build_case_context_prompt(case: dict) -> str:
 
 
 _SYSTEM_PROMPT = (
-    "你是 StockSage 的红队审核员。你的输出仅为咨询意见，"
+    "你是 MingCang 的红队审核员。你的输出仅为咨询意见，"
     "不得直接修改官方信号、信号数据库或任何受信内存。"
 )
 

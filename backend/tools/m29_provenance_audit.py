@@ -10,8 +10,8 @@ from typing import Any
 from backend.data.database import IndexPrice, MarketSnapshot, Price
 from backend.tools import m29_evidence_ledger
 
-DEFAULT_JSON_OUTPUT = Path.home() / ".stock-sage" / "m29_provenance_audit.json"
-DEFAULT_MARKDOWN_OUTPUT = Path.home() / ".stock-sage" / "m29_provenance_audit.md"
+DEFAULT_JSON_OUTPUT = Path.home() / ".mingcang" / "m29_provenance_audit.json"
+DEFAULT_MARKDOWN_OUTPUT = Path.home() / ".mingcang" / "m29_provenance_audit.md"
 DAILY_PRICE_PROVENANCE_FIELDS = {"source", "fetched_at", "adjustment"}
 ARTIFACT_PROVENANCE_FIELDS = set(m29_evidence_ledger.PROVENANCE_REQUIRED_FIELDS)
 

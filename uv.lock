@@ -2612,7 +2612,7 @@ wheels = [
 ]
 
 [[package]]
-name = "stock-sage"
+name = "mingcang"
 version = "0.2.3"
 source = { editable = "." }
 dependencies = [
@@ -2688,8 +2688,8 @@ requires-dist = [
     { name = "scikit-learn", specifier = ">=1.4.0,<2.0.0" },
     { name = "scipy", specifier = ">=1.12.0,<2.0.0" },
     { name = "sqlalchemy", specifier = ">=2.0.0,<3.0.0" },
-    { name = "stock-sage", extras = ["agent"], marker = "extra == 'dev'" },
-    { name = "stock-sage", extras = ["test"], marker = "extra == 'dev'" },
+    { name = "mingcang", extras = ["agent"], marker = "extra == 'dev'" },
+    { name = "mingcang", extras = ["test"], marker = "extra == 'dev'" },
     { name = "tushare", specifier = ">=1.2.26,<2.0.0" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.29.0,<1.0.0" },
     { name = "yfinance", specifier = ">=0.2.38,<1.0.0" },

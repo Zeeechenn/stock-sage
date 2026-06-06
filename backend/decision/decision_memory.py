@@ -9,12 +9,12 @@ from pathlib import Path
 
 from backend.decision.signal_policy import is_entry_signal
 
-MEMORY_DIR = Path.home() / ".stock-sage" / "memory"
+MEMORY_DIR = Path.home() / ".mingcang" / "memory"
 _HEADER = "| 日期 | 建议 | 综合分 | 止盈 | 止损 | LLM偏向 |\n|------|------|--------|------|------|--------|\n"
 
 
 def save_decision(symbol: str, date: str, signal: dict) -> None:
-    """将信号追加到 ~/.stock-sage/memory/<symbol>.md"""
+    """将信号追加到 ~/.mingcang/memory/<symbol>.md"""
     MEMORY_DIR.mkdir(parents=True, exist_ok=True)
     path = MEMORY_DIR / f"{symbol}.md"
     bias = signal.get("llm_arbitration", {}).get("action_bias", "-")

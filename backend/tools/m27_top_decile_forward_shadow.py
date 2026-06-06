@@ -5,7 +5,7 @@ realized labels before the shadow window, then predicts eligibility for target
 window rows using features only. It does not promote, persist a model, write DB
 rows, call LLM/API, or modify production signal profiles. Like the M27.1b
 tools, it may read or refresh the local training-panel cache under
-``~/.stock-sage/cache``.
+``~/.mingcang/cache``.
 """
 from __future__ import annotations
 
@@ -41,7 +41,7 @@ from backend.tools.m27_test3_production_profile_ab import (
 )
 from backend.tools.m27_top_decile_filter_ab import filter_top_decile_candidates
 
-DEFAULT_OUTPUT_DIR = Path.home() / ".stock-sage"
+DEFAULT_OUTPUT_DIR = Path.home() / ".mingcang"
 DEFAULT_OUTPUT_STEM = "m27_top_decile_forward_shadow"
 DEFAULT_START = "2026-05-15"
 DEFAULT_END = "2026-05-22"

@@ -1,4 +1,4 @@
-"""Build the M27 test3 universe from the local StockSage SQLite database."""
+"""Build the M27 test3 universe from the local MingCang SQLite database."""
 from __future__ import annotations
 
 import argparse

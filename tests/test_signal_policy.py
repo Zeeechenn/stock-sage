@@ -169,7 +169,7 @@ def test_bark_signal_alert_names_the_concrete_action(monkeypatch):
 
     sent = []
 
-    def fake_send(title, body, group="StockSage", sound="bark"):
+    def fake_send(title, body, group="MingCang", sound="bark"):
         sent.append({"title": title, "body": body, "group": group, "sound": sound})
         return True
 

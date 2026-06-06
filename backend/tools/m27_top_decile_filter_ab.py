@@ -33,8 +33,8 @@ from backend.tools.m27_label_objective_eval import (
     top_decile_metrics,
 )
 
-DEFAULT_JSON_OUTPUT = Path.home() / ".stock-sage" / "m27_top_decile_filter_ab_report.json"
-DEFAULT_MARKDOWN_OUTPUT = Path.home() / ".stock-sage" / "m27_top_decile_filter_ab_report.md"
+DEFAULT_JSON_OUTPUT = Path.home() / ".mingcang" / "m27_top_decile_filter_ab_report.json"
+DEFAULT_MARKDOWN_OUTPUT = Path.home() / ".mingcang" / "m27_top_decile_filter_ab_report.md"
 
 
 def _candidate_return_metrics(candidates: pd.DataFrame) -> dict[str, Any]:

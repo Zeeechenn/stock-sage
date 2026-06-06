@@ -79,17 +79,58 @@ def test_remote_write_requires_action_allowlist():
 
 
 def test_agent_security_reads_settings_when_env_not_in_os(monkeypatch):
-    from backend.agent.security import require_agent_access
+    from backend.agent.security import AgentSecurityError, agent_mode, require_agent_access
     from backend.config import settings
 
-    monkeypatch.delenv("STOCKSAGE_AGENT_MODE", raising=False)
-    monkeypatch.delenv("STOCKSAGE_AGENT_API_KEY", raising=False)
+    for key in (
+        "MINGCANG_AGENT_MODE",
+        "MINGCANG_AGENT_API_KEY",
+        "MINGCANG_AGENT_REMOTE_WRITE_ENABLED",
+        "MINGCANG_AGENT_REMOTE_WRITE_ACTIONS",
+        "STOCKSAGE_AGENT_MODE",
+        "STOCKSAGE_AGENT_API_KEY",
+        "STOCKSAGE_AGENT_REMOTE_WRITE_ENABLED",
+        "STOCKSAGE_AGENT_REMOTE_WRITE_ACTIONS",
+    ):
+        monkeypatch.delenv(key, raising=False)
     monkeypatch.setattr(settings, "stocksage_agent_mode", "remote")
     monkeypatch.setattr(settings, "stocksage_agent_api_key", "secret")
     monkeypatch.setattr(settings, "stocksage_agent_remote_write_enabled", True)
     monkeypatch.setattr(settings, "stocksage_agent_remote_write_actions", "watchlist.add")
 
+    assert agent_mode() == "remote"
     require_agent_access("write", api_key="secret", action="watchlist.add")
+    with pytest.raises(AgentSecurityError):
+        require_agent_access("write", api_key="wrong", action="watchlist.add")
+    with pytest.raises(AgentSecurityError):
+        require_agent_access("write", action="watchlist.add")
+
+
+def test_agent_security_reads_mingcang_settings_when_env_not_in_os(monkeypatch):
+    from backend.agent.security import AgentSecurityError, agent_mode, require_agent_access
+    from backend.config import settings
+
+    for key in (
+        "MINGCANG_AGENT_MODE",
+        "MINGCANG_AGENT_API_KEY",
+        "MINGCANG_AGENT_REMOTE_WRITE_ENABLED",
+        "MINGCANG_AGENT_REMOTE_WRITE_ACTIONS",
+        "STOCKSAGE_AGENT_MODE",
+        "STOCKSAGE_AGENT_API_KEY",
+        "STOCKSAGE_AGENT_REMOTE_WRITE_ENABLED",
+        "STOCKSAGE_AGENT_REMOTE_WRITE_ACTIONS",
+    ):
+        monkeypatch.delenv(key, raising=False)
+    monkeypatch.setattr(settings, "mingcang_agent_mode", "remote")
+    monkeypatch.setattr(settings, "mingcang_agent_api_key", "secret")
+    monkeypatch.setattr(settings, "mingcang_agent_remote_write_enabled", True)
+    monkeypatch.setattr(settings, "mingcang_agent_remote_write_actions", "watchlist.add")
+    monkeypatch.setattr(settings, "stocksage_agent_mode", "")
+
+    assert agent_mode() == "remote"
+    require_agent_access("write", api_key="secret", action="watchlist.add")
+    with pytest.raises(AgentSecurityError):
+        require_agent_access("write", api_key="wrong", action="watchlist.add")
 
 
 def test_execute_action_validates_payload_before_handler(test_db):

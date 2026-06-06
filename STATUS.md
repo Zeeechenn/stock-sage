@@ -1,11 +1,11 @@
-# StockSage — Public Status Snapshot
+# MingCang — Public Status Snapshot
 
 > Compact current-state snapshot for fresh agents and public readers. Detailed
 > plans live in `docs/ROADMAP.md`; completed history lives in `CHANGELOG.md`.
 
 Current release: `v0.2.3` (2026-06-04).
 
-StockSage is an agent-ready, local-first A-share research workspace. It supports
+MingCang is an agent-ready, local-first A-share research workspace. It supports
 research, backtests, local validation, memory/context inspection, and code
 maintenance. It does not place real trades or provide financial advice.
 
@@ -101,7 +101,7 @@ no conflict output. Full `make verify` passed with backend pytest
 `1049 passed, 5 skipped`, frontend node tests `19 passed`, and Vite build.
 Fixed-end test2 replay at `--end 2026-06-05` had zero raw JSON diff against the
 main `paper_trading/test2_ab_state.json`; DB copy-smoke on
-`/private/tmp/stocksage_m44_after_l0_gate_copy.db` passed `init_db()`,
+`/private/tmp/mingcang_m44_after_l0_gate_copy.db` passed `init_db()`,
 `PRAGMA integrity_check`, Atlas table/index checks, and protected `stocks` /
 `signals` row-count stability (`718` / `879`). `build_memory_context()` now
 keeps L0 memory dormant by default unless `ATLAS_ENABLED=true`, while explicit
@@ -113,7 +113,7 @@ M31 completion note (2026-06-02): `backend.data.cache_policy` defines L1/L2/L3
 and the intraday zero-network contract; `/api/system/data-coverage` exposes
 freshness contracts and provider fallback chains; `backend.tools.m31_cache_benchmark`
 writes read-only latency reports under `/private/tmp`; `backend.agent.cli`
-and `stocksage` expose `premarket` / `intraday` / `postmarket` dry-run rhythm
+and `mingcang` expose `premarket` / `intraday` / `postmarket` dry-run rhythm
 commands; `/api/export/postmarket-review.html` and `?format=word` export
 postmarket review reports with the day's signal table, per-signal evidence cards
 (score decomposition + stop/take + LLM rationale), a position-review section
@@ -129,7 +129,7 @@ still need field normalization, PIT/freshness checks, and promotion gates before
 becoming research or signal inputs.
 
 M41 capability note (2026-06-03): `/api/system/data-coverage` now nests a
-StockSage-owned A/HK/US seven-layer market capability catalog under
+MingCang-owned A/HK/US seven-layer market capability catalog under
 `summary.market_capability_catalog`, alongside per-market coverage and provider
 fallback chains. `backend.decision.market_policy` keeps official signal
 generation CN-only: HK/US may be prepared and viewed as read-only research
@@ -149,7 +149,7 @@ market/layer without running those probes.
 M41 probe-summary note (2026-06-03): `/api/system/external-data-sources`
 now returns `probe_summary`. With `probe=true`, the API keeps raw probe payloads
 and adds normalized read-only health rows by market/layer/provider, including
-sample size, fields present, required StockSage fields, missing-field gaps,
+sample size, fields present, required MingCang fields, missing-field gaps,
 freshness status, and explicit `safe_for_research_scoring=false` /
 `safe_for_production_signal=false`. With `probe=false`, the endpoint still does
 not run network probes and reports `probed=false`. Field-complete rows are only
@@ -207,9 +207,9 @@ the build step was rerun under normal filesystem permissions and passed.
 Last recorded full gate for the current release:
 
 ```bash
-PYTHONPYCACHEPREFIX=/private/tmp/stocksage_pycache \
-RUFF_CACHE_DIR=/private/tmp/stocksage_ruff_cache \
-MYPY_CACHE_DIR=/private/tmp/stocksage_mypy_cache \
+PYTHONPYCACHEPREFIX=/private/tmp/mingcang_pycache \
+RUFF_CACHE_DIR=/private/tmp/mingcang_ruff_cache \
+MYPY_CACHE_DIR=/private/tmp/mingcang_mypy_cache \
 make verify PYTEST='.venv/bin/python -m pytest -p no:cacheprovider'
 ```
 
@@ -258,9 +258,9 @@ python3 -m backend.agent.cli stock-context <symbol> --pretty
 ## Agent Boundary
 
 - Local Codex / Claude Code sessions are trusted development sessions.
-- Remote exposure requires `STOCKSAGE_AGENT_MODE=remote` and
-  `STOCKSAGE_AGENT_API_KEY`.
-- Remote writes require both `STOCKSAGE_AGENT_REMOTE_WRITE_ENABLED=true` and an
+- Remote exposure requires `MINGCANG_AGENT_MODE=remote` and
+  `MINGCANG_AGENT_API_KEY`.
+- Remote writes require both `MINGCANG_AGENT_REMOTE_WRITE_ENABLED=true` and an
   explicit action allowlist.
 - Real broker orders, destructive git operations, publishing, pushing, and
   releases require explicit user instruction.

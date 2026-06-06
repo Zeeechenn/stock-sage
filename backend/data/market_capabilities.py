@@ -364,7 +364,7 @@ def _market_status(layer_rows: list[dict]) -> str:
 
 
 def build_market_capability_catalog() -> dict:
-    """Return the StockSage 7-layer capability catalog for CN/HK/US."""
+    """Return the MingCang 7-layer capability catalog for CN/HK/US."""
     markets: dict[str, dict[str, object]] = {}
     for market in SUPPORTED_MARKETS:
         layers: list[dict[str, object]] = []

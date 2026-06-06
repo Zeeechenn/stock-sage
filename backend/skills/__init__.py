@@ -1,2 +1,2 @@
-"""Thin financial skill facades built on top of existing StockSage modules."""
+"""Thin financial skill facades built on top of existing MingCang modules."""
 

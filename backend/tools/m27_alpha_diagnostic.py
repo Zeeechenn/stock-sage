@@ -3,7 +3,7 @@
 This tool explains why the current alpha candidate is weak before changing the
 training objective or production quant weight. It reads the local feature panel,
 recomputes forward-return labels for several horizons, and writes a local-only
-report under ``~/.stock-sage`` by default.
+report under ``~/.mingcang`` by default.
 """
 from __future__ import annotations
 
@@ -30,8 +30,8 @@ from backend.data.qlib_data import (
     build_training_data,
 )
 
-DEFAULT_JSON_OUTPUT = Path.home() / ".stock-sage" / "m27_alpha_diagnostic_report.json"
-DEFAULT_MARKDOWN_OUTPUT = Path.home() / ".stock-sage" / "m27_alpha_diagnostic_report.md"
+DEFAULT_JSON_OUTPUT = Path.home() / ".mingcang" / "m27_alpha_diagnostic_report.json"
+DEFAULT_MARKDOWN_OUTPUT = Path.home() / ".mingcang" / "m27_alpha_diagnostic_report.md"
 DEFAULT_HORIZONS = [3, 5, 10, 20]
 MIN_DAILY_NAMES = 5
 N_GROUPS = 5

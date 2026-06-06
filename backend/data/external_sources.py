@@ -75,7 +75,7 @@ def _sources() -> list[ExternalSource]:
             integration_notes=[
                 "Treat endpoint outputs as evidence first, not signal weights.",
                 "Add PIT timestamps before any dataset joins qlib features.",
-                "Normalize fields behind StockSage-owned adapters instead of copying skill code.",
+                "Normalize fields behind MingCang-owned adapters instead of copying skill code.",
             ],
             risk_level="medium",
             risk_notes=[
@@ -132,7 +132,7 @@ def _sources() -> list[ExternalSource]:
             integration_notes=[
                 "Keep disabled by default behind TICKFLOW_ENABLED until data parity is measured.",
                 "Use HTTP probe first; do not expose the API key to frontend code.",
-                "Match StockSage's adjusted-price policy before registering as a signal provider.",
+                "Match MingCang's adjusted-price policy before registering as a signal provider.",
             ],
             risk_level="medium",
             risk_notes=[
@@ -352,7 +352,7 @@ def _evidence_trials() -> list[ExternalEvidenceTrial]:
 def _fetch_json(url: str, timeout_seconds: float, max_bytes: int = 512_000) -> dict:
     response = requests.get(
         url,
-        headers={"User-Agent": "StockSage/1.0"},
+        headers={"User-Agent": "MingCang/1.0"},
         timeout=timeout_seconds,
     )
     response.raise_for_status()
@@ -364,7 +364,7 @@ def _fetch_json(url: str, timeout_seconds: float, max_bytes: int = 512_000) -> d
 def _fetch_text(url: str, timeout_seconds: float, max_bytes: int = 512_000) -> str:
     response = requests.get(
         url,
-        headers={"User-Agent": "StockSage/1.0"},
+        headers={"User-Agent": "MingCang/1.0"},
         timeout=timeout_seconds,
     )
     response.raise_for_status()

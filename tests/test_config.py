@@ -28,3 +28,13 @@ if any("class-based `config`" in message for message in messages):
         capture_output=True,
         check=True,
     )
+
+
+def test_sqlite_path_from_url_resolves_local_database_paths(tmp_path):
+    from backend.config import sqlite_path_from_url
+
+    db_path = tmp_path / "stock-sage.db"
+
+    assert sqlite_path_from_url(f"sqlite:///{db_path}") == db_path
+    assert sqlite_path_from_url("sqlite:///:memory:") is None
+    assert sqlite_path_from_url("postgresql://localhost/mingcang") is None

@@ -12,6 +12,12 @@ def test_native_pi_extension_registers_expected_tools():
     text = extension.read_text(encoding="utf-8")
 
     for name in (
+        "mingcang_health",
+        "mingcang_project_context",
+        "mingcang_stock_context",
+        "mingcang_memory_snapshot",
+        "mingcang_action_dry_run",
+        "mingcang_action_confirm",
         "stocksage_health",
         "stocksage_project_context",
         "stocksage_stock_context",
@@ -19,22 +25,26 @@ def test_native_pi_extension_registers_expected_tools():
         "stocksage_action_dry_run",
         "stocksage_action_confirm",
     ):
-        assert f'name: "{name}"' in text
+        assert f'"{name}"' in text
     assert "pi.registerTool" in text
     assert "backend.agent.cli" in text
 
 
-def test_stocksage_launcher_exposes_trading_rhythm_commands():
+def test_mingcang_launcher_exposes_trading_rhythm_commands_and_legacy_alias():
     repo = Path(__file__).resolve().parents[1]
-    launcher = repo / "scripts" / "stocksage_launcher.sh"
+    launcher = repo / "scripts" / "mingcang_launcher.sh"
+    legacy = repo / "scripts" / "stocksage_launcher.sh"
 
     text = launcher.read_text(encoding="utf-8")
+    legacy_text = legacy.read_text(encoding="utf-8")
 
     assert "premarket|intraday|postmarket" in text
     assert 'backend.agent.cli "$command_name" --pretty "$@"' in text
-    assert "stocksage premarket" in text
-    assert "stocksage intraday" in text
-    assert "stocksage postmarket" in text
+    assert "mingcang premarket" in text
+    assert "mingcang intraday" in text
+    assert "mingcang postmarket" in text
+    assert "legacy alias" in legacy_text
+    assert "mingcang_launcher.sh" in legacy_text
 
 
 def test_agent_run_does_not_bulk_export_dotenv_secrets(tmp_path):

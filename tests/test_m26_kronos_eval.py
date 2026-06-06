@@ -1,4 +1,5 @@
 import pandas as pd
+import pytest
 
 
 def test_kronos_trading_dates_use_union_not_full_intersection():
@@ -16,6 +17,18 @@ def test_kronos_trading_dates_use_union_not_full_intersection():
         "2026-01-02",
         "2026-01-03",
     ]
+
+
+def test_kronos_load_prices_missing_db_does_not_create_file(tmp_path, monkeypatch):
+    from backend.tools import m26_kronos_eval
+
+    missing_db = tmp_path / "missing.db"
+    monkeypatch.setattr(m26_kronos_eval, "DB_PATH", missing_db)
+
+    with pytest.raises(FileNotFoundError):
+        m26_kronos_eval.load_prices(["300001"], "2026-01-01", "2026-01-02")
+
+    assert not missing_db.exists()
 
 
 def test_kronos_predict_returns_aligns_input_and_label_horizon():

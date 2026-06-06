@@ -93,7 +93,7 @@ def test_daily_review_ensure_runs_once_after_1500(test_db, tmp_path, monkeypatch
     rows = list_reviews(kind="daily", db=test_db)
     assert len(rows) == 1
     detail = get_review(rows[0]["id"], db=test_db)
-    assert "# StockSage 每日复盘" in detail["content"]
+    assert "# MingCang 每日复盘" in detail["content"]
     assert "当日信号" in detail["content"]
 
 

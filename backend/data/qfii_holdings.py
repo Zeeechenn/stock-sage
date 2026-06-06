@@ -2,7 +2,7 @@
 QFII（合格境外机构投资者）前十大流通股东抓取与缓存
 
 数据源：AkShare `stock_gdfx_free_top_10_em`（东方财富）
-缓存：~/.stock-sage/qfii_cache/{symbol}.json
+缓存：~/.mingcang/qfii_cache/{symbol}.json
   • 一只股票一个文件，键为季度报告期（"20251231"），值为该季 QFII 持仓列表
   • 拉取失败时静默降级（返回空字典），不影响其他长期分析师
 
@@ -30,7 +30,7 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-CACHE_DIR = Path.home() / ".stock-sage" / "qfii_cache"
+CACHE_DIR = Path.home() / ".mingcang" / "qfii_cache"
 
 # M19.3 TTL: 季报披露窗口约 120 天（Q4/Q1 由 4/30 截止，Q3 由 10/31）；
 # 在窗口内空结果可能只是"尚未披露"，每 7 天重试一次。窗口外的空结果稳定，永久缓存。

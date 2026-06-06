@@ -1,4 +1,4 @@
-"""Backfill StockSage data coverage gaps.
+"""Backfill MingCang data coverage gaps.
 
 This tool intentionally does not start the scheduler. It fills missing
 financial rows, fresh news rows, and short price history where providers have

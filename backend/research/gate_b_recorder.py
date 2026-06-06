@@ -27,11 +27,11 @@ import statistics
 from datetime import UTC, datetime
 from typing import Any
 
-logger = logging.getLogger(__name__)
-
 from backend.config import settings
 from backend.memory.audit_log import audit_write
 from backend.research.case import build_case
+
+logger = logging.getLogger(__name__)
 
 GATE_B_VERSION = "v1"
 

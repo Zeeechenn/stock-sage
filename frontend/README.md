@@ -1,4 +1,4 @@
-# StockSage Frontend
+# MingCang Frontend
 
 React 18 + Vite + TailwindCSS + TradingView Lightweight Charts
 

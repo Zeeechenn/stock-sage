@@ -1,4 +1,4 @@
-"""Command-line bridge for local StockSage agent shells."""
+"""Command-line bridge for local MingCang agent shells."""
 
 from __future__ import annotations
 
@@ -9,10 +9,10 @@ from collections.abc import Callable
 from typing import Any
 
 from backend.agent.context import (
-    stock_sage_context,
-    stock_sage_memory_context,
-    stock_sage_memory_snapshot,
-    stock_sage_stock_context,
+    mingcang_context,
+    mingcang_memory_context,
+    mingcang_memory_snapshot,
+    mingcang_stock_context,
 )
 from backend.agent.security import AgentSecurityError, require_agent_access
 from backend.data.cache_policy import workflow_cache_policy
@@ -97,7 +97,7 @@ def _command_health(args: argparse.Namespace) -> dict:
     _read_guard(args)
 
     def _health(db):
-        context = stock_sage_context(db)
+        context = mingcang_context(db)
         return {
             "ok": True,
             "agent_mode": context["agent_mode"],
@@ -113,19 +113,19 @@ def _command_health(args: argparse.Namespace) -> dict:
 def _command_project_context(args: argparse.Namespace) -> dict:
     _read_guard(args)
     return _with_read_only_memory_usage(
-        lambda: _with_db(lambda db: stock_sage_context(db, symbol=args.symbol))
+        lambda: _with_db(lambda db: mingcang_context(db, symbol=args.symbol))
     )
 
 
 def _command_memory_snapshot(args: argparse.Namespace) -> dict:
     _read_guard(args)
-    return _with_read_only_memory_usage(lambda: _with_db(stock_sage_memory_snapshot))
+    return _with_read_only_memory_usage(lambda: _with_db(mingcang_memory_snapshot))
 
 
 def _command_memory_context(args: argparse.Namespace) -> dict:
     _read_guard(args)
     return _with_read_only_memory_usage(
-        lambda: _with_db(lambda db: stock_sage_memory_context(
+        lambda: _with_db(lambda db: mingcang_memory_context(
             db,
             symbol=args.symbol,
             query=args.query,
@@ -138,7 +138,7 @@ def _command_memory_context(args: argparse.Namespace) -> dict:
 def _command_stock_context(args: argparse.Namespace) -> dict:
     _read_guard(args)
     return _with_read_only_memory_usage(
-        lambda: _with_db(lambda db: stock_sage_stock_context(db, args.symbol))
+        lambda: _with_db(lambda db: mingcang_stock_context(db, args.symbol))
     )
 
 
@@ -280,8 +280,8 @@ def _command_weekend(args: argparse.Namespace) -> dict:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="StockSage local agent CLI bridge")
-    parser.add_argument("--api-key", help="StockSage remote agent API key")
+    parser = argparse.ArgumentParser(description="MingCang local agent CLI bridge")
+    parser.add_argument("--api-key", help="MingCang remote agent API key")
     parser.add_argument("--pretty", action="store_true", help="pretty-print JSON output")
     subparsers = parser.add_subparsers(dest="command", required=True)
 

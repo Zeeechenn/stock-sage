@@ -1,6 +1,6 @@
 # Research Stock
 
-Read StockSage project context and memory before answering.
+Read MingCang project context and memory before answering.
 
 ```bash
 python3 -m backend.agent.cli project-context --symbol {{symbol}} --pretty

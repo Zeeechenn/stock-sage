@@ -274,7 +274,7 @@ def job_weekly_long_term_reflect() -> dict:
 
 @tracked_job("daily_memory_backup")
 def job_daily_memory_backup() -> None:
-    """Daily dump of ai_memory to ~/.stock-sage/memory/backups/ (M9.横向)."""
+    """Daily dump of ai_memory to ~/.mingcang/memory/backups/ (M9.横向)."""
     from backend.jobs.weekend import run_daily_memory_backup
 
     return run_daily_memory_backup()

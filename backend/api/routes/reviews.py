@@ -174,7 +174,7 @@ def _run_long_term_review(day: str, db: Session) -> dict:
         if rows else f"{day} 长期研究团队已运行，暂无可展示标签。"
     )
     lines = [
-        f"# StockSage 长期复盘 — {day}",
+        f"# MingCang 长期复盘 — {day}",
         "",
         "## 摘要",
         f"- 长期标签：{len(rows)} 条",

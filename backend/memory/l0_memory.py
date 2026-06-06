@@ -1,7 +1,7 @@
-"""StockSage L0 memory helpers.
+"""MingCang L0 memory helpers.
 
 This is a local-first memory contract inspired by TencentDB-Agent-Memory's
-atom/scenario/profile layering.  It deliberately keeps StockSage SQLite as the
+atom/scenario/profile layering.  It deliberately keeps MingCang SQLite as the
 source of truth and keeps trusted writes behind explicit gates.
 """
 from __future__ import annotations

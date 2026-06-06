@@ -21,7 +21,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     init_db()
     from backend.config import settings
     os.environ.setdefault("MPLCONFIGDIR", str(Path.home() / ".matplotlib"))
-    logger.info("StockSage DB: %s", settings.database_url)
+    logger.info("MingCang DB: %s", settings.database_url)
     if settings.scheduler_enabled:
         scheduler_start()
     yield
@@ -29,7 +29,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         scheduler_stop()
 
 
-app = FastAPI(title="StockSage API", version="0.2.1", lifespan=lifespan)
+app = FastAPI(title="MingCang API", version="0.2.1", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
