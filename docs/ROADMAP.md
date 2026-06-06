@@ -41,7 +41,7 @@ Boundaries:
 - [x] Narrowed and executed the AVGO direct-source seed (`ateacher-20260603-connectivity-avgo-direct`) as a Broadcom networking / switching-chip / 1.6T DSP connectivity anchor only; `ForwardThesis` remains `draft`, L0 memory remains `pending`, and broader accelerator/backlog/custom-silicon wording was excluded.
 - [x] Execute later imports only after reviewing dry-run output; imported rows remain draft/pending and do not become trusted automatically.
 - [ ] Use `backend/research/thesis_ledger.py` only where its thinner `symbol/title/kill_conditions/status` shape is sufficient, or extend it deliberately after tests.
-- [ ] Ensure imports are idempotent and do not create trusted memory automatically.
+- [x] Ensure imports are idempotent and do not create trusted memory automatically.
 - [ ] A-teacher hook updates should become ledger entries, not markdown-only notes.
 
 ### M45.2 放大器证伪记分牌
@@ -49,10 +49,18 @@ Boundaries:
 - [x] Add dry-run-first `backend.tools.m45_falsification_scoreboard`: execute writes ReviewCase rows and optional pending MemoryPromotionCandidate rows only; it does not promote trusted memory or touch official signals / decisions / positions.
 - [x] Harden execute preflight: scoreboard execute now refuses missing `ForwardThesis` links or unverified / non-direct source inputs before writing ReviewCase rows.
 - [x] Recorded initial `not_due` baselines for the imported MRVL and narrowed AVGO theses after dry-run review; both write only ReviewCase rows and create no pending memory candidates.
-- [ ] Invalidation-catch ledger: when a held thesis breaks, record whether the alarm fired before loss materialized or was missed.
-- [ ] Defensive-value ledger: compare system-on/off drawdown and loss rate for the short-term risk lane; do not judge this lane by IC.
-- [ ] Track breadth hits separately: AI-surfaced, human-adopted theses that later work are slow secondary evidence.
+- [x] Invalidation-catch ledger: when a held thesis breaks, record whether the alarm fired before loss materialized or was missed.
+- [x] Defensive-value ledger: compare system-on/off drawdown and loss rate for the short-term risk lane; do not judge this lane by IC.
+- [x] Track breadth hits separately: AI-surfaced, human-adopted theses that later work are slow secondary evidence.
 - [x] Route review outcomes through ReviewCase / pending memory-candidate surfaces so trusted promotion remains outcome-gated.
+
+Implementation note: `backend.tools.m45_falsification_scoreboard` now keeps
+M45 scoreboard events inside `ReviewCase.review_payload_json` as
+`m45_scoreboard_events`, keyed by `source_ref + lane + as_of`, while preserving
+`m45_scoreboard` as the latest event for backward-compatible readers. The
+`invalidation_catch`, `defensive_value`, and `breadth_hit` lanes require
+auditable payload fields for non-`not_due` rows; `not_due` rows cannot create
+memory promotion candidates.
 
 ### M45.3 模块三连分诊
 

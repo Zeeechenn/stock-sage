@@ -59,7 +59,7 @@ def test_m45_ateacher_import_dry_run_does_not_write(test_db):
 
 
 def test_m45_ateacher_import_execute_writes_forward_thesis_and_l0_pending(test_db):
-    from backend.data.database import ForwardThesis
+    from backend.data.database import ForwardThesis, MemoryPromotionCandidate, StockMemoryItem
     from backend.memory.l0_memory import list_memory_atoms
     from backend.tools.m45_import_ateacher_theses import execute_import, normalize_item
 
@@ -89,6 +89,8 @@ def test_m45_ateacher_import_execute_writes_forward_thesis_and_l0_pending(test_d
     assert atom["evidence"]["source_verified_by"] == "tester"
     assert atom["evidence"]["production_impact"] == "none"
     assert atom["evidence"]["forward_thesis_id"] == thesis.id
+    assert test_db.query(MemoryPromotionCandidate).count() == 0
+    assert test_db.query(StockMemoryItem).count() == 0
 
 
 def test_m45_ateacher_import_is_idempotent(test_db):

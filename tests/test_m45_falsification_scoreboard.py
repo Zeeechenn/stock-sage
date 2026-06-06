@@ -189,6 +189,41 @@ def test_m45_falsification_scoreboard_same_source_lane_as_of_is_idempotent_and_u
         "Updated after confirming the alarm preceded the drawdown."
     )
     assert payload["m45_scoreboard"]["review_payload"] == {"max_drawdown_pct": -4.8}
+    assert len(payload["m45_scoreboard_events"]) == 1
+    assert payload["m45_scoreboard_events"][0]["result"] == "hit"
+
+
+def test_m45_falsification_scoreboard_different_lane_same_symbol_date_appends_event(test_db):
+    from backend.data.database import ReviewCase
+    from backend.tools.m45_falsification_scoreboard import (
+        execute_scoreboard,
+        normalize_item,
+    )
+
+    _seed_forward_thesis(test_db)
+    execute_scoreboard(test_db, [normalize_item(_item())], execute=True)
+    execute_scoreboard(
+        test_db,
+        [normalize_item(_item(
+            lane="defensive_value",
+            result="helped",
+            source_ref="m45-scoreboard-300308-2026-06-05-defensive",
+            review_payload={
+                "system_on_drawdown_pct": -2.0,
+                "system_off_drawdown_pct": -5.0,
+                "sample_size": 1,
+            },
+        ))],
+        execute=True,
+    )
+
+    assert test_db.query(ReviewCase).count() == 1
+    payload = json.loads(test_db.query(ReviewCase).one().review_payload_json)
+    assert [event["lane"] for event in payload["m45_scoreboard_events"]] == [
+        "falsification",
+        "defensive_value",
+    ]
+    assert payload["m45_scoreboard"]["lane"] == "defensive_value"
 
 
 def test_m45_falsification_scoreboard_candidate_summary_creates_only_pending_candidate(test_db):
@@ -224,6 +259,29 @@ def test_m45_falsification_scoreboard_candidate_summary_creates_only_pending_can
     assert test_db.query(StockMemoryItem).count() == 0
 
 
+def test_m45_falsification_scoreboard_not_due_rejects_candidate_summary(test_db):
+    from backend.data.database import MemoryPromotionCandidate, ReviewCase
+    from backend.tools.m45_falsification_scoreboard import (
+        execute_scoreboard,
+        normalize_item,
+    )
+
+    _seed_forward_thesis(test_db)
+    raw = _item(
+        result="not_due",
+        candidate_summary={
+            "summary": "Too early to learn from this thesis.",
+            "memory_type": "lesson",
+        },
+    )
+
+    with pytest.raises(ValueError, match="not_due events cannot create memory candidates"):
+        execute_scoreboard(test_db, [normalize_item(raw)], execute=True)
+
+    assert test_db.query(ReviewCase).count() == 0
+    assert test_db.query(MemoryPromotionCandidate).count() == 0
+
+
 def test_m45_falsification_scoreboard_execute_requires_forward_thesis(test_db):
     from backend.data.database import ReviewCase
     from backend.tools.m45_falsification_scoreboard import (
@@ -252,6 +310,55 @@ def test_m45_falsification_scoreboard_execute_requires_direct_verified_source(te
     assert test_db.query(ReviewCase).count() == 0
 
 
+def test_m45_falsification_scoreboard_execute_requires_direct_source_kind(test_db):
+    from backend.data.database import ReviewCase
+    from backend.tools.m45_falsification_scoreboard import (
+        execute_scoreboard,
+        normalize_item,
+    )
+
+    _seed_forward_thesis(test_db)
+
+    with pytest.raises(ValueError, match="source_kind_not_direct_source"):
+        execute_scoreboard(test_db, [normalize_item(_item(source_kind="handoff_context"))], execute=True)
+
+    assert test_db.query(ReviewCase).count() == 0
+
+
+def test_m45_falsification_scoreboard_execute_requires_source_verified_by(test_db):
+    from backend.data.database import ReviewCase
+    from backend.tools.m45_falsification_scoreboard import (
+        execute_scoreboard,
+        normalize_item,
+    )
+
+    _seed_forward_thesis(test_db)
+
+    with pytest.raises(ValueError, match="missing_source_verified_by"):
+        execute_scoreboard(test_db, [normalize_item(_item(source_verified_by=None))], execute=True)
+
+    assert test_db.query(ReviewCase).count() == 0
+
+
+def test_m45_falsification_scoreboard_execute_requires_source_locator(test_db):
+    from backend.data.database import ReviewCase
+    from backend.tools.m45_falsification_scoreboard import (
+        execute_scoreboard,
+        normalize_item,
+    )
+
+    _seed_forward_thesis(test_db)
+
+    with pytest.raises(ValueError, match="missing_source_locator"):
+        execute_scoreboard(
+            test_db,
+            [normalize_item(_item(source_url=None, evidence_ref=None))],
+            execute=True,
+        )
+
+    assert test_db.query(ReviewCase).count() == 0
+
+
 def test_m45_falsification_scoreboard_rejects_invalid_lane():
     from backend.tools.m45_falsification_scoreboard import normalize_item
 
@@ -264,3 +371,78 @@ def test_m45_falsification_scoreboard_rejects_invalid_result():
 
     with pytest.raises(ValueError, match="invalid result"):
         normalize_item(_item(result="strong_buy"))
+
+
+def test_m45_falsification_scoreboard_invalidation_catch_requires_auditable_payload():
+    from backend.tools.m45_falsification_scoreboard import normalize_item
+
+    with pytest.raises(ValueError, match="review_payload missing required fields"):
+        normalize_item(_item(
+            lane="invalidation_catch",
+            result="caught_before_loss",
+            review_payload={"alarm_fired_at": "2026-06-05"},
+        ))
+
+
+def test_m45_falsification_scoreboard_defensive_value_requires_comparison_payload():
+    from backend.tools.m45_falsification_scoreboard import normalize_item
+
+    with pytest.raises(ValueError, match="review_payload missing required fields"):
+        normalize_item(_item(
+            lane="defensive_value",
+            result="helped",
+            review_payload={"system_on_drawdown_pct": -2.0},
+        ))
+
+
+def test_m45_falsification_scoreboard_breadth_hit_requires_adoption_payload():
+    from backend.tools.m45_falsification_scoreboard import normalize_item
+
+    with pytest.raises(ValueError, match="review_payload missing required fields"):
+        normalize_item(_item(
+            lane="breadth_hit",
+            result="hit",
+            review_payload={"surfaced_by": "ai"},
+        ))
+
+
+def test_m45_falsification_scoreboard_accepts_not_due_without_lane_payload():
+    from backend.tools.m45_falsification_scoreboard import normalize_item
+
+    item = normalize_item(_item(
+        lane="invalidation_catch",
+        result="not_due",
+        evidence_summary="Review cadence has not reached the due date.",
+        review_payload=None,
+    ))
+
+    assert item.lane == "invalidation_catch"
+    assert item.result == "not_due"
+
+
+def test_m45_falsification_scoreboard_dry_run_surfaces_lane_contract():
+    from backend.tools.m45_falsification_scoreboard import execute_scoreboard, normalize_item
+
+    result = execute_scoreboard(
+        None,
+        [normalize_item(_item(
+            lane="defensive_value",
+            result="helped",
+            review_payload={
+                "system_on_drawdown_pct": -2.0,
+                "system_off_drawdown_pct": -5.0,
+                "sample_size": 1,
+            },
+        ))],
+        execute=False,
+    )
+
+    payload = result["planned"][0]["review_case"]["review_payload"]["m45_scoreboard"]
+    assert payload["ledger_contract"] == {
+        "lane": "defensive_value",
+        "required_fields": [
+            "system_on_drawdown_pct",
+            "system_off_drawdown_pct",
+            "sample_size",
+        ],
+    }

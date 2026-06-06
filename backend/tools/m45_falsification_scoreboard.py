@@ -36,6 +36,24 @@ LANE_RESULTS = {
     "breadth_hit": {"hit", "miss", "neutral", "not_due"},
 }
 
+LANE_REQUIRED_PAYLOAD_FIELDS = {
+    "invalidation_catch": [
+        "alarm_fired_at",
+        "loss_materialized_at",
+        "max_drawdown_pct",
+    ],
+    "defensive_value": [
+        "system_on_drawdown_pct",
+        "system_off_drawdown_pct",
+        "sample_size",
+    ],
+    "breadth_hit": [
+        "surfaced_by",
+        "adopted_by_human",
+        "outcome_observed_at",
+    ],
+}
+
 SAFETY_FLAGS = {
     "production_unchanged": True,
     "calls_llm_or_api": False,
@@ -131,6 +149,25 @@ def _candidate_summary(raw: Any) -> ScoreboardCandidateSummary | None:
     )
 
 
+def _ledger_required_fields(lane: str, result: str) -> list[str]:
+    if result == "not_due":
+        return []
+    return LANE_REQUIRED_PAYLOAD_FIELDS.get(lane, [])
+
+
+def _validate_lane_contract(*, lane: str, result: str, review_payload: dict[str, Any] | None) -> None:
+    required = _ledger_required_fields(lane, result)
+    if not required:
+        return
+    payload = review_payload or {}
+    missing = [field for field in required if field not in payload]
+    if missing:
+        raise ValueError(
+            "review_payload missing required fields for "
+            f"{lane!r}: {', '.join(missing)}"
+        )
+
+
 def normalize_item(raw: dict[str, Any]) -> ScoreboardItem:
     if not isinstance(raw, dict):
         raise ValueError("each scoreboard item must be an object")
@@ -149,6 +186,14 @@ def normalize_item(raw: dict[str, Any]) -> ScoreboardItem:
     review_payload = raw.get("review_payload")
     if review_payload is not None and not isinstance(review_payload, dict):
         raise ValueError("review_payload must be an object")
+    _validate_lane_contract(
+        lane=lane,
+        result=result,
+        review_payload=review_payload,
+    )
+    candidate_summary = _candidate_summary(raw.get("candidate_summary"))
+    if result == "not_due" and candidate_summary is not None:
+        raise ValueError("not_due events cannot create memory candidates")
 
     return ScoreboardItem(
         symbol=_required_str(raw, "symbol"),
@@ -164,7 +209,7 @@ def normalize_item(raw: dict[str, Any]) -> ScoreboardItem:
         source_verified=_optional_bool(raw, "source_verified"),
         source_verified_by=_optional_str(raw, "source_verified_by"),
         review_payload=review_payload,
-        candidate_summary=_candidate_summary(raw.get("candidate_summary")),
+        candidate_summary=candidate_summary,
     )
 
 
@@ -185,6 +230,7 @@ def load_items(path: Path) -> list[ScoreboardItem]:
 def _scoreboard_payload(item: ScoreboardItem) -> dict[str, Any]:
     return {
         "source_ref": item.source_ref,
+        "as_of": item.as_of,
         "thesis_ref": item.thesis_ref,
         "evidence_ref": item.evidence_ref,
         "source_url": item.source_url,
@@ -195,12 +241,18 @@ def _scoreboard_payload(item: ScoreboardItem) -> dict[str, Any]:
         "result": item.result,
         "evidence_summary": item.evidence_summary,
         "review_payload": item.review_payload or {},
+        "ledger_contract": {
+            "lane": item.lane,
+            "required_fields": _ledger_required_fields(item.lane, item.result),
+        },
     }
 
 
 def _review_case_payload(item: ScoreboardItem) -> dict[str, Any]:
+    scoreboard = _scoreboard_payload(item)
     return {
-        "m45_scoreboard": _scoreboard_payload(item),
+        "m45_scoreboard": scoreboard,
+        "m45_scoreboard_events": [scoreboard],
         "correct": None,
         "recommendation": None,
         "attribution": [
@@ -225,6 +277,28 @@ def _loads_json(value: str | None, fallback: Any) -> Any:
         return json.loads(value)
     except json.JSONDecodeError:
         return fallback
+
+
+def _scoreboard_event_key(event: dict[str, Any]) -> tuple[Any, Any, Any]:
+    return event.get("source_ref"), event.get("lane"), event.get("as_of")
+
+
+def _merge_scoreboard_events(existing_payload: dict[str, Any], event: dict[str, Any]) -> list[dict[str, Any]]:
+    raw_events = existing_payload.get("m45_scoreboard_events")
+    if isinstance(raw_events, list):
+        events = [dict(row) for row in raw_events if isinstance(row, dict)]
+    else:
+        previous = existing_payload.get("m45_scoreboard")
+        events = [dict(previous)] if isinstance(previous, dict) else []
+
+    event_key = _scoreboard_event_key(event)
+    for index, existing in enumerate(events):
+        if _scoreboard_event_key(existing) == event_key:
+            events[index] = event
+            break
+    else:
+        events.append(event)
+    return events
 
 
 def _forward_lookup_refs(item: ScoreboardItem) -> set[str]:
@@ -381,6 +455,7 @@ def _upsert_review_case(db, item: ScoreboardItem) -> dict[str, Any]:
         .first()
     )
     if existing is None:
+        payload["m45_scoreboard_events"] = [payload["m45_scoreboard"]]
         return create_review_case(
             db,
             symbol=item.symbol,
@@ -389,6 +464,13 @@ def _upsert_review_case(db, item: ScoreboardItem) -> dict[str, Any]:
             review_payload=payload,
         )
 
+    existing_payload = _loads_json(existing.review_payload_json, {})
+    if not isinstance(existing_payload, dict):
+        existing_payload = {}
+    payload["m45_scoreboard_events"] = _merge_scoreboard_events(
+        existing_payload,
+        payload["m45_scoreboard"],
+    )
     existing.thesis_id = existing.thesis_id or thesis_id
     existing.review_payload_json = json.dumps(payload, ensure_ascii=False, default=str)
     existing.attribution_json = json.dumps(payload["attribution"], ensure_ascii=False)
