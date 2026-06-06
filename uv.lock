@@ -1284,6 +1284,91 @@ wheels = [
 ]
 
 [[package]]
+name = "mingcang"
+version = "0.3.0"
+source = { editable = "." }
+dependencies = [
+    { name = "akshare" },
+    { name = "anthropic" },
+    { name = "apscheduler" },
+    { name = "backtrader" },
+    { name = "fastapi" },
+    { name = "feedparser" },
+    { name = "joblib" },
+    { name = "jsonschema" },
+    { name = "lightgbm" },
+    { name = "numpy" },
+    { name = "openai" },
+    { name = "pandas" },
+    { name = "pydantic-settings" },
+    { name = "python-dotenv" },
+    { name = "requests" },
+    { name = "scikit-learn" },
+    { name = "scipy" },
+    { name = "sqlalchemy" },
+    { name = "tushare" },
+    { name = "uvicorn", extra = ["standard"] },
+    { name = "yfinance" },
+]
+
+[package.optional-dependencies]
+agent = [
+    { name = "mcp" },
+]
+dev = [
+    { name = "mcp" },
+    { name = "mypy" },
+    { name = "pip-audit" },
+    { name = "pre-commit" },
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "ruff" },
+]
+efinance = [
+    { name = "efinance" },
+]
+test = [
+    { name = "pytest" },
+    { name = "pytest-cov" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "akshare", specifier = ">=1.12.0,<2.0.0" },
+    { name = "anthropic", specifier = ">=0.25.0,<1.0.0" },
+    { name = "apscheduler", specifier = ">=3.10.0,<4.0.0" },
+    { name = "backtrader", specifier = ">=1.9.78.123,<2.0.0" },
+    { name = "efinance", marker = "extra == 'efinance'", specifier = ">=0.5.5,<1.0.0" },
+    { name = "fastapi", specifier = ">=0.111.0,<1.0.0" },
+    { name = "feedparser", specifier = ">=6.0.0,<7.0.0" },
+    { name = "joblib", specifier = ">=1.4.0,<2.0.0" },
+    { name = "jsonschema", specifier = ">=4.0,<5.0" },
+    { name = "lightgbm", specifier = ">=4.3.0,<5.0.0" },
+    { name = "mcp", marker = "extra == 'agent'", specifier = ">=1.0.0,<2.0.0" },
+    { name = "mingcang", extras = ["agent"], marker = "extra == 'dev'" },
+    { name = "mingcang", extras = ["test"], marker = "extra == 'dev'" },
+    { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.10.0,<2.0.0" },
+    { name = "numpy", specifier = ">=1.26.0,<3.0.0" },
+    { name = "openai", specifier = ">=1.0.0,<3.0.0" },
+    { name = "pandas", specifier = ">=2.2.0,<4.0.0" },
+    { name = "pip-audit", marker = "extra == 'dev'", specifier = ">=2.7.0,<3.0.0" },
+    { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=3.7.0,<5.0.0" },
+    { name = "pydantic-settings", specifier = ">=2.2.0,<3.0.0" },
+    { name = "pytest", marker = "extra == 'test'", specifier = ">=9.0.3,<10.0.0" },
+    { name = "pytest-cov", marker = "extra == 'test'", specifier = ">=5.0.0,<8.0.0" },
+    { name = "python-dotenv", specifier = ">=1.0.0,<2.0.0" },
+    { name = "requests", specifier = ">=2.31.0,<3.0.0" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.4.0,<1.0.0" },
+    { name = "scikit-learn", specifier = ">=1.4.0,<2.0.0" },
+    { name = "scipy", specifier = ">=1.12.0,<2.0.0" },
+    { name = "sqlalchemy", specifier = ">=2.0.0,<3.0.0" },
+    { name = "tushare", specifier = ">=1.2.26,<2.0.0" },
+    { name = "uvicorn", extras = ["standard"], specifier = ">=0.29.0,<1.0.0" },
+    { name = "yfinance", specifier = ">=0.2.38,<1.0.0" },
+]
+provides-extras = ["test", "dev", "agent", "efinance"]
+
+[[package]]
 name = "mini-racer"
 version = "0.14.1"
 source = { registry = "https://pypi.org/simple" }
@@ -2610,91 +2695,6 @@ sdist = { url = "https://files.pythonhosted.org/packages/25/44/ec35f1b6e83094b99
 wheels = [
     { url = "https://files.pythonhosted.org/packages/1c/54/196d0c1db10af76baa4f64894448505d60d3cdf70ef92cbb35f46a4e4c71/starlette-1.2.1-py3-none-any.whl", hash = "sha256:4de0082d08c8f6764a85a54cf1120d6939507a19905c7768acad2a9f875d2b89", size = 73350, upload-time = "2026-05-31T01:07:50.09Z" },
 ]
-
-[[package]]
-name = "mingcang"
-version = "0.2.3"
-source = { editable = "." }
-dependencies = [
-    { name = "akshare" },
-    { name = "anthropic" },
-    { name = "apscheduler" },
-    { name = "backtrader" },
-    { name = "fastapi" },
-    { name = "feedparser" },
-    { name = "joblib" },
-    { name = "jsonschema" },
-    { name = "lightgbm" },
-    { name = "numpy" },
-    { name = "openai" },
-    { name = "pandas" },
-    { name = "pydantic-settings" },
-    { name = "python-dotenv" },
-    { name = "requests" },
-    { name = "scikit-learn" },
-    { name = "scipy" },
-    { name = "sqlalchemy" },
-    { name = "tushare" },
-    { name = "uvicorn", extra = ["standard"] },
-    { name = "yfinance" },
-]
-
-[package.optional-dependencies]
-agent = [
-    { name = "mcp" },
-]
-dev = [
-    { name = "mcp" },
-    { name = "mypy" },
-    { name = "pip-audit" },
-    { name = "pre-commit" },
-    { name = "pytest" },
-    { name = "pytest-cov" },
-    { name = "ruff" },
-]
-efinance = [
-    { name = "efinance" },
-]
-test = [
-    { name = "pytest" },
-    { name = "pytest-cov" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "akshare", specifier = ">=1.12.0,<2.0.0" },
-    { name = "anthropic", specifier = ">=0.25.0,<1.0.0" },
-    { name = "apscheduler", specifier = ">=3.10.0,<4.0.0" },
-    { name = "backtrader", specifier = ">=1.9.78.123,<2.0.0" },
-    { name = "efinance", marker = "extra == 'efinance'", specifier = ">=0.5.5,<1.0.0" },
-    { name = "fastapi", specifier = ">=0.111.0,<1.0.0" },
-    { name = "feedparser", specifier = ">=6.0.0,<7.0.0" },
-    { name = "joblib", specifier = ">=1.4.0,<2.0.0" },
-    { name = "jsonschema", specifier = ">=4.0,<5.0" },
-    { name = "lightgbm", specifier = ">=4.3.0,<5.0.0" },
-    { name = "mcp", marker = "extra == 'agent'", specifier = ">=1.0.0,<2.0.0" },
-    { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.10.0,<2.0.0" },
-    { name = "numpy", specifier = ">=1.26.0,<3.0.0" },
-    { name = "openai", specifier = ">=1.0.0,<3.0.0" },
-    { name = "pandas", specifier = ">=2.2.0,<4.0.0" },
-    { name = "pip-audit", marker = "extra == 'dev'", specifier = ">=2.7.0,<3.0.0" },
-    { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=3.7.0,<5.0.0" },
-    { name = "pydantic-settings", specifier = ">=2.2.0,<3.0.0" },
-    { name = "pytest", marker = "extra == 'test'", specifier = ">=9.0.3,<10.0.0" },
-    { name = "pytest-cov", marker = "extra == 'test'", specifier = ">=5.0.0,<8.0.0" },
-    { name = "python-dotenv", specifier = ">=1.0.0,<2.0.0" },
-    { name = "requests", specifier = ">=2.31.0,<3.0.0" },
-    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.4.0,<1.0.0" },
-    { name = "scikit-learn", specifier = ">=1.4.0,<2.0.0" },
-    { name = "scipy", specifier = ">=1.12.0,<2.0.0" },
-    { name = "sqlalchemy", specifier = ">=2.0.0,<3.0.0" },
-    { name = "mingcang", extras = ["agent"], marker = "extra == 'dev'" },
-    { name = "mingcang", extras = ["test"], marker = "extra == 'dev'" },
-    { name = "tushare", specifier = ">=1.2.26,<2.0.0" },
-    { name = "uvicorn", extras = ["standard"], specifier = ">=0.29.0,<1.0.0" },
-    { name = "yfinance", specifier = ">=0.2.38,<1.0.0" },
-]
-provides-extras = ["test", "dev", "agent", "efinance"]
 
 [[package]]
 name = "tabulate"
