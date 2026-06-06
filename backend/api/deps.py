@@ -18,7 +18,8 @@ Usage example::
 """
 from __future__ import annotations
 
-from backend.config import Settings, settings as _settings
+from backend.config import Settings
+from backend.config import settings as _settings
 
 
 def get_settings() -> Settings:

@@ -2,56 +2,56 @@
 
 All 31 models register on the shared ``backend.data.orm.Base``.
 """
-from backend.data.orm import Base
-from backend.data.models.market import (
-    Stock,
-    Position,
-    Price,
-    NewsItem,
-    IndexPrice,
-    MarketSnapshot,
-    FinancialMetric,
-)
-from backend.data.models.signals import (
-    Signal,
-    SentimentCache,
-    LongTermLabel,
+from backend.data.models.chat import (
+    ChatMessage,
+    ChatSession,
+    LlmUsageLog,
 )
 from backend.data.models.decision import (
     DecisionRun,
+    PendingAIAction,
     ResearchState,
     ReviewRun,
-    PendingAIAction,
+)
+from backend.data.models.market import (
+    FinancialMetric,
+    IndexPrice,
+    MarketSnapshot,
+    NewsItem,
+    Position,
+    Price,
+    Stock,
 )
 from backend.data.models.memory import (
     DecisionMemoryLayered,
-    StockMemoryItem,
     MemoryAtom,
-    MemoryScenario,
     MemoryProfile,
     MemoryPromotionCandidate,
-)
-from backend.data.models.chat import (
-    ChatSession,
-    ChatMessage,
-    LlmUsageLog,
-)
-from backend.data.models.thesis import (
-    ThesisRecord,
-    ThesisConfidenceEntry,
-    ForwardThesis,
-)
-from backend.data.models.theme import (
-    ThemeRecord,
-    ThemeHypothesis,
+    MemoryScenario,
+    StockMemoryItem,
 )
 from backend.data.models.review import (
     ReviewCase,
 )
-from backend.data.models.universe import (
-    UniverseSnapshot,
-    GateBObservation,
+from backend.data.models.signals import (
+    LongTermLabel,
+    SentimentCache,
+    Signal,
 )
+from backend.data.models.theme import (
+    ThemeHypothesis,
+    ThemeRecord,
+)
+from backend.data.models.thesis import (
+    ForwardThesis,
+    ThesisConfidenceEntry,
+    ThesisRecord,
+)
+from backend.data.models.universe import (
+    GateBObservation,
+    UniverseSnapshot,
+)
+from backend.data.orm import Base
 
 __all__ = [
     "Base",

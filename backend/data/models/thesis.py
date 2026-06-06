@@ -2,7 +2,6 @@
 from datetime import datetime
 
 from sqlalchemy import (
-    Boolean,
     DateTime,
     Float,
     Integer,

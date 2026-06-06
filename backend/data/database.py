@@ -11,13 +11,6 @@ from typing import Any, cast
 from sqlalchemy import text
 
 from backend.config import settings  # noqa: F401  re-exported for backward compatibility
-from backend.data.orm import (  # noqa: F401  re-exported for backward compatibility
-    Base,
-    SessionLocal,
-    _DEFAULT_DB_PATH,
-    _utcnow,
-    engine,
-)
 from backend.data.models import (  # noqa: F401  re-exported for backward compatibility
     ChatMessage,
     ChatSession,
@@ -51,7 +44,13 @@ from backend.data.models import (  # noqa: F401  re-exported for backward compat
     ThesisRecord,
     UniverseSnapshot,
 )
-
+from backend.data.orm import (  # noqa: F401  re-exported for backward compatibility
+    _DEFAULT_DB_PATH,
+    Base,
+    SessionLocal,
+    _utcnow,
+    engine,
+)
 
 _FORWARD_THESES_LEGACY_UNIQUE_RE = re.compile(
     r"\bunique\s*\(\s*statement\s*,\s*horizon_date\s*\)"
