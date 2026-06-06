@@ -81,4 +81,3 @@ def test_m45_ateacher_hook_update_rejects_trading_fields():
 
     with pytest.raises(ValueError, match="forbidden trading fields"):
         normalize_hook_update(_hook_update(price_target=88.0))
-
