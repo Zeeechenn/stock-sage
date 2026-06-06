@@ -33,25 +33,11 @@ MingCang never decides for you: **LLMs don't predict prices, don't place orders,
 
 ---
 
-## What AI does. What you do.
+## Architecture: the research-to-decision loop
 
-Alpha comes from human judgment — your research, sector knowledge, filter, and veto. AI isn't the main character; it handles the three things you can't watch alone:
+0.3.0 rebuilds the whole research model into a **case-based loop**: four "cases" wire research, signal, position, and review into one loop across five layers (L0–L4). Each case answers exactly one question, and they link to each other and stay auditable.
 
-| Role | Owner | What it means |
-|---|---|---|
-| Alpha / direction | **You** | Your research, intuition, sector knowledge |
-| Breadth sweep | AI | News, signals, and angles you can't track manually |
-| Falsification | AI | Challenge the thesis, check whether stop/invalidation conditions still hold |
-| Short-term risk discipline | AI + rules | ATR stops, portfolio exposure, data-quality alerts |
-| Final decision | **You** | Always |
-
----
-
-## Architecture: the ATLAS L0–L4 loop
-
-0.3.0 rebuilds the whole research model into the **ATLAS L0–L4 architecture**: four "cases" wire research, signal, position, and review into one loop. Each case answers exactly one question, and they link to each other and stay auditable.
-
-![MingCang ATLAS architecture](docs/assets/architecture.svg)
+![MingCang research-to-decision architecture](docs/assets/architecture.svg)
 
 ```
 Import (data + news + your judgment + external theses)
@@ -78,7 +64,7 @@ Import (data + news + your judgment + external theses)
 - **Where data comes from** → **L1 (Evidence) + the data layer**: A-share prices/financials/QFII, news sentiment, A/HK/US read-only global data, all in local SQLite, never the cloud; a Provider Guard enforces freshness and adjustment-basis sanity.
 - **What memory is for** → **L0 + L4**: rules, lessons, and research indexes are stored in layers; only ReviewCase-attributed, human-confirmed outcomes promote from `pending` to trusted, then feed back as context for the next judgment — that's why the loop grows.
 
-> **Status**: the ATLAS L0–L4 architecture is merged into `main` but **dormant by default** (`ATLAS_ENABLED=false`) — the skeleton lands first with zero production-signal change, activating layer by layer as the M29 forward-evidence gate clears. Production signals remain technical 0.6 + sentiment 0.4 + ATR 2.5 stop; quant stays off at `WEIGHT_QUANT=0.0` pending evidence.
+> **Status**: this case-based loop has landed but is **dormant by default** — the skeleton comes first with zero production-signal change, activating layer by layer as the forward-evidence gate clears. Production signals remain technical 0.6 + sentiment 0.4 + ATR 2.5 trailing stop; quant stays off pending evidence.
 
 ---
 
@@ -124,19 +110,6 @@ python3 -m backend.agent.cli stock-context 000001 --pretty
 ```
 
 > Migration: the legacy `stocksage` command, `stock_sage_*` MCP tools, and `STOCKSAGE_AGENT_*` env vars remain available during transition. New installs should use `mingcang`.
-
----
-
-## What's next
-
-MingCang is shifting from "build a quant oracle" to "amplify human judgment, gated by forward evidence." Current roadmap:
-
-1. **M45 · amplifier-primary, source-gated** (in progress) — structure external analyst/institutional judgment into imported theses, give each a falsification scoreboard and a slow forward-shadow evidence path; AI-surfaced alpha must pass forward, outcome-gated falsification before it can touch real decisions.
-2. **M29 · forward-evidence gate** — quant stays `WEIGHT_QUANT=0.0` until IC / ICIR / monotonicity / non-overlapping-sample checks all pass and the user confirms.
-3. **ATLAS L0–L4 staged activation** — the dormant skeleton wires `SignalCase` / `PositionCase` / `ReviewCase` from shadow to live as gates clear.
-4. **M32 · forward-hypothesis bridge** — once review data is thick enough, upgrade sector/theme research into falsifiable forward theses (with horizon, evidence, invalidation conditions) instead of "strong buy" labels.
-
-Full task sequence in [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ---
 
@@ -193,14 +166,39 @@ Legacy `STOCKSAGE_AGENT_*` names are still read, but new deployments should use 
 |---|---|
 | [AGENTS.md](AGENTS.md) | Agent usage rules and safety boundaries |
 | [PROJECT.md](PROJECT.md) | Codebase navigation and key file index |
-| [docs/ATLAS.md](docs/ATLAS.md) | ATLAS four-case architecture design and milestones |
 | [STATUS.md](STATUS.md) | Current production state, signal weights, test entry points |
-| [CHANGELOG.md](CHANGELOG.md) | Release history and completed milestones |
-| [docs/ROADMAP.md](docs/ROADMAP.md) | In-progress and deferred work |
+| [CHANGELOG.md](CHANGELOG.md) | Release history and completed work |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Development setup and contribution flow |
+
+---
+
+## From StockSage to MingCang
+
+The project was formerly **StockSage**; from 0.3.0 it's officially **MingCang / 明仓**. This is more than a rename:
+
+- The whole research model was rebuilt into a case-based research-to-decision loop (research → signal → position → review → memory);
+- Positioning shifted to "amplify human judgment, gated by forward evidence," adding thesis-import channels and a falsification scoreboard;
+- A ready-to-use `mingcang` Pi terminal shell was added to lower the barrier to entry;
+- A/HK/US read-only global data was expanded, with stronger data-quality and price-adjustment guards.
+
+Legacy `stocksage`, `stock_sage_*`, and `STOCKSAGE_AGENT_*` paths remain available during the transition.
 
 ---
 
 ## Disclaimer
 
 MingCang is a personal research tool, **not financial advice**. It doesn't place trades automatically. LLMs don't predict prices. Take-profit and stop-loss levels are generated from ATR formulas and risk constraints. All trading decisions and financial risk belong to the user.
+
+---
+
+## Where this is heading
+
+MingCang is positioned as **amplifier-primary, source-gated** — not an oracle that predicts on its own, but a system that amplifies human judgment and gates on outcomes.
+
+- **Offense (alpha) comes from humans, not a manufactured signal.** The primary source of offense is imported judgment from seasoned external researchers (paired with prosperity and financial-quality frameworks), with the user's own judgment as filter, veto, and position sizing. Manufacturing edge from price patterns has been ruled out — backtests showed no edge.
+- **AI is an amplifier, not an oracle.** It does two things: breadth — aggregate public information and surface candidate theses a human would miss, always labeled "unproven hypotheses"; falsification & risk — build evidence dossiers, track theses, alarm on invalidation, plus a short-term risk-discipline lane.
+- **AI may attempt to become an alpha source, but every attempt is gated.** Future models, new skills, and open-source components are all allowed to try, but they influence real decisions only after passing a forward, outcome-based falsification gate; default trust is always the human.
+- **Learning is outcome-gated, not plausibility-gated.** A thesis is promoted from pending to trusted memory only after its outcome is realized and verified — never because it "sounds well-reasoned."
+- **Judged on metrics that can fail.** Invalidation-catch rate (when a thesis breaks, did the alarm fire before the loss or only after?) and defensive value (drawdown and loss-rate with the system on vs. off); breadth hits are slow, secondary evidence.
+
+Every future capability must clear this falsification gate before influencing decisions, preventing the accumulation of unfalsified complexity.

@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1000" height="812" viewBox="0 0 1000 812" role="img" aria-labelledby="title desc">
-  <title id="title">MingCang ATLAS research-to-decision loop</title>
-  <desc id="desc">MingCang ATLAS L0-L4 architecture: imported data and human theses flow through ResearchCase, SignalCase, PositionCase, and ReviewCase, with outcome-gated memory feeding the next judgment. The human makes every decision; safety gates wrap the loop.</desc>
+  <title id="title">MingCang research-to-decision loop</title>
+  <desc id="desc">MingCang research-to-decision architecture: imported data and human theses flow through ResearchCase, SignalCase, PositionCase, and ReviewCase, with outcome-gated memory feeding the next judgment. The human makes every decision; safety gates wrap the loop.</desc>
   <defs>
     <linearGradient id="coreFill" x1="0" x2="1" y1="0" y2="1">
       <stop offset="0" stop-color="#ecfeff"/>
@@ -48,7 +48,7 @@
 
   <rect class="bg" width="1000" height="812"/>
 
-  <text class="kicker" x="56" y="62">MINGCANG / LOCAL-FIRST RESEARCH OS · ATLAS L0–L4</text>
+  <text class="kicker" x="56" y="62">MINGCANG / LOCAL-FIRST RESEARCH OS</text>
   <text class="title" x="56" y="106">Research-to-Decision Loop</text>
   <text class="subtitle" x="58" y="135">进口判断 → 记录证据 → 证伪 → 跟踪 → 复盘归因 → 记忆更新。人做最终决策，AI 做广度、证伪与风险纪律。</text>
 
@@ -93,7 +93,7 @@
       <path class="iconWarm" d="M1 30 C3 21 19 21 21 30"/>
     </g>
     <text class="label" x="52" y="25">进口人类论题</text>
-    <text class="small" x="52" y="44">A老师 · 机构 · 景气</text>
+    <text class="small" x="52" y="44">外部研究者 · 机构 · 景气</text>
   </g>
   <g transform="translate(76 514)">
     <rect class="node" x="0" y="0" width="192" height="54" rx="2"/>
@@ -106,7 +106,7 @@
   </g>
 
   <!-- four cases flow -->
-  <text class="column" x="300" y="206">02 / 研究决策闭环 · ATLAS CASES</text>
+  <text class="column" x="300" y="206">02 / 研究决策闭环 · CASES</text>
   <line class="hair" x1="300" y1="218" x2="924" y2="218"/>
 
   <!-- ResearchCase -->
@@ -125,7 +125,7 @@
     <text class="caseTitle" x="20" y="56">SignalCase</text>
     <text class="ask" x="20" y="80">现在有可交易的设置吗？</text>
     <text class="small" x="20" y="104">技术因子 0.6 + 新闻情感 0.4 · regime 过滤</text>
-    <text class="small" x="20" y="121">量化 audit-only（WEIGHT_QUANT=0，待门控）</text>
+    <text class="small" x="20" y="121">量化 audit-only（默认关闭，待门控）</text>
   </g>
   <!-- PositionCase -->
   <g transform="translate(628 412)" filter="url(#soft)">
@@ -189,6 +189,6 @@
     <rect class="dashed" x="330" y="-20" width="250" height="42" rx="2"/>
     <text class="layerWarm" x="350" y="-2">SAFETY</text>
     <text class="small" x="350" y="14">key · 写白名单 · 本地优先</text>
-    <text class="small" x="612" y="3">ATLAS 已合入 main，ATLAS_ENABLED=false 休眠，过门后逐步激活。</text>
+    <text class="small" x="612" y="3">闭环架构已落地，默认休眠，过门后逐步激活。</text>
   </g>
 </svg>
