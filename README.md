@@ -33,13 +33,17 @@
 
 ---
 
+> **第一次只做这个**：想先体验，不配 Key，跑下面的 `make demo`；想长期使用，走 [快速开始](#快速开始) 安装 `mingcang`；想开发，先 `make install` 再 `make dev` / `cd frontend && npm run dev`。
+
 ## 3 分钟上手（无需真实 Key / 网络）
 
 ```bash
 git clone https://github.com/Zeeechenn/MingCang.git
 cd MingCang
-make demo        # 用 mock 数据跑一轮完整演示，无需配置任何 key 或网络
+make demo        # 种子 mock 数据，并启动后端 + 前端
 ```
+
+打开 <http://127.0.0.1:5173>。首页先看到 3 只示例股票（贵州茅台 / 中际旭创 / 中国平安）；demo 数据库还包含一条中际旭创长期论题、一份复盘和一条待确认记忆候选，供后续用户手册串成完整闭环。后端健康检查在 <http://127.0.0.1:8000/health>。按 `Ctrl+C` 停止 demo。
 
 ![明仓前端界面预览：脉冲页收盘快照](docs/assets/screenshot-watchlist.png)
 
@@ -84,7 +88,7 @@ make demo        # 用 mock 数据跑一轮完整演示，无需配置任何 key
 
 ## 快速开始
 
-明仓自带一个 **`mingcang` Pi 终端壳**——把整套 CLI、记忆、研究流程和安全边界打包成一个开箱即用的 agent 终端，不用记一堆命令就能用。
+明仓自带一个 **`mingcang` Pi 终端壳**——把整套 CLI、记忆、研究流程和安全边界打包成一个开箱即用的 agent 终端，不用记一堆命令就能用。只想离线看 demo 时不需要安装它，直接用上面的 `make demo`。
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Zeeechenn/MingCang/main/scripts/install.sh | sh
@@ -102,7 +106,7 @@ make agent-setup   # 准备环境
 make agent         # 启动 Pi 终端
 ```
 
-默认 `AI_PROVIDER=local_cli`，走本机已登录的 Claude CLI，不需要云端 key。也可以直接用底层 CLI：
+默认 `AI_PROVIDER=local_cli`，走本机已登录的本地 CLI，不需要云端 key；demo 模式不需要任何 LLM / 数据源 key。也可以直接用底层 CLI：
 
 ```bash
 python3 -m backend.agent.cli health --pretty
@@ -123,6 +127,8 @@ python3 -m backend.agent.cli stock-context 000001 --pretty
 对 Pi 终端说："研究一下中际旭创"、"看看 300308 现在怎么样"。它会先拉股票上下文，再给结论：
 
 ```bash
+mingcang stock 300308
+# 或直接用底层 CLI：
 python3 -m backend.agent.cli stock-context 300308 --pretty
 ```
 

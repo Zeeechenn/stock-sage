@@ -33,6 +33,22 @@ MingCang never decides for you: **LLMs don't predict prices, don't place orders,
 
 ---
 
+> **First-time path:** use `make demo` below if you want a no-key trial; use [Quick start](#quick-start) when you want to install the `mingcang` terminal; use `make install` plus `make dev` / `cd frontend && npm run dev` if you are developing.
+
+## 3-minute demo (no real keys / no provider network)
+
+```bash
+git clone https://github.com/Zeeechenn/MingCang.git
+cd MingCang
+make demo        # seed mock data, then start backend + frontend
+```
+
+Open <http://127.0.0.1:5173>. The first screen shows 3 sample stocks; the demo database also includes one Zhongji Innolight long-term thesis, one review case, and one pending memory-promotion candidate for the full loop that the user guide will walk through. The backend health check is at <http://127.0.0.1:8000/health>. Press `Ctrl+C` to stop the demo.
+
+![MingCang frontend preview: watchlist pulse page](docs/assets/screenshot-watchlist.png)
+
+---
+
 ## Architecture: the research-to-decision loop
 
 0.3.0 rebuilds the whole research model into a **case-based loop**: four "cases" wire research, signal, position, and review into one loop across five layers (L0–L4). Each case answers exactly one question, and they link to each other and stay auditable.
@@ -83,7 +99,7 @@ Import (data + news + your judgment + external theses)
 
 ## Quick start
 
-MingCang ships with a **`mingcang` Pi terminal shell** — it packages the whole CLI, memory, research flow, and safety boundaries into a ready-to-use agent terminal, so you don't have to memorize commands.
+MingCang ships with a **`mingcang` Pi terminal shell** — it packages the whole CLI, memory, research flow, and safety boundaries into a ready-to-use agent terminal, so you don't have to memorize commands. If you only want the offline demo, use `make demo` above instead.
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Zeeechenn/MingCang/main/scripts/install.sh | sh
@@ -101,7 +117,7 @@ make agent-setup   # prepare environment
 make agent         # launch the Pi terminal
 ```
 
-Default `AI_PROVIDER=local_cli` routes internal LLM work through your local Claude CLI — no cloud key needed. You can also call the raw CLI:
+Default `AI_PROVIDER=local_cli` routes internal LLM work through your logged-in local CLI — no cloud key needed. Demo mode does not require any LLM or market-data keys. You can also call the raw CLI:
 
 ```bash
 python3 -m backend.agent.cli health --pretty
@@ -122,6 +138,8 @@ Once installed, you can either talk to the `mingcang` Pi terminal in plain langu
 Tell the Pi terminal "research Zhongji Innolight" or "how does 300308 look right now?" — it pulls the stock context first, then concludes:
 
 ```bash
+mingcang stock 300308
+# Or call the raw CLI directly:
 python3 -m backend.agent.cli stock-context 300308 --pretty
 ```
 
@@ -232,6 +250,8 @@ Legacy `STOCKSAGE_AGENT_*` names are still read, but new deployments should use 
 | [STATUS.md](STATUS.md) | Current production state, signal weights, test entry points |
 | [CHANGELOG.md](CHANGELOG.md) | Release history and completed work |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Development setup and contribution flow |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Full L0-L4 architecture and case-loop details (Chinese-first) |
+| [docs/WHY_NOT_AI_STOCK_PICKER.md](docs/WHY_NOT_AI_STOCK_PICKER.md) | Why MingCang is not an AI stock picker: LLM boundary, ATR discipline, memory gates (Chinese-first) |
 
 ---
 

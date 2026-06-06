@@ -39,6 +39,22 @@ case "$command_name" in
     PYTHONPATH=. "$PYTHON_BIN" -m backend.agent.cli health --pretty
     PYTHONPATH=. "$PYTHON_BIN" -m backend.agent.cli actions --pretty
     ;;
+  demo)
+    make demo
+    ;;
+  project|project-context)
+    PYTHONPATH=. "$PYTHON_BIN" -m backend.agent.cli project-context "$@" --pretty
+    ;;
+  memory|memory-snapshot)
+    PYTHONPATH=. "$PYTHON_BIN" -m backend.agent.cli memory-snapshot "$@" --pretty
+    ;;
+  stock|stock-context)
+    if [[ $# -lt 1 ]]; then
+      echo "Usage: mingcang stock <symbol>" >&2
+      exit 2
+    fi
+    PYTHONPATH=. "$PYTHON_BIN" -m backend.agent.cli stock-context "$@" --pretty
+    ;;
   premarket|intraday|postmarket|weekend)
     PYTHONPATH=. "$PYTHON_BIN" -m backend.agent.cli "$command_name" --pretty "$@"
     ;;
@@ -56,7 +72,12 @@ Usage:
   mingcang             Start native Pi in MingCang research mode
   mingcang dev         Start native Pi in developer mode
   mingcang configure   Re-run MingCang setup/configuration
+  mingcang demo        Seed mock data and start backend + frontend demo
   mingcang doctor      Run health and action catalog checks
+  mingcang project     Read watchlist/positions/memory startup context
+  mingcang memory      Read the project memory snapshot
+  mingcang stock 300308
+                        Read one stock's signal/news/label/copilot context
   mingcang premarket   Show the premarket workflow contract (dry-run)
   mingcang intraday    Show the intraday local-cache workflow contract (dry-run)
   mingcang postmarket  Show the postmarket review/export workflow contract (dry-run)

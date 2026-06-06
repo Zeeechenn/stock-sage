@@ -8,10 +8,46 @@
 
 | 工作线 | 当前状态 | 第一动作 | 停止条件 |
 |---|---|---|---|
+| M46 用户可发现性与上手路径 | P1：0.3.1 可信度补丁已完成并通过完整 verify；子 agent 零背景试用发现入口分流、demo 前端、英文 README、功能地图仍需收口 | 先把 GitHub 首页做成极简分流器，再补任务型 `docs/USER_GUIDE.md` 与状态型 `docs/FEATURE_MAP.md` | 不把 README 变成大而全文档；不把维护者路线图当普通用户下一步 |
 | M45 研究定位落地 | 当前主线：amplifier-primary, source-gated；tracked docs below are self-contained, while local ADR 0001 stays git-ignored under `docs/adr/` for private follow-up | M45.1: 用 `backend.tools.m45_import_ateacher_theses` 先 dry-run A老师进口判断，再显式 `--execute` 落成 ForwardThesis + L0 pending atom | 不复活 quant、不改 production profile、不让未过门 alpha 影响真实决策 |
 | M44 Atlas 合并 | complete locally: dormant `--no-ff` merge landed on local `main` at `9820143`, `ATLAS_ENABLED=false`, not pushed | 保持 dormant；push / publish only after explicit user authorization | 任何 official signal / test2 / scheduler / shared-infra drift 先停下归因或 revert merge |
 | M29 Forward Evidence | routine read-only check；所有 alpha 证据仍 non-promoting，fresh forward coverage 尚未 ready | 只读跑 `backend.tools.m29_forward_readiness --db-url ...`；ready 后才追加 1d/3d/5d shadow + ledger | 会恢复 quant、改 production profile、接 checkpoint、写真实 `sentiment_cache` 或调额外付费服务时先确认 |
 | 后置/低优先 | M24.3 / M25 / M21.4 / M12 / M10.5 / M4 / M5 | 只在触发条件满足时启动 | 不从历史摘要推出新的生产行为 |
+
+---
+
+## M46 用户可发现性与上手路径【P1】
+
+Current fact pattern:
+
+- A0 baseline is recorded in `docs/dev/BASELINE_2026-06.md`; local recheck on 2026-06-06 passed `make verify` with ruff, mypy, 1101 backend tests, 19 frontend tests, Vite build, and ESLint summary.
+- 0.3.1 trust-patch scope is complete: MingCang naming/title cleanup, version surface consolidation for the frontend release badge, screenshot-backed README preview, `docs/WHY_NOT_AI_STOCK_PICKER.md`, `make demo`, and frontend lint summary inside `verify`.
+- Zero-background subagent review found the next product gap is not another feature: users still need a clearer "what do I do first?" path, a task manual, and a feature/status map.
+
+Decision:
+
+- Do **not** start with one large exhaustive user manual.
+- Use a layered information architecture:
+  1. `README.md` / `README_EN.md` stay as a thin GitHub router: positioning, no-key demo, screenshot, 3 recommended paths, install, safety boundary, docs navigation.
+  2. `docs/USER_GUIDE.md` becomes the task manual: research one stock, daily scan, watchlist, long-term thesis, review/memory; each task states input, command, expected output, and next step.
+  3. `docs/FEATURE_MAP.md` becomes the capability/status map: Data / Signals / Research / Memory / Agent / UI, with default-enabled vs dormant, read-only vs mutating, production-signal impact, and required keys.
+  4. `docs/ARCHITECTURE.md` and `docs/ROADMAP.md` remain maintainer/agent depth docs, not the normal first-click user path.
+
+Immediate tasks:
+
+- [x] Keep demo entry honest: `make demo` seeds mock data and starts backend + frontend, with expected URLs documented.
+- [x] Make `mingcang stock <symbol>` a real launcher shortcut and keep raw `stock-context` CLI examples available.
+- [x] Mirror the no-key demo path into `README_EN.md`.
+- [ ] Enrich demo data so the first frontend screen does not look like an empty production database: add at least one latest signal / price row if it can be done without touching real data or production providers.
+- [ ] Create `docs/USER_GUIDE.md` with task-first sections and small expected-output snippets.
+- [ ] Create `docs/FEATURE_MAP.md` with capability boundaries and key/provider requirements.
+- [ ] Slim README after the two docs exist: keep architecture in the lower half or link out when it distracts from first use.
+
+Stop conditions:
+
+- Do not expose personal trading records, real databases, provider keys, or local-only paths in public docs.
+- Do not let demo/sample data affect production DB, scheduler jobs, official signals, or memory promotion.
+- Do not move internal Mxx/Atlas/test2 planning into user-facing docs except as clearly marked maintainer context.
 
 ---
 

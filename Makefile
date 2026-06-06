@@ -39,7 +39,7 @@ help:
 	@echo "  typecheck    mypy 类型检查"
 	@echo "  check        lint + typecheck + test 一键全跑（PR 前用）"
 	@echo "  verify       后端/前端/构建全量验证（含 ESLint 汇总，不阻塞构建）"
-	@echo "  demo         种子演示数据库并启动后端 demo 模式（无需真实 API Key）"
+	@echo "  demo         种子演示数据库并启动后端 + 前端 demo（无需真实 API Key）"
 	@echo "  coverage-snapshot 输出当前数据覆盖快照"
 	@echo "  agent-setup  配置 MingCang 原生 Pi/agent 本地运行环境"
 	@echo "  agent        启动 MingCang 原生 Pi 研究型终端 agent"
@@ -115,10 +115,25 @@ demo:
 	DATABASE_URL=sqlite:///$(shell pwd)/examples/sample_db/mingcang_demo.db \
 		PYTHONPATH=. $(PYTHON) scripts/demo_seed.py
 	@echo ""
-	@echo "Demo DB ready. Starting backend against demo DB..."
-	@echo "(Press Ctrl+C to stop)"
+	@echo "Demo DB ready."
+	@echo "Backend:  http://127.0.0.1:8000"
+	@echo "Frontend: http://127.0.0.1:5173"
+	@echo "(Press Ctrl+C to stop both servers)"
+	@set -e; \
+	backend_pid=; \
+	cleanup() { \
+		if [ -n "$$backend_pid" ]; then \
+			kill "$$backend_pid" 2>/dev/null || true; \
+			wait "$$backend_pid" 2>/dev/null || true; \
+		fi; \
+	}; \
+	trap cleanup EXIT INT TERM; \
 	DATABASE_URL=sqlite:///$(shell pwd)/examples/sample_db/mingcang_demo.db \
-		PYTHONPATH=. $(PYTHON) -m uvicorn backend.main:app --reload --port 8000
+		PYTHONPATH=. $(PYTHON) -m uvicorn backend.main:app --reload --port 8000 & \
+	backend_pid=$$!; \
+	sleep 2; \
+	echo "Starting frontend dev server..."; \
+	cd frontend && npm run dev -- --host 127.0.0.1
 
 dev:
 	PYTHONPATH=. $(PYTHON) -m uvicorn backend.main:app --reload
