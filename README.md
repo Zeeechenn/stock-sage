@@ -41,9 +41,9 @@ cd MingCang
 make demo        # 用 mock 数据跑一轮完整演示，无需配置任何 key 或网络
 ```
 
-<!-- TODO: 前端截图 / GIF：添加标的→研究卡→证伪→复盘→记忆候选。运行 `make demo` 后截取，补齐后取消下一行注释。 -->
-<!-- ![明仓前端界面预览](docs/assets/screenshot-watchlist.png) -->
-> 📸 _前端截图 / 演示 GIF 待补（运行 `make demo` 后截取）。_
+![明仓前端界面预览：脉冲页收盘快照](docs/assets/screenshot-watchlist.png)
+
+<!-- TODO: 后续可补一段操作 GIF（添加标的→研究卡→证伪→复盘→记忆候选）。 -->
 
 ---
 
