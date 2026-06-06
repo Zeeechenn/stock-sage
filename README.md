@@ -1,13 +1,13 @@
-# MingCang — Position Lens
+# 明仓
 
-> 本地优先的个人 A 股持仓研究镜头：看清仓位、证据、风险和复盘。
+散户亏钱，很少亏在不够聪明，常常亏在判断没有纪律、失误没有记忆。
 
-MingCang（明仓）把行情、新闻、财务、QFII、持仓、复盘和长期记忆组织在本地 SQLite 中，再把技术信号、新闻情绪、长期研究、组合约束和 agent 工作流连接成一套可审计的研究工作台。它关注的不是“预测下一个价格”，而是帮个人投资者看清：为什么关注一只股票、证据是否足够、风险哪里变化、下一步是否需要人工判断。
+明仓是我给自己搭的研究环境。解法不是做个更聪明的 AI，而是建立一个循环：把对一只票的判断记下来，让 AI 帮你找漏洞、盯风险；等结果出来，归因，让下次的判断更有证据可依。
 
-MingCang 只做研究、复盘、风险提示和 dry-run 编排，**不自动下真实订单，不构成投资建议，最终决策始终由用户负责**。
+**进口 → 记录 → 证伪 → 归因 → 记忆更新** — 这个循环是系统的核心，不是某个功能，是整体设计目标。
 
-[![CI](https://github.com/Zeeechenn/stock-sage/actions/workflows/test.yml/badge.svg)](https://github.com/Zeeechenn/stock-sage/actions/workflows/test.yml)
-[![Release](https://img.shields.io/github/v/release/Zeeechenn/stock-sage?logo=github&color=success)](https://github.com/Zeeechenn/stock-sage/releases)
+[![CI](https://github.com/Zeeechenn/MingCang/actions/workflows/test.yml/badge.svg)](https://github.com/Zeeechenn/MingCang/actions/workflows/test.yml)
+[![Release](https://img.shields.io/github/v/release/Zeeechenn/MingCang?logo=github&color=success)](https://github.com/Zeeechenn/MingCang/releases)
 ![Python](https://img.shields.io/badge/python-3.11-blue)
 ![Frontend](https://img.shields.io/badge/frontend-React%20%2B%20Vite-22c55e)
 ![Agent](https://img.shields.io/badge/agent--ready-Codex%20%7C%20Claude%20Code%20%7C%20Cursor-8957e5)
@@ -15,113 +15,161 @@ MingCang 只做研究、复盘、风险提示和 dry-run 编排，**不自动下
 
 **语言**：[简体中文](README.md) · [English](README_EN.md)
 
-## 明仓能帮你看清什么
+---
 
-| 镜头 | 看到什么 |
+## AI 做什么，人做什么
+
+AI 不是主角。Alpha 来自人的判断——你的研究、行业认知、过滤和否决权。AI 的角色是三件事：
+
+| 角色 | 负责方 | 具体是什么 |
+|---|---|---|
+| Alpha / 方向 | **你** | 你的研究、直觉、行业认知 |
+| 广度扫描 | AI | 你盯不过来的新闻、信号、关联线索 |
+| 证伪 | AI | 反驳假设、检查止损条件是否还成立 |
+| 短期风险纪律 | AI + 规则 | ATR 止损、组合暴露、数据质量预警 |
+| 最终决策 | **你** | 始终是你 |
+
+---
+
+## 研究循环
+
+```
+     你的判断 / 外部研究员 / 行业研究输入
+                ↓
+    ResearchCase ← ForwardThesis（draft）
+                ↓
+       证伪核查 / 止损条件跟踪
+                ↓
+     SignalCase → PositionCase
+                ↓
+   ReviewCase → 归因 → MemoryPromotion
+                ↓
+          下次判断更有证据
+```
+
+每一步都有记录、可审计。记忆不由 AI 自动促进——要等结果出来，人工确认，才能进入可信层。
+
+---
+
+## 当前能力
+
+| 层 | 做什么 |
 |---|---|
-| 持仓 | 自选、持仓、暴露、复盘状态和待处理动作 |
-| 证据 | 技术信号、新闻情绪、财务/QFII、长期标签和数据质量 |
-| 记忆 | 项目规则、历史研究、决策笔记、审计日志和聊天摘要 |
-| 风险 | ATR 止损、组合上限、弱证据、过期标签和远程写入边界 |
-| Agent 工作流 | CLI / MCP 上下文，供 Codex、Claude Code、Cursor 等外层 agent 调用 |
+| 数据 | 行情、新闻、财务、QFII，本地 SQLite，不上云 |
+| 信号 | 技术因子 + LLM 新闻情感，生产权重 0.6 / 0.4 |
+| 研究 | 假设进口、证伪记分牌、外部研究员 / 机构研究导入 |
+| 记忆 | 分层记忆，outcome-gated 促进，审计日志 |
+| Agent | MCP / CLI，供 Claude Code / Codex / Cursor 调用 |
+| 界面 | React 前端 + REST API，本地优先 |
 
-## 工作方式
+量化 / Kronos 当前 `WEIGHT_QUANT=0.0`，等待前向证据通过门控。Atlas L0-L4 架构已合入本地 main，`ATLAS_ENABLED=false` 休眠，等 M29 量化门控通过后逐步激活。
 
-MingCang 是本地优先的研究底座，而不是替你决策的 agent。数据、记忆和个人持仓默认保留在本机；外层 agent 通过 CLI / MCP 读取健康状态、项目上下文、单股 dossier 和记忆摘要。写操作先 dry-run，只有在用户确认后才执行；远程暴露默认只读，并受 API key、写开关和 action allowlist 保护。
+---
 
 ## 快速开始
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Zeeechenn/stock-sage/main/scripts/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/Zeeechenn/MingCang/main/scripts/install.sh | sh
 mingcang
 ```
 
-开发者也可以手动 clone 后启动：
+手动安装：
 
 ```bash
-git clone https://github.com/Zeeechenn/stock-sage.git
-cd stock-sage
+git clone https://github.com/Zeeechenn/MingCang.git
+cd MingCang
 make agent-setup
 make agent
 ```
 
-默认本地配置是 `AI_PROVIDER=local_cli`，会使用本机已登录的 Claude / Codex CLI；只有切换到 `anthropic` 或 `openai` 时才需要云端 LLM key。
+默认 `AI_PROVIDER=local_cli`，走本机已登录的 Claude CLI，不需要云端 key。
 
 ```bash
 python3 -m backend.agent.cli health --pretty
 python3 -m backend.agent.cli premarket --pretty
-python3 -m backend.agent.cli intraday --symbol 000001 --pretty
-python3 -m backend.agent.cli postmarket --pretty
+python3 -m backend.agent.cli stock-context 000001 --pretty
 ```
 
-> 兼容说明：旧 `stocksage` 命令、`stock_sage_*` MCP tool、`STOCKSAGE_AGENT_*` 环境变量和 `~/.stock-sage` / `stock-sage.db` 入口在迁移期仍保留；新安装建议使用 `mingcang`、`mingcang_*`、`MINGCANG_AGENT_*`、`~/.mingcang` 和 `mingcang.db`。
-> 仓库 URL 说明：GitHub 仓库正式重命名前，公开链接暂时继续指向现有 `Zeeechenn/stock-sage` 仓库，避免首页徽章、安装脚本和 clone 入口失效。
+> 迁移说明：旧 `stocksage` 命令、`stock_sage_*` MCP 工具、`STOCKSAGE_AGENT_*` 环境变量在过渡期仍可用；新安装建议使用 `mingcang`。
 
-## Agent 使用
+---
 
-新 agent 默认只需要：
+## Agent 接入
 
-1. 先读 [AGENTS.md](AGENTS.md)，确认本地/远程边界。
-2. 按任务加载 `STATUS.md`、`PROJECT.md`、`docs/ROADMAP.md` 或 `CHANGELOG.md`。
-3. 通过 CLI / MCP 读取项目上下文、记忆和单股 dossier；写操作先 dry-run，再等用户确认。
+外层 agent（Codex / Claude Code / Cursor）接入时，默认只需要：
 
-常用 MCP 工具：
+1. 读 [AGENTS.md](AGENTS.md)——了解本地 / 远程边界
+2. 按需加载 `STATUS.md` / `PROJECT.md` / `docs/ROADMAP.md`
+3. 写操作先 dry-run，等用户确认
+
+核心 MCP 工具：
 
 | 工具 | 用途 |
 |---|---|
-| `mingcang_project_context` | 项目运行概况、配置、持仓、自选和记忆摘要 |
-| `mingcang_memory_snapshot` | 项目记忆、分层记忆、审计日志和聊天摘要状态 |
-| `mingcang_stock_context` | 单只股票的信号、新闻、持仓、长期标签和记忆上下文 |
-| `mingcang_health` | agent 模式、数据库、依赖和权限健康检查 |
+| `mingcang_project_context` | 持仓、自选、记忆摘要、配置概况 |
+| `mingcang_stock_context` | 单只股票：信号、新闻、标签、copilot shadow |
+| `mingcang_memory_snapshot` | 分层记忆、审计日志、记忆促进状态 |
+| `mingcang_health` | 数据库、依赖、权限健康检查 |
 
-旧 `stock_sage_*` 工具名仍作为兼容别名。
+旧 `stock_sage_*` 工具名保留为兼容别名。
+
+---
 
 ## 配置
 
 <details>
-<summary><b>本地配置、数据源和远程 agent</b></summary>
+<summary><b>本地与远程配置</b></summary>
 
 ```env
 AI_PROVIDER=local_cli
 DATABASE_URL=sqlite:////absolute/path/to/mingcang.db
-TUSHARE_QFQ_ENABLED=false
-TICKFLOW_ENABLED=false
-IFIND_MCP_ENABLED=false
 MINGCANG_AGENT_MODE=local
 ```
 
-远程暴露是 opt-in：
+远程暴露是 opt-in，默认只读：
 
 ```env
 MINGCANG_AGENT_MODE=remote
-MINGCANG_AGENT_API_KEY=replace_with_a_long_random_secret
+MINGCANG_AGENT_API_KEY=your_secret_key
 MINGCANG_AGENT_REMOTE_WRITE_ENABLED=false
 MINGCANG_AGENT_REMOTE_WRITE_ACTIONS=
 ```
 
-旧 `STOCKSAGE_AGENT_*` 名称仍可读取，但新部署应使用 `MINGCANG_AGENT_*`。`.env`、数据库、模型文件、个人交易记录和真实 key 不应进入 Git。
+旧 `STOCKSAGE_AGENT_*` 变量名仍可读取，新部署推荐用 `MINGCANG_AGENT_*`。`.env`、数据库、个人交易记录、真实 key 不进 Git。
 
 </details>
 
+---
+
 ## 架构
 
-![MingCang 系统架构](docs/assets/architecture.svg)
+![明仓系统架构](docs/assets/architecture.svg)
+
+---
 
 ## 当前状态与路线图
 
-MingCang 当前主线仍坚持“研究先行、交易保守”：A 股生产信号以技术面和新闻情绪为主，量化/Kronos 证据继续作为可审计研究线索沉淀；HK/US 保持只读研究边界。版本历史见 [CHANGELOG.md](CHANGELOG.md)，当前运行快照见 [STATUS.md](STATUS.md)，后续计划见 [docs/ROADMAP.md](docs/ROADMAP.md)。
+生产信号：技术 0.6 + 情感 0.4，ATR 2.5 移动止损保护浮盈。量化关闭，等待前向证据。M45 研究假设进口通道已就绪（外部研究员论题 draft 状态）。
 
-## 更多文档
+- [STATUS.md](STATUS.md) — 当前运行快照
+- [docs/ROADMAP.md](docs/ROADMAP.md) — 进行中任务
+- [CHANGELOG.md](CHANGELOG.md) — 版本历史
 
-| 文档 | 内容 |
+---
+
+## 文档索引
+
+| 文件 | 内容 |
 |---|---|
-| [AGENTS.md](AGENTS.md) | Codex / Claude Code / MCP 本地 agent 使用说明 |
-| [PROJECT.md](PROJECT.md) | 项目索引、能力地图和关键文件导航 |
-| [STATUS.md](STATUS.md) | 当前运行快照、生产边界、信号权重、测试和启动命令 |
-| [CHANGELOG.md](CHANGELOG.md) | 已完成版本、里程碑和重要变更 |
-| [docs/ROADMAP.md](docs/ROADMAP.md) | M 编号进行中任务、未来规划和后置事项 |
-| [CONTRIBUTING.md](CONTRIBUTING.md) | 开发环境、测试要求和贡献流程 |
+| [AGENTS.md](AGENTS.md) | Agent 使用规则和安全边界 |
+| [PROJECT.md](PROJECT.md) | 代码库导航和关键文件索引 |
+| [STATUS.md](STATUS.md) | 当前生产状态、信号权重、测试入口 |
+| [CHANGELOG.md](CHANGELOG.md) | 版本历史和已完成里程碑 |
+| [docs/ROADMAP.md](docs/ROADMAP.md) | 进行中和待做任务 |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | 开发环境和贡献流程 |
 
-## 风险声明
+---
 
-MingCang 是个人研究和辅助决策工具，**不构成投资建议**。系统不会自动下单，LLM 不做价格预测，止盈止损由 ATR 公式和风险约束生成。任何交易决策和资金风险均由使用者自行承担。
+## 声明
+
+明仓是个人研究工具，**不构成投资建议**。系统不自动下单，LLM 不做价格预测，止盈止损由 ATR 公式和风险约束生成。所有交易决策和资金风险由使用者自行承担。

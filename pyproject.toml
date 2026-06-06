@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mingcang"
-version = "0.2.3"
-description = "明仓 / MingCang：本地优先的个人 A 股持仓研究镜头"
+version = "0.3.0"
+description = "明仓 / MingCang：个人 A 股研究循环工作台——进口假设、证伪、归因、记忆更新"
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }

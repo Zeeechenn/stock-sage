@@ -6,6 +6,17 @@
 
 ---
 
+## [v0.3.0] MingCang rebrand and research-loop homepage（2026-06-06）
+
+### Changed
+- Public identity moved from StockSage to MingCang / 明仓 across the GitHub-facing README, English README, project index, package metadata, install path, and agent-facing project description.
+- README positioning now centers on the personal A-share research loop: import thesis, record evidence, falsify, review outcomes, and promote memory only after human confirmation.
+- The architecture diagram was redrawn as a clean white component map for inputs, local evidence core, SQLite/memory, agent tools, research UI, human decision, and safety gates.
+
+### Decision
+- Legacy `stocksage`, `stock_sage_*`, `STOCKSAGE_AGENT_*`, and `~/.stock-sage` compatibility paths remain available during the transition; new public installs and docs should use MingCang naming.
+- This release is a public identity and architecture-facing release; it does not change production signal weights, quant/Kronos promotion status, trading automation boundaries, or HK/US read-only constraints.
+
 ## [v0.2.3] M42 qfq/hfq price-contamination guard（2026-06-04）
 
 ### Added

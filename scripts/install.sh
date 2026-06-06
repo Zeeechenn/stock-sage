@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO_URL="${MINGCANG_REPO_URL:-${STOCKSAGE_REPO_URL:-https://github.com/Zeeechenn/stock-sage.git}}"
+REPO_URL="${MINGCANG_REPO_URL:-${STOCKSAGE_REPO_URL:-https://github.com/Zeeechenn/MingCang.git}}"
 APP_DIR="${MINGCANG_APP_DIR:-${STOCKSAGE_APP_DIR:-$HOME/.mingcang/app}}"
 BIN_DIR="${MINGCANG_BIN_DIR:-${STOCKSAGE_BIN_DIR:-$HOME/.local/bin}}"
 LAUNCHER="$BIN_DIR/mingcang"

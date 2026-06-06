@@ -5,7 +5,7 @@ APP_DIR="${MINGCANG_APP_DIR:-${STOCKSAGE_APP_DIR:-$HOME/.mingcang/app}}"
 
 if [[ ! -d "$APP_DIR" ]]; then
   echo "MingCang app directory was not found: $APP_DIR" >&2
-  echo "Install with: curl -fsSL https://raw.githubusercontent.com/Zeeechenn/stock-sage/main/scripts/install.sh | sh" >&2
+  echo "Install with: curl -fsSL https://raw.githubusercontent.com/Zeeechenn/MingCang/main/scripts/install.sh | sh" >&2
   exit 1
 fi
 

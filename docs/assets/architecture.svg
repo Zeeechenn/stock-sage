@@ -1,108 +1,205 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="920" viewBox="0 0 1440 920" role="img" aria-labelledby="title desc">
-  <title id="title">MingCang system architecture</title>
-  <desc id="desc">明仓 MingCang architecture diagram showing local data sources, SQLite storage, research engine, memory and audit layer, agent interfaces, user surfaces, audit-only quant evidence, read-only HK/US research, and safety gates.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="1000" viewBox="0 0 1000 1000" role="img" aria-labelledby="title desc">
+  <title id="title">MingCang clean evidence architecture</title>
+  <desc id="desc">Clean white component-style architecture diagram for MingCang with inputs, local evidence core, SQLite and memory, agent surfaces, human decision outputs, and safety gates.</desc>
   <defs>
+    <linearGradient id="coreFill" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#ecfeff"/>
+      <stop offset="0.58" stop-color="#f8fffd"/>
+      <stop offset="1" stop-color="#ffffff"/>
+    </linearGradient>
+    <linearGradient id="warmFill" x1="0" x2="1">
+      <stop offset="0" stop-color="#fffbeb"/>
+      <stop offset="1" stop-color="#ffffff"/>
+    </linearGradient>
+    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="16" stdDeviation="18" flood-color="#0f766e" flood-opacity="0.08"/>
+    </filter>
+    <marker id="arrow" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+      <path d="M1 1 L7 4.5 L1 8 Z" fill="#0f766e" opacity="0.45"/>
+    </marker>
+    <marker id="arrowWarm" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+      <path d="M1 1 L7 4.5 L1 8 Z" fill="#b7791f" opacity="0.60"/>
+    </marker>
     <style>
-      .bg { fill: #f8fafc; }
-      .title { font: 800 42px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #0f172a; letter-spacing: 0; }
-      .subtitle { font: 500 18px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #475569; letter-spacing: 0; }
-      .lane { fill: #ffffff; stroke: #d8e0ea; stroke-width: 1.2; }
-      .laneTitle { font: 800 19px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #0f172a; letter-spacing: 0; }
-      .label { font: 720 15px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #0f172a; letter-spacing: 0; }
-      .small { font: 500 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #475569; letter-spacing: 0; }
-      .card { fill: #f8fafc; stroke: #dbe4ef; stroke-width: 1; }
-      .accent1 { fill: #ecfeff; stroke: #22d3ee; }
-      .accent2 { fill: #f0fdf4; stroke: #4ade80; }
-      .accent3 { fill: #fff7ed; stroke: #fb923c; }
-      .accent4 { fill: #eef2ff; stroke: #818cf8; }
-      .line { stroke: #64748b; stroke-width: 2.2; fill: none; marker-end: url(#arrow); }
-      .safe { stroke: #0f766e; stroke-width: 2.4; fill: none; marker-end: url(#arrowSafe); }
+      .bg { fill: #ffffff; }
+      .frame { fill: #ffffff; stroke: #e5e7eb; stroke-width: 1.2; }
+      .sectionLine { stroke: #e5e7eb; stroke-width: 1; }
+      .hair { stroke: #0d1117; stroke-opacity: 0.08; stroke-width: 1; }
+      .trace { fill: none; stroke: #0f766e; stroke-opacity: 0.36; stroke-width: 1.55; stroke-linecap: round; marker-end: url(#arrow); }
+      .traceWarm { fill: none; stroke: #b7791f; stroke-opacity: 0.46; stroke-width: 1.35; stroke-linecap: round; stroke-dasharray: 7 8; marker-end: url(#arrowWarm); }
+      .kicker { font: 650 10.5px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; fill: #0f766e; letter-spacing: 0.16em; }
+      .title { font: 760 38px ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #0d1117; letter-spacing: 0; }
+      .subtitle { font: 430 15px ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #5f6b68; letter-spacing: 0; }
+      .column { font: 700 11px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; fill: #72807c; letter-spacing: 0.14em; }
+      .label { font: 730 16px ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #0d1117; letter-spacing: 0; }
+      .small { font: 430 12px ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #5f6b68; letter-spacing: 0; }
+      .micro { font: 650 10.5px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; fill: #0f766e; letter-spacing: 0.11em; }
+      .microWarm { font: 650 10.5px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; fill: #9a6700; letter-spacing: 0.11em; }
+      .node { fill: #ffffff; stroke: #d9e2df; stroke-width: 1.05; }
+      .nodeTeal { fill: #f0fdfa; stroke: #99d8cf; stroke-width: 1.05; }
+      .nodeWarm { fill: url(#warmFill); stroke: #e7c873; stroke-width: 1.05; }
+      .nodeDashed { fill: #fffdf8; stroke: #c28c2a; stroke-width: 1.1; stroke-dasharray: 7 7; }
+      .iconStroke { fill: none; stroke: #3f4a47; stroke-width: 1.35; stroke-linecap: round; stroke-linejoin: round; }
+      .iconTeal { fill: none; stroke: #0f766e; stroke-width: 1.35; stroke-linecap: round; stroke-linejoin: round; }
+      .iconWarm { fill: none; stroke: #9a6700; stroke-width: 1.35; stroke-linecap: round; stroke-linejoin: round; }
+      .corePanel { fill: url(#coreFill); stroke: #9fd8d1; stroke-width: 1.2; }
+      .coreTitle { font: 780 29px ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #0d1117; letter-spacing: 0; }
+      .coreSub { font: 650 10.5px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; fill: #0f766e; letter-spacing: 0.14em; }
     </style>
-    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
-      <path d="M2 2 L10 6 L2 10 Z" fill="#64748b"/>
-    </marker>
-    <marker id="arrowSafe" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
-      <path d="M2 2 L10 6 L2 10 Z" fill="#0f766e"/>
-    </marker>
   </defs>
 
-  <rect class="bg" width="1440" height="920"/>
-  <text class="title" x="72" y="82">MingCang System Architecture</text>
-  <text class="subtitle" x="72" y="116">Position Lens: local data, auditable evidence, agent workflows, and explicit safety gates</text>
+  <rect class="bg" width="1000" height="1000"/>
 
-  <rect class="lane" x="64" y="158" width="198" height="610" rx="8"/>
-  <text class="laneTitle" x="88" y="196">Data Sources</text>
-  <rect class="card accent1" x="88" y="226" width="150" height="70" rx="8"/>
-  <text class="label" x="108" y="254">Market Data</text>
-  <text class="small" x="108" y="278">Eastmoney / AkShare</text>
-  <rect class="card accent2" x="88" y="326" width="150" height="70" rx="8"/>
-  <text class="label" x="108" y="354">Fundamentals</text>
-  <text class="small" x="108" y="378">Financials / QFII</text>
-  <rect class="card accent3" x="88" y="426" width="150" height="70" rx="8"/>
-  <text class="label" x="108" y="454">News</text>
-  <text class="small" x="108" y="478">iFinD / Tavily</text>
-  <rect class="card accent4" x="88" y="526" width="150" height="70" rx="8"/>
-  <text class="label" x="108" y="554">User Input</text>
-  <text class="small" x="108" y="578">Watchlist / Positions</text>
+  <text class="kicker" x="56" y="66">MINGCANG / LOCAL-FIRST RESEARCH OS</text>
+  <text class="title" x="56" y="112">Clean Evidence Architecture</text>
+  <text class="subtitle" x="58" y="143">Component-style map of local data, memory, agent context, and gated human decisions.</text>
 
-  <rect class="lane" x="312" y="158" width="210" height="610" rx="8"/>
-  <text class="laneTitle" x="336" y="196">Local Store</text>
-  <rect class="card accent2" x="336" y="236" width="162" height="86" rx="8"/>
-  <text class="label" x="358" y="266">mingcang.db</text>
-  <text class="small" x="358" y="290">Prices / news / signals</text>
-  <rect class="card" x="336" y="360" width="162" height="80" rx="8"/>
-  <text class="label" x="358" y="390">Quality Gates</text>
-  <text class="small" x="358" y="414">as_of / adjusted prices</text>
-  <rect class="card" x="336" y="478" width="162" height="80" rx="8"/>
-  <text class="label" x="358" y="508">Audit Trail</text>
-  <text class="small" x="358" y="532">FTS logs / reviews</text>
+  <rect class="frame" x="48" y="176" width="904" height="644" rx="2"/>
+  <line class="sectionLine" x1="310" y1="176" x2="310" y2="820"/>
+  <line class="sectionLine" x1="682" y1="176" x2="682" y2="820"/>
+  <line class="hair" x1="76" y1="224" x2="924" y2="224"/>
 
-  <rect class="lane" x="572" y="158" width="238" height="610" rx="8"/>
-  <text class="laneTitle" x="596" y="196">Research Engine</text>
-  <rect class="card accent1" x="596" y="228" width="190" height="74" rx="8"/>
-  <text class="label" x="618" y="258">Technical Layer</text>
-  <text class="small" x="618" y="282">Signals and indicators</text>
-  <rect class="card accent3" x="596" y="330" width="190" height="74" rx="8"/>
-  <text class="label" x="618" y="360">Sentiment Layer</text>
-  <text class="small" x="618" y="384">News and events</text>
-  <rect class="card accent4" x="596" y="432" width="190" height="74" rx="8"/>
-  <text class="label" x="618" y="462">Evidence Gates</text>
-  <text class="small" x="618" y="486">Quant / Kronos audit-only</text>
-  <rect class="card" x="596" y="534" width="190" height="74" rx="8"/>
-  <text class="label" x="618" y="564">Risk Boundaries</text>
-  <text class="small" x="618" y="588">A-share prod / HK-US read-only</text>
+  <text class="column" x="76" y="208">01 / INPUTS</text>
+  <text class="column" x="340" y="208">02 / LOCAL EVIDENCE CORE</text>
+  <text class="column" x="712" y="208">03 / SURFACES</text>
 
-  <rect class="lane" x="860" y="158" width="218" height="610" rx="8"/>
-  <text class="laneTitle" x="884" y="196">Memory</text>
-  <rect class="card accent2" x="884" y="236" width="170" height="78" rx="8"/>
-  <text class="label" x="904" y="266">~/.mingcang</text>
-  <text class="small" x="904" y="290">Rules and notes</text>
-  <rect class="card" x="884" y="352" width="170" height="78" rx="8"/>
-  <text class="label" x="904" y="382">Layered Memory</text>
-  <text class="small" x="904" y="406">Atoms / scenarios</text>
-  <rect class="card" x="884" y="468" width="170" height="78" rx="8"/>
-  <text class="label" x="904" y="498">Review Memory</text>
-  <text class="small" x="904" y="522">Evidence over time</text>
+  <path class="trace" d="M296 306 H360"/>
+  <path class="trace" d="M296 438 H360"/>
+  <path class="trace" d="M296 570 H360"/>
+  <path class="trace" d="M612 356 H712"/>
+  <path class="trace" d="M612 488 H712"/>
+  <path class="traceWarm" d="M505 518 V724 H712"/>
+  <path class="traceWarm" d="M505 518 V724 H296"/>
 
-  <rect class="lane" x="1128" y="158" width="248" height="610" rx="8"/>
-  <text class="laneTitle" x="1152" y="196">Interfaces</text>
-  <rect class="card accent4" x="1152" y="228" width="200" height="74" rx="8"/>
-  <text class="label" x="1174" y="258">CLI / Pi</text>
-  <text class="small" x="1174" y="282">mingcang commands</text>
-  <rect class="card accent1" x="1152" y="330" width="200" height="74" rx="8"/>
-  <text class="label" x="1174" y="360">MCP Tools</text>
-  <text class="small" x="1174" y="384">mingcang_* context</text>
-  <rect class="card accent2" x="1152" y="432" width="200" height="74" rx="8"/>
-  <text class="label" x="1174" y="462">Web Console</text>
-  <text class="small" x="1174" y="486">Research cockpit</text>
-  <rect class="card" x="1152" y="534" width="200" height="74" rx="8"/>
-  <text class="label" x="1174" y="564">Exports</text>
-  <text class="small" x="1174" y="588">Reports / notifications</text>
+  <g transform="translate(76 274)">
+    <rect class="node" x="0" y="0" width="220" height="64" rx="2"/>
+    <g transform="translate(18 16)">
+      <ellipse class="iconStroke" cx="12" cy="7" rx="12" ry="6"/>
+      <path class="iconStroke" d="M0 7 V25 C0 28 5 32 12 32 C19 32 24 28 24 25 V7"/>
+      <path class="iconStroke" d="M0 16 C0 19 5 23 12 23 C19 23 24 19 24 16"/>
+    </g>
+    <text class="label" x="58" y="27">Market Data</text>
+    <text class="small" x="58" y="49">prices, financials, QFII</text>
+  </g>
 
-  <path class="line" d="M262 458 H312"/>
-  <path class="line" d="M522 458 H572"/>
-  <path class="line" d="M810 458 H860"/>
-  <path class="line" d="M1078 458 H1128"/>
-  <path class="safe" d="M1252 608 C1252 696 1020 814 704 814 C390 814 194 700 194 610"/>
-  <text class="subtitle" x="320" y="852">Safety loop: local-first, dry-run before writes, quant promotion gated, remote writes gated by API key + allowlist</text>
+  <g transform="translate(76 406)">
+    <rect class="node" x="0" y="0" width="220" height="64" rx="2"/>
+    <g transform="translate(18 16)">
+      <rect class="iconStroke" x="0" y="0" width="26" height="30" rx="3"/>
+      <path class="iconStroke" d="M0 8 H26 M7 18 H20 M7 24 H17"/>
+      <circle cx="6" cy="4" r="1.2" fill="#3f4a47"/>
+    </g>
+    <text class="label" x="58" y="27">News Context</text>
+    <text class="small" x="58" y="49">events and sentiment</text>
+  </g>
+
+  <g transform="translate(76 538)">
+    <rect class="node" x="0" y="0" width="220" height="64" rx="2"/>
+    <g transform="translate(16 18)">
+      <rect class="iconStroke" x="3" y="0" width="25" height="20" rx="2"/>
+      <path class="iconStroke" d="M0 28 H31 L27 20 H4 Z"/>
+      <circle cx="15.5" cy="10" r="4" fill="none" stroke="#3f4a47" stroke-width="1.2"/>
+    </g>
+    <text class="label" x="58" y="27">User State</text>
+    <text class="small" x="58" y="49">watchlist and holdings</text>
+  </g>
+
+  <g transform="translate(76 692)">
+    <rect class="nodeDashed" x="0" y="0" width="220" height="58" rx="2"/>
+    <g transform="translate(18 15)">
+      <path class="iconWarm" d="M13 0 L25 6 V16 C25 24 19 29 13 32 C7 29 1 24 1 16 V6 Z"/>
+      <path class="iconWarm" d="M8 16 L12 20 L19 11"/>
+    </g>
+    <text class="label" x="58" y="25">Provider Guard</text>
+    <text class="small" x="58" y="46">freshness checks</text>
+  </g>
+
+  <g transform="translate(360 286)" filter="url(#soft)">
+    <rect class="corePanel" x="0" y="0" width="252" height="326" rx="4"/>
+    <g transform="translate(30 34)">
+      <rect class="iconTeal" x="0" y="0" width="36" height="28" rx="4"/>
+      <path class="iconTeal" d="M8 9 H28 M8 17 H20"/>
+    </g>
+    <text class="coreTitle" x="78" y="58">MingCang</text>
+    <text class="coreSub" x="78" y="85">EVIDENCE CORE</text>
+    <line class="hair" x1="30" y1="118" x2="222" y2="118"/>
+    <text class="micro" x="30" y="150">SIGNALS</text>
+    <text class="small" x="112" y="150">technical + sentiment</text>
+    <text class="micro" x="30" y="194">DOSSIER</text>
+    <text class="small" x="112" y="194">context and thesis</text>
+    <text class="micro" x="30" y="238">RISK</text>
+    <text class="small" x="112" y="238">ATR and exposure</text>
+    <text class="micro" x="30" y="282">REVIEW</text>
+    <text class="small" x="112" y="282">outcome memory</text>
+  </g>
+
+  <g transform="translate(360 692)">
+    <rect class="nodeTeal" x="0" y="0" width="116" height="58" rx="2"/>
+    <g transform="translate(16 14)">
+      <ellipse class="iconTeal" cx="11" cy="6" rx="11" ry="5"/>
+      <path class="iconTeal" d="M0 6 V25 C0 28 5 31 11 31 C17 31 22 28 22 25 V6"/>
+    </g>
+    <text class="micro" x="48" y="24">SQLITE</text>
+    <text class="small" x="48" y="45">local DB</text>
+  </g>
+
+  <g transform="translate(496 692)">
+    <rect class="nodeTeal" x="0" y="0" width="116" height="58" rx="2"/>
+    <g transform="translate(16 14)">
+      <rect class="iconTeal" x="1" y="1" width="24" height="28" rx="3"/>
+      <path class="iconTeal" d="M7 9 H19 M7 16 H19 M7 23 H15"/>
+    </g>
+    <text class="micro" x="48" y="24">MEMORY</text>
+    <text class="small" x="48" y="45">gated</text>
+  </g>
+
+  <g transform="translate(712 274)">
+    <rect class="node" x="0" y="0" width="220" height="64" rx="2"/>
+    <g transform="translate(18 16)">
+      <rect class="iconStroke" x="0" y="0" width="28" height="24" rx="3"/>
+      <path class="iconStroke" d="M0 8 H28 M9 15 L5 18 L9 21 M19 15 L23 18 L19 21"/>
+    </g>
+    <text class="label" x="58" y="27">Agent Tools</text>
+    <text class="small" x="58" y="49">CLI, Pi, MCP</text>
+  </g>
+
+  <g transform="translate(712 406)">
+    <rect class="node" x="0" y="0" width="220" height="64" rx="2"/>
+    <g transform="translate(16 16)">
+      <rect class="iconStroke" x="0" y="0" width="30" height="24" rx="3"/>
+      <path class="iconStroke" d="M5 30 H25 L22 24 H8 Z M7 9 H23 M7 16 H18"/>
+    </g>
+    <text class="label" x="58" y="27">Research UI</text>
+    <text class="small" x="58" y="49">console and exports</text>
+  </g>
+
+  <g transform="translate(712 538)">
+    <rect class="nodeWarm" x="0" y="0" width="220" height="64" rx="2"/>
+    <g transform="translate(18 15)">
+      <circle class="iconWarm" cx="13" cy="9" r="6"/>
+      <path class="iconWarm" d="M3 31 C5 22 21 22 23 31"/>
+    </g>
+    <text class="label" x="58" y="27">Human Decision</text>
+    <text class="small" x="58" y="49">no auto orders</text>
+  </g>
+
+  <g transform="translate(712 692)">
+    <rect class="nodeDashed" x="0" y="0" width="220" height="58" rx="2"/>
+    <g transform="translate(18 14)">
+      <path class="iconWarm" d="M13 1 L25 7 V16 C25 24 19 29 13 32 C7 29 1 24 1 16 V7 Z"/>
+      <path class="iconWarm" d="M8 16 L12 20 L19 11"/>
+    </g>
+    <text class="microWarm" x="58" y="24">SAFETY</text>
+    <text class="small" x="58" y="45">key + allowlist</text>
+  </g>
+
+  <g transform="translate(56 900)">
+    <rect class="node" x="0" y="-22" width="196" height="46" rx="2"/>
+    <line x1="18" y1="1" x2="74" y2="1" stroke="#0f766e" stroke-opacity="0.50" stroke-width="1.5"/>
+    <text class="small" x="92" y="5">read/context</text>
+    <rect class="nodeWarm" x="270" y="-22" width="300" height="46" rx="2"/>
+    <line x1="288" y1="1" x2="344" y2="1" stroke="#b7791f" stroke-opacity="0.62" stroke-width="1.5" stroke-dasharray="7 8"/>
+    <text class="small" x="362" y="5">gated write / promotion</text>
+    <text class="small" x="644" y="5">Quant audit-only; HK/US read-only.</text>
+  </g>
 </svg>

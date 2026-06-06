@@ -3,7 +3,7 @@
 > Compact current-state snapshot for fresh agents and public readers. Detailed
 > plans live in `docs/ROADMAP.md`; completed history lives in `CHANGELOG.md`.
 
-Current release: `v0.2.3` (2026-06-04).
+Current release: `v0.3.0` (2026-06-06).
 
 MingCang is an agent-ready, local-first A-share research workspace. It supports
 research, backtests, local validation, memory/context inspection, and code

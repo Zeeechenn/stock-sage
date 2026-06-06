@@ -1,16 +1,10 @@
 # MingCang — Project Index
 
-MingCang is a personal A-share research and decision-support application. This
-file is a compact public index for the repository; operational details live in
-the linked documents.
+个人 A 股研究循环工作台。核心目标不是造一个更聪明的 AI，而是建立一个可审计的判断循环：进口假设 → 证伪 → 归因 → 记忆更新。
 
----
+Alpha 来自人的判断；AI 负责广度扫描、证伪和短期风险纪律；最终决策始终由用户负责。
 
-## 项目定位
-
-个人 A 股辅助决策工具。默认生产路径融合技术因子和 LLM 新闻情感，输出可审计的研究建议，用户自行最终决策。
-
-**核心约束**：止盈止损由 ATR 公式计算；默认用 ATR 2.5 移动止损保护浮盈，固定止盈作提醒/分批参考；LLM 不做价格预测，不做自动交易。
+**核心约束**：止盈止损由 ATR 公式计算；默认用 ATR 2.5 移动止损保护浮盈；LLM 不做价格预测，不做自动交易；记忆促进需要 outcome 结果和人工确认。
 
 ---
 

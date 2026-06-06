@@ -52,7 +52,7 @@ class OpenAIProvider(LLMProvider):
             kwargs["base_url"] = base_url
             # OpenRouter 要求这两个 header 用于路由追踪
             kwargs["default_headers"] = {
-                "HTTP-Referer": "https://github.com/Zeeechenn/stock-sage",
+                "HTTP-Referer": "https://github.com/Zeeechenn/MingCang",
                 "X-Title": "MingCang",
             }
         self._client = OpenAI(**kwargs)
