@@ -6,6 +6,33 @@
 
 ---
 
+## [v0.3.1] 可信度补丁 / Trust patch（2026-06-06）
+
+> **收口，不加新能力。** 这一版只做产品化收口：清理命名/版本不一致、补一条「必定成功」的
+> 演示路径、把首屏从内部术语改成用户视角。生产信号零改动（技术 0.6 + 情感 0.4 + ATR 2.5，
+> `WEIGHT_QUANT=0.0`），`make verify` 改动前后无回归（后端 1101 passed / 前端 19 passed / build 绿）。
+
+### Added
+- `make demo`：用 mock 数据跑一轮完整演示，**无需真实 API Key 或网络**。配套
+  `scripts/demo_seed.py` 幂等种子（3 支股票 + 1 `ForwardThesis` + 1 `ReviewCase` +
+  1 pending `MemoryPromotionCandidate`）写入独立 demo DB，真实 `mingcang.db` 不受影响。
+- `docs/ARCHITECTURE.md`：L0–L4 分层、Case 类型与融合逻辑的完整说明（从 README 首屏下沉）。
+- `docs/WHY_NOT_AI_STOCK_PICKER.md`：解释「为什么明仓不是 AI 选股器」（LLM 边界、ATR 纪律、记忆门控）。
+- `docs/dev/BASELINE_2026-06.md`：`make verify` 基线与改动后对照。
+- README 首屏「3 分钟上手」与前端界面预览截图（`docs/assets/screenshot-watchlist.png`）。
+- `frontend/src/version.js`：前端版本号单一来源（从 `package.json` 读取）。
+- Makefile 新增 `frontend-lint-summary`（非阻塞 ESLint 汇总）并纳入 `verify`。
+
+### Changed
+- README 首屏改为用户视角：用例表 → 不替你做主声明 → demo → 截图 → 架构一句话概括 + 链接。
+- 前端 `WatchlistPage` 版本条从写死的 `v0.2.1 / M27 / M28 / M29` 改为读取 `APP_VERSION`，统一显示 `v0.3.0`。
+- 清理 ROADMAP 标题、CHANGELOG、ATLAS 文档与 backend 注释/docstring 里的 StockSage 用户可见残留。
+
+### Kept (compat)
+- `_LEGACY_STOCKSAGE_DB_PATH`、`STOCKSAGE_AGENT_*` 环境变量、`.pi` MCP 工具名等载荷型兼容别名保留不动。
+
+---
+
 ## [v0.3.0] Research-to-decision loop rebuild + MingCang rebrand（2026-06-06）
 
 > **Headline: the research model was rebuilt.** This release lands a case-based
