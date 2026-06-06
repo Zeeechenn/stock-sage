@@ -1,176 +1,413 @@
+/* =========================================================================
+   明仓 docs — Hermes-inspired theme for MkDocs Material
+   Dark-first: near-black canvas, gold accent, warm off-white text,
+   JetBrains Mono code on ink, subtle gold dot-grid backdrop.
+   ========================================================================= */
+
 :root {
-  --md-text-font: "SF Pro Text", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
-  --md-code-font: "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  --md-text-font: "DM Sans", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
+  --md-code-font: "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+
+  /* shared accent ramp (gold) */
+  --mc-gold: #ffd400;
+  --mc-gold-bright: #ffe14d;
+  --mc-gold-deep: #ffbf00;
+}
+
+/* -------------------------------------------------------------------------
+   DARK SCHEME — the signature look
+   ------------------------------------------------------------------------- */
+[data-md-color-scheme="slate"] {
+  --md-hue: 232;
+
+  --md-default-bg-color: #07070d;
+  --md-default-bg-color--light: #0f0f18;
+  --md-default-bg-color--lighter: #14142a;
+  --md-default-bg-color--lightest: #1a1a30;
+
+  --md-default-fg-color: #e8e4dc;
+  --md-default-fg-color--light: #b8b3a9;
+  --md-default-fg-color--lighter: #9a968e;
+  --md-default-fg-color--lightest: rgba(255, 255, 255, 0.07);
+
+  --md-primary-fg-color: #07070d;
+  --md-primary-fg-color--light: #0f0f18;
+  --md-primary-fg-color--dark: #050509;
+  --md-primary-bg-color: #e8e4dc;
+  --md-primary-bg-color--light: #9a968e;
+
+  --md-accent-fg-color: var(--mc-gold);
+  --md-accent-fg-color--transparent: rgba(255, 212, 0, 0.1);
+
+  --md-typeset-a-color: var(--mc-gold);
+  --md-typeset-color: #e8e4dc;
+
+  --md-code-bg-color: #0a0a12;
+  --md-code-fg-color: #e8e4dc;
+
+  --md-footer-bg-color: #050509;
+  --md-footer-bg-color--dark: #050509;
+
+  color-scheme: dark;
+}
+
+/* warm-tinted prism colours so code doesn't fight the gold canvas */
+[data-md-color-scheme="slate"] {
+  --md-code-hl-color: rgba(255, 212, 0, 0.18);
+  --md-code-hl-number-color: #ff9d6b;
+  --md-code-hl-special-color: #ff8fb3;
+  --md-code-hl-function-color: #c9a8ff;
+  --md-code-hl-constant-color: #ffd97a;
+  --md-code-hl-keyword-color: #ffb14d;
+  --md-code-hl-string-color: #8be0a4;
+  --md-code-hl-name-color: #e8e4dc;
+  --md-code-hl-operator-color: #9a968e;
+  --md-code-hl-punctuation-color: #9a968e;
+  --md-code-hl-comment-color: #5f5b70;
+}
+
+/* gold dot-grid backdrop, exactly like the reference */
+[data-md-color-scheme="slate"] .md-main {
+  background-image: radial-gradient(rgba(255, 212, 0, 0.035) 1px, transparent 0);
+  background-size: 32px 32px;
+  background-position: center top;
+}
+
+/* -------------------------------------------------------------------------
+   LIGHT SCHEME — refined bronze companion
+   ------------------------------------------------------------------------- */
+[data-md-color-scheme="default"] {
+  --mc-gold: #8b6508;
+
+  --md-default-bg-color: #ffffff;
+  --md-default-fg-color: #1b1b1d;
+
   --md-primary-fg-color: #ffffff;
-  --md-primary-bg-color: #20242c;
-  --md-primary-fg-color--dark: #ffffff;
-  --md-accent-fg-color: #8a5b00;
-  --md-typeset-a-color: #2557c7;
+  --md-primary-bg-color: #1b1b1d;
+
+  --md-accent-fg-color: #8b6508;
+  --md-typeset-a-color: #8b6508;
 }
 
-body,
-.md-typeset,
-.md-search__input,
-.md-nav,
-.md-header {
-  letter-spacing: 0;
+[data-md-color-scheme="default"] .md-main {
+  background-image: radial-gradient(rgba(139, 101, 8, 0.05) 1px, transparent 0);
+  background-size: 32px 32px;
 }
 
+/* -------------------------------------------------------------------------
+   HEADER / NAVBAR — translucent ink bar with hairline border
+   ------------------------------------------------------------------------- */
 .md-header {
-  background: #ffffff !important;
-  color: #20242c !important;
+  backdrop-filter: saturate(140%) blur(12px);
+  -webkit-backdrop-filter: saturate(140%) blur(12px);
   box-shadow: none !important;
 }
 
-.md-header {
-  border-bottom: 1px solid #e5e7eb !important;
+[data-md-color-scheme="slate"] .md-header {
+  background-color: rgba(7, 7, 13, 0.82) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
 }
 
-.md-header__button,
-.md-header__title,
-.md-source,
-.md-source__repository,
-.md-source__facts {
-  color: #20242c !important;
-  opacity: 1 !important;
+[data-md-color-scheme="default"] .md-header {
+  background-color: rgba(255, 255, 255, 0.85) !important;
+  color: #1b1b1d;
+  border-bottom: 1px solid #e5e7eb;
 }
 
-.md-header__topic {
-  color: #20242c !important;
+[data-md-color-scheme="default"] .md-header__button,
+[data-md-color-scheme="default"] .md-header__title,
+[data-md-color-scheme="default"] .md-source {
+  color: #1b1b1d;
 }
 
-.md-header__topic + .md-header__topic {
-  display: none !important;
+.md-header__title {
+  font-weight: 650;
+  letter-spacing: -0.01em;
 }
 
+/* search */
 .md-search__form {
-  background: #f3f4f6 !important;
-  border: 1px solid #e5e7eb !important;
-  border-radius: 999px !important;
+  border-radius: 999px;
   box-shadow: none !important;
 }
 
-.md-search__input,
-.md-search__icon {
-  color: #20242c !important;
+[data-md-color-scheme="slate"] .md-search__form {
+  background-color: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.09);
 }
 
-.md-search__input::placeholder {
-  color: #9ca3af !important;
+[data-md-color-scheme="slate"] .md-search__form:hover {
+  background-color: rgba(255, 255, 255, 0.09);
 }
 
+/* -------------------------------------------------------------------------
+   SIDEBAR NAV — gold active pill
+   ------------------------------------------------------------------------- */
+.md-nav {
+  font-size: 0.72rem;
+}
+
+.md-nav__title {
+  color: var(--md-default-fg-color--lighter);
+  font-size: 0.64rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.md-nav__link {
+  border-radius: 6px;
+  padding: 0.28rem 0.5rem;
+  transition: background-color 140ms ease, color 140ms ease;
+}
+
+.md-nav__link:hover {
+  background-color: rgba(255, 212, 0, 0.07);
+}
+
+.md-nav__link--active,
+.md-nav__item .md-nav__link--active {
+  color: var(--mc-gold) !important;
+  font-weight: 650;
+}
+
+[data-md-color-scheme="slate"] .md-nav__link--active {
+  background-color: rgba(255, 212, 0, 0.08);
+}
+
+[data-md-color-scheme="default"] .md-nav__link--active {
+  background-color: rgba(139, 101, 8, 0.08);
+}
+
+/* -------------------------------------------------------------------------
+   TYPOGRAPHY
+   ------------------------------------------------------------------------- */
 .md-main__inner {
-  max-width: 1320px;
+  max-width: 1360px;
 }
 
 .md-content__inner {
-  padding-top: 1.35rem;
+  padding-top: 1.4rem;
 }
 
 .md-typeset {
   font-size: 0.82rem;
-  line-height: 1.72;
+  line-height: 1.74;
 }
 
 .md-typeset h1 {
-  margin-bottom: 0.7rem;
-  color: #111827;
-  font-size: clamp(2.25rem, 4.4vw, 4rem);
-  font-weight: 760;
-  line-height: 1.05;
-  letter-spacing: 0;
+  margin-bottom: 0.55rem;
+  color: var(--md-default-fg-color);
+  font-size: clamp(2.4rem, 5vw, 4.2rem);
+  font-weight: 700;
+  line-height: 1.02;
+  letter-spacing: -0.03em;
 }
 
 .md-typeset h2 {
-  margin-top: 2.4rem;
-  padding-top: 0.5rem;
+  margin-top: 2.6rem;
+  padding-top: 0.4rem;
   border: 0;
-  color: #111827;
-  font-weight: 720;
-  letter-spacing: 0;
+  color: var(--md-default-fg-color);
+  font-size: 1.5rem;
+  font-weight: 680;
+  letter-spacing: -0.015em;
 }
 
 .md-typeset h3 {
-  color: #111827;
-  letter-spacing: 0;
-}
-
-.md-typeset p,
-.md-typeset li {
-  color: #334155;
+  color: var(--md-default-fg-color);
+  font-weight: 650;
+  letter-spacing: -0.01em;
 }
 
 .md-typeset a {
-  transition: color 160ms cubic-bezier(0.16, 1, 0.3, 1), background-color 160ms cubic-bezier(0.16, 1, 0.3, 1);
+  font-weight: 500;
+  text-underline-offset: 3px;
+  transition: color 150ms ease;
 }
 
+.md-typeset a:hover {
+  color: var(--mc-gold-deep);
+}
+
+/* -------------------------------------------------------------------------
+   HERO LEAD — first paragraph after the H1 reads larger
+   ------------------------------------------------------------------------- */
+.md-typeset h1 + p {
+  max-width: 46rem;
+  margin-bottom: 1.6rem;
+  color: var(--md-default-fg-color--light);
+  font-size: 1.12rem;
+  line-height: 1.6;
+}
+
+/* -------------------------------------------------------------------------
+   BUTTONS — gold primary, ghost secondary
+   ------------------------------------------------------------------------- */
 .md-typeset .md-button {
-  margin: 0.35rem 0.45rem 0.35rem 0;
-  border-color: #ead9a6;
-  border-radius: 7px;
-  color: #7a5200;
-  font-weight: 650;
-}
-
-.md-typeset .md-button--primary {
-  border-color: #ffd400;
-  background: #ffd400;
-  color: #111827;
+  margin: 0.3rem 0.5rem 0.3rem 0;
+  padding: 0.5rem 1.15rem;
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: 8px;
+  color: var(--md-default-fg-color);
+  font-size: 0.78rem;
+  font-weight: 600;
+  transition: transform 140ms ease, background-color 140ms ease, border-color 140ms ease, color 140ms ease;
 }
 
 .md-typeset .md-button:hover {
-  border-color: #d6b35f;
-  background: #fff8dc;
-  color: #111827;
+  transform: translateY(-1px);
+  border-color: var(--mc-gold);
+  background-color: rgba(255, 212, 0, 0.08);
+  color: var(--md-default-fg-color);
+}
+
+.md-typeset .md-button--primary {
+  border-color: var(--mc-gold);
+  background: var(--mc-gold);
+  color: #07070d !important;
 }
 
 .md-typeset .md-button--primary:hover {
-  border-color: #e8bd00;
-  background: #e8bd00;
+  border-color: var(--mc-gold-bright);
+  background: var(--mc-gold-bright);
+  color: #07070d !important;
+  box-shadow: 0 6px 24px rgba(255, 212, 0, 0.22);
 }
 
-.md-nav__link--active {
-  color: #8a5b00;
-  font-weight: 650;
+/* -------------------------------------------------------------------------
+   GRID CARDS — quick links / feature tiles
+   ------------------------------------------------------------------------- */
+.md-typeset .grid.cards > ul > li,
+.md-typeset .grid > .card {
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: 12px;
+  padding: 1rem 1.1rem;
+  transition: transform 160ms ease, border-color 160ms ease, background-color 160ms ease;
 }
 
+[data-md-color-scheme="slate"] .md-typeset .grid.cards > ul > li {
+  background-color: rgba(255, 255, 255, 0.015);
+}
+
+.md-typeset .grid.cards > ul > li:hover {
+  transform: translateY(-3px);
+  border-color: rgba(255, 212, 0, 0.45);
+  background-color: rgba(255, 212, 0, 0.04);
+}
+
+.md-typeset .grid.cards > ul > li > hr {
+  margin: 0.6rem 0;
+  border-color: var(--md-default-fg-color--lightest);
+}
+
+.md-typeset .grid.cards .twemoji,
+.md-typeset .grid.cards :is(.lg, .xl) {
+  color: var(--mc-gold);
+}
+
+.md-typeset .grid.cards > ul > li > p:first-child {
+  font-size: 1.4rem;
+  color: var(--mc-gold);
+}
+
+/* -------------------------------------------------------------------------
+   TABLES
+   ------------------------------------------------------------------------- */
 .md-typeset table:not([class]) {
-  border: 1px solid rgba(15, 23, 42, 0.1);
-  border-radius: 8px;
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: 10px;
   box-shadow: none;
   overflow: hidden;
+  font-size: 0.76rem;
 }
 
 .md-typeset table:not([class]) th {
-  background: #f8fafc;
-  color: #111827;
-  font-weight: 680;
+  font-weight: 650;
+  letter-spacing: 0.01em;
 }
 
-.md-typeset table:not([class]) td {
-  background: #ffffff;
+[data-md-color-scheme="slate"] .md-typeset table:not([class]) th {
+  background-color: rgba(255, 212, 0, 0.06);
+  color: var(--md-default-fg-color);
 }
 
+[data-md-color-scheme="default"] .md-typeset table:not([class]) th {
+  background-color: rgba(139, 101, 8, 0.06);
+}
+
+[data-md-color-scheme="slate"] .md-typeset table:not([class]) td {
+  background-color: transparent;
+}
+
+[data-md-color-scheme="slate"] .md-typeset table:not([class]) tr:hover td {
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+/* -------------------------------------------------------------------------
+   CODE
+   ------------------------------------------------------------------------- */
 .md-typeset code {
   border-radius: 5px;
+  font-size: 0.82em;
 }
 
 .md-typeset pre > code {
-  border-radius: 8px;
+  border-radius: 10px;
 }
 
+[data-md-color-scheme="slate"] .md-typeset pre > code {
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.md-typeset .highlight .filename,
+.md-typeset .highlighttable .linenos {
+  border-radius: 10px 10px 0 0;
+}
+
+/* -------------------------------------------------------------------------
+   ADMONITIONS / DETAILS
+   ------------------------------------------------------------------------- */
 .md-typeset .admonition,
 .md-typeset details {
-  border-radius: 8px;
+  border-radius: 10px;
+  border-width: 1px;
   box-shadow: none;
+  font-size: 0.78rem;
 }
 
-@media (max-width: 720px) {
+[data-md-color-scheme="slate"] .md-typeset .admonition.note,
+[data-md-color-scheme="slate"] .md-typeset .admonition.info {
+  border-color: rgba(255, 212, 0, 0.25);
+}
+
+/* -------------------------------------------------------------------------
+   FOOTER
+   ------------------------------------------------------------------------- */
+.md-footer-meta {
+  background-color: var(--md-footer-bg-color);
+}
+
+/* -------------------------------------------------------------------------
+   RESPONSIVE
+   ------------------------------------------------------------------------- */
+@media (max-width: 76.1875em) {
+  [data-md-color-scheme="slate"] .md-nav--primary .md-nav__title {
+    background-color: var(--md-default-bg-color--light);
+    color: var(--md-default-fg-color);
+  }
+}
+
+@media (max-width: 44.9375em) {
   .md-content__inner {
     padding-top: 1rem;
   }
 
   .md-typeset h1 {
-    font-size: clamp(1.8rem, 9vw, 2.6rem);
+    font-size: clamp(1.9rem, 9vw, 2.7rem);
+  }
+
+  .md-typeset h1 + p {
+    font-size: 1rem;
   }
 }
