@@ -1,4 +1,4 @@
-# MingCang · 明仓
+# MingCang
 
 **MingCang is a local-first personal A-share research and decision workbench.** It breaks "I like this stock" into an auditable loop — **import judgment → record evidence → falsify → track → review & attribute → update memory** — so every judgment can be replayed, challenged, and verified, and every outcome becomes evidence you can use next time.
 
@@ -113,6 +113,69 @@ python3 -m backend.agent.cli stock-context 000001 --pretty
 
 ---
 
+## Usage guide
+
+Once installed, you can either talk to the `mingcang` Pi terminal in plain language or run the raw CLI. Here are the most common flows.
+
+### Research one stock
+
+Tell the Pi terminal "research Zhongji Innolight" or "how does 300308 look right now?" — it pulls the stock context first, then concludes:
+
+```bash
+python3 -m backend.agent.cli stock-context 300308 --pretty
+```
+
+You get the official signal (buy / watch / avoid), recent news and sentiment, long-term labels, the research copilot's shadow conclusion, and the risks and open questions it lists. For deeper digging, have it run a deep-research pass:
+
+```bash
+python3 -m backend.agent.cli action research.deep.run \
+  --payload-json '{"topic":"1.6T optical module demand","symbols":["300308"]}' --pretty
+```
+
+### Check signals every day
+
+MingCang splits the trading rhythm into four one-line workflows:
+
+```bash
+python3 -m backend.agent.cli premarket  --pretty   # pre-market: pre-sync checks and entry points
+python3 -m backend.agent.cli intraday   --pretty   # intraday: fast read-only local-cache stock lookups
+python3 -m backend.agent.cli postmarket --pretty   # post-market: full-market signals and review report
+python3 -m backend.agent.cli weekend    --pretty   # weekend: long-term label refresh and weekly reflection
+```
+
+In the Pi terminal just say "run the pre-market scan" or "review after close." Signals include the day's suggestion, the ATR trailing-stop level, portfolio exposure, and data-quality alerts — MingCang never places the order, it just enforces discipline.
+
+### Maintain a watchlist
+
+Add a name (dry-run by default; add `--confirm` to commit):
+
+```bash
+python3 -m backend.agent.cli action watchlist.add \
+  --payload-json '{"symbol":"300308","name":"Zhongji Innolight","market":"CN"}' --pretty
+```
+
+Remove with `watchlist.remove`. Then scan the whole list via `project-context` or the post-market workflow. Or just tell the Pi terminal "add Zhongji Innolight to my watchlist" / "scan my watchlist."
+
+### Run long-term research and keep tracking it
+
+Record a sector or theme judgment (yours, a seasoned researcher's, or from a prosperity/financial framework) as a thesis with invalidation conditions; the system tracks it over time and reminds you to review on schedule:
+
+```bash
+python3 -m backend.agent.cli action long_term.run --payload-json '{"symbol":"300308"}' --pretty
+```
+
+It won't raise a buy score just because a thesis "sounds reasonable" — only after the outcome lands and the review passes does the judgment promote into trusted memory and feed the next round of research.
+
+### Put memory to work
+
+```bash
+python3 -m backend.agent.cli memory-snapshot --pretty
+```
+
+This shows layered memory, the audit log, and promotion status: which rules/lessons are trusted and which are still pending. Trusted memory is injected automatically as context the next time you research the same stock or theme.
+
+---
+
 ## Agent integration
 
 For Pi / Claude Code / Codex / Cursor, the minimal setup is:
@@ -193,12 +256,17 @@ MingCang is a personal research tool, **not financial advice**. It doesn't place
 
 ## Where this is heading
 
-MingCang is positioned as **amplifier-primary, source-gated** — not an oracle that predicts on its own, but a system that amplifies human judgment and gates on outcomes.
+In one line: **let AI amplify your judgment instead of guessing for you.** That splits into two tracks — how the research works, and making the tool easier to use.
 
-- **Offense (alpha) comes from humans, not a manufactured signal.** The primary source of offense is imported judgment from seasoned external researchers (paired with prosperity and financial-quality frameworks), with the user's own judgment as filter, veto, and position sizing. Manufacturing edge from price patterns has been ruled out — backtests showed no edge.
-- **AI is an amplifier, not an oracle.** It does two things: breadth — aggregate public information and surface candidate theses a human would miss, always labeled "unproven hypotheses"; falsification & risk — build evidence dossiers, track theses, alarm on invalidation, plus a short-term risk-discipline lane.
-- **AI may attempt to become an alpha source, but every attempt is gated.** Future models, new skills, and open-source components are all allowed to try, but they influence real decisions only after passing a forward, outcome-based falsification gate; default trust is always the human.
-- **Learning is outcome-gated, not plausibility-gated.** A thesis is promoted from pending to trusted memory only after its outcome is realized and verified — never because it "sounds well-reasoned."
-- **Judged on metrics that can fail.** Invalidation-catch rate (when a thesis breaks, did the alarm fire before the loss or only after?) and defensive value (drawdown and loss-rate with the system on vs. off); breadth hits are slow, secondary evidence.
+**On research, a few principles:**
 
-Every future capability must clear this falsification gate before influencing decisions, preventing the accumulation of unfalsified complexity.
+- **The judgment that actually makes money comes from people, not a model guessing.** The core is still you, plus researchers and proven frameworks you trust (prosperity, financial quality). MingCang's job is to watch those judgments, find holes, and warn you — not to "read tea leaves" from price action, a path we backtested and found has no edge.
+- **AI does just two things: widen breadth and poke holes.** Breadth means surfacing news and leads one person can't cover — always as "unverified guesses." Poking holes means challenging your assumptions, tracking invalidation conditions, and alarming before a loss.
+- **AI is welcome to get smarter, but it has to prove it with outcomes.** Any new model or capability may try, but it must prove itself on real results before it can influence your decisions; until then, the final call is always yours.
+- **Only outcome-verified lessons are remembered.** Whether a judgment was right is settled only after the outcome lands and the review passes — never recorded as truth just because it "sounds reasonable."
+
+**On the tool, what's coming next:**
+
+- **Hong Kong and US markets.** A-shares are the main battleground today; HK/US are still read-only research context. Next we make them a full research → track → review pipeline like A-shares.
+- **Polished frontend and backend.** Make the research console, signal views, and review records smoother to use, and the backend more stable, faster, and easier to maintain.
+- **A genuinely usable piece of software.** The goal is a one-click, ready-to-use install that non-coders can run — not just a set of developer scripts.
