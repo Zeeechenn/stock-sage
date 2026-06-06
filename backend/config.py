@@ -268,7 +268,7 @@ class Settings(BaseSettings):
     mingcang_agent_remote_write_enabled: bool = False
     mingcang_agent_remote_write_actions: str = ""
 
-    # Legacy StockSage names remain accepted during the MingCang transition.
+    # Legacy StockSage (前身 StockSage) names remain accepted during the MingCang transition.
     stocksage_agent_mode: str = ""
     stocksage_agent_api_key: str = ""
     stocksage_agent_remote_write_enabled: bool = False

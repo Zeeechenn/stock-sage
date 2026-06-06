@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { getDashboardSummary, getWatchlist, addStock, removeStock, searchStocks } from '../api'
 import { filterWatchlistItems } from './watchlistFilters'
+import { APP_VERSION } from '../version'
 
 const REC_STYLE = {
   可小仓试错: 'border-red-500/35 bg-red-500/10 text-red-700 dark:text-red-200',
@@ -18,9 +19,9 @@ const PANEL = 'rounded-sm border border-stone-300/80 bg-[#faf6ec] dark:border-sl
 const PANEL_ALT = 'rounded-sm border border-stone-300/80 bg-[#fffaf0] dark:border-slate-700 dark:bg-[#222936]'
 const LABEL = 'text-[10px] font-semibold uppercase tracking-[0.2em] text-stone-500 dark:text-slate-400'
 const RELEASE_ITEMS = [
-  ['v0.2.1', '质量补丁'],
-  ['M28', '调研链路打通'],
-  ['M29', 'Forward evidence'],
+  [`v${APP_VERSION}`, '信任补丁'],
+  ['Case-loop', '案例闭环架构'],
+  ['M30', '多空证据账本'],
   ['Quant', '生产继续关闭'],
 ]
 
@@ -83,7 +84,7 @@ function ReleaseStatus() {
         <div>
           <div className={LABEL}>当前发布</div>
           <div className="mt-1 text-sm font-medium text-stone-950 dark:text-slate-100">
-            M27 证据闭环未晋升，M29 进入只读证据账本与预注册 alpha 假设阶段。
+            v{APP_VERSION} 案例闭环架构落地，多空证据账本持续沉淀，量化生产待下一轮评审开放。
           </div>
         </div>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">

@@ -1,4 +1,4 @@
-"""Architecture boundary checks for the StockSage modular monolith.
+"""Architecture boundary checks for the 明仓 / MingCang modular monolith.
 
 These tests intentionally parse source with ``ast`` instead of importing backend
 modules, so they cannot trigger provider registration, network clients, or DB

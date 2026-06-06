@@ -2,7 +2,7 @@
 
 > Review timestamp: 2026-06-04.
 > Scope: `/Users/zeeechenn/Documents/项目s/atlas` on `codex/atlas`, rebased onto
-> local StockSage `main` at `423bb1d9338b85467a5e96cf5c9a96df15dd641c`.
+> local 明仓 / MingCang `main` at `423bb1d9338b85467a5e96cf5c9a96df15dd641c`.
 > Question answered: can the rebased Atlas candidate proceed to architecture
 > review without production/test2/scheduler drift?
 

@@ -64,7 +64,7 @@ function registerToolAliases(pi: ExtensionAPI, primary: string, legacy: string, 
     ...spec,
     name: legacy,
     label: `${spec.label} (legacy)`,
-    description: `${spec.description} Legacy StockSage alias.`,
+    description: `${spec.description} Legacy alias (前身 StockSage).`,
   });
 }
 
@@ -168,7 +168,7 @@ export default function (pi: ExtensionAPI) {
   });
 
   pi.registerCommand("stocksage-health", {
-    description: "Run MingCang health check through the legacy StockSage command alias.",
+    description: "Run MingCang health check through the legacy command alias (前身 StockSage).",
     handler: async (_args, ctx) => {
       const result = await runMingCang(ctx.cwd, ["health", "--pretty"]);
       ctx.ui.notify(result.stdout.trim(), "info");

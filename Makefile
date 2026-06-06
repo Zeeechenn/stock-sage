@@ -17,7 +17,7 @@ COVERAGE_FILE ?= /tmp/mingcang-coverage
 COVERAGE_XML ?= coverage.xml
 PIP_AUDIT_CACHE_DIR ?= /tmp/mingcang-pip-audit-cache
 
-.PHONY: help install python-sync python-lock python-lock-check precommit-install test coverage frontend-test frontend-lint frontend-format-check lint security dependency-audit fmt typecheck check verify dev build coverage-snapshot agent-setup agent agent-dev agent-mcp agent-mcp-config clean docker-build docker-up docker-down
+.PHONY: help install python-sync python-lock python-lock-check precommit-install test coverage frontend-test frontend-lint frontend-lint-summary frontend-format-check lint security dependency-audit fmt typecheck check verify demo dev build coverage-snapshot agent-setup agent agent-dev agent-mcp agent-mcp-config clean docker-build docker-up docker-down
 
 help:
 	@echo "MingCang Makefile commands:"
@@ -29,7 +29,8 @@ help:
 	@echo "  test         跑后端测试套件"
 	@echo "  coverage     跑后端测试并输出覆盖率报告"
 	@echo "  frontend-test 跑前端 node:test 单元测试"
-	@echo "  frontend-lint 跑前端 ESLint（当前 advisory，不纳入 verify）"
+	@echo "  frontend-lint 跑前端 ESLint（阻塞式，全量输出）"
+	@echo "  frontend-lint-summary 跑前端 ESLint，汇总警告/错误数（非阻塞，已纳入 verify）"
 	@echo "  frontend-format-check 跑前端 Prettier 配置文件检查"
 	@echo "  lint         ruff 检查（不修复）"
 	@echo "  security     ruff 安全规则快照（当前不作为硬门槛）"
@@ -37,7 +38,8 @@ help:
 	@echo "  fmt          ruff format + ruff fix"
 	@echo "  typecheck    mypy 类型检查"
 	@echo "  check        lint + typecheck + test 一键全跑（PR 前用）"
-	@echo "  verify       后端/前端/构建全量验证"
+	@echo "  verify       后端/前端/构建全量验证（含 ESLint 汇总，不阻塞构建）"
+	@echo "  demo         种子演示数据库并启动后端 demo 模式（无需真实 API Key）"
 	@echo "  coverage-snapshot 输出当前数据覆盖快照"
 	@echo "  agent-setup  配置 MingCang 原生 Pi/agent 本地运行环境"
 	@echo "  agent        启动 MingCang 原生 Pi 研究型终端 agent"
@@ -79,6 +81,11 @@ frontend-test:
 frontend-lint:
 	cd frontend && npm run lint
 
+frontend-lint-summary:
+	@echo "--- frontend ESLint summary (advisory, non-blocking) ---"
+	@cd frontend && npm run lint 2>&1 | tail -5 || true
+	@echo "--- end ESLint summary ---"
+
 frontend-format-check:
 	cd frontend && npm run format:check
 
@@ -100,7 +107,18 @@ typecheck:
 
 check: lint typecheck test
 
-verify: lint typecheck test frontend-test build
+verify: lint typecheck test frontend-test build frontend-lint-summary
+
+demo:
+	@echo "=== MingCang Demo Mode ==="
+	@echo "Seeding demo DB at examples/sample_db/mingcang_demo.db ..."
+	DATABASE_URL=sqlite:///$(shell pwd)/examples/sample_db/mingcang_demo.db \
+		PYTHONPATH=. $(PYTHON) scripts/demo_seed.py
+	@echo ""
+	@echo "Demo DB ready. Starting backend against demo DB..."
+	@echo "(Press Ctrl+C to stop)"
+	DATABASE_URL=sqlite:///$(shell pwd)/examples/sample_db/mingcang_demo.db \
+		PYTHONPATH=. $(PYTHON) -m uvicorn backend.main:app --reload --port 8000
 
 dev:
 	PYTHONPATH=. $(PYTHON) -m uvicorn backend.main:app --reload

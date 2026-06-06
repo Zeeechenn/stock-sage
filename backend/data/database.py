@@ -344,7 +344,7 @@ class MemoryAtom(Base):
     L0 Memory / Knowledge Base — one minimal memory unit.
 
     Inspired by TencentDB-Agent-Memory's local layered design, but kept as a
-    StockSage-owned SQLite contract.  LLM/tool paths may create raw/pending
+    明仓 / MingCang-owned SQLite contract.  LLM/tool paths may create raw/pending
     atoms; trusted/refuted states are reserved for explicit human/review gates.
     """
     __tablename__ = "memory_atoms"

@@ -8,7 +8,7 @@
 
 ## 1. Decision
 
-StockSage should not become a pure research-writing agent.
+明仓 / MingCang should not become a pure research-writing agent.
 
 The long-term goal remains trading decision support: discover candidates, judge entry and exit conditions, monitor positions, and review outcomes so the system can improve its win-rate evidence over time.
 
@@ -122,7 +122,7 @@ M32 turns review evidence into falsifiable forward theses: sector or theme-level
 
 ### M33+ — ATLAS Case Architecture
 
-M33 and later milestones unify research, signal, position, and review objects so StockSage can connect thesis, entry, exit, and calibration.
+M33 and later milestones unify research, signal, position, and review objects so 明仓 / MingCang can connect thesis, entry, exit, and calibration.
 
 ---
 

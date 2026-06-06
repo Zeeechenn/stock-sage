@@ -1,4 +1,4 @@
-# StockSage — 路线图（进行中与待做）
+# 明仓 / MingCang — 路线图（进行中与待做）
 
 > Fresh agents should read this file for current work only. Completed milestone
 > detail belongs in `CHANGELOG.md`; architecture navigation belongs in

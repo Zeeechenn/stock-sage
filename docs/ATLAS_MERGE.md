@@ -1,6 +1,6 @@
 # Atlas Merge Record
 
-> Compact handoff for the Atlas -> StockSage `main` integration. Historical
+> Compact handoff for the Atlas -> 明仓 / MingCang `main` integration. Historical
 > phase-by-phase evidence belongs in git history and `CHANGELOG.md`; this file
 > keeps only the current state, live boundaries, verification anchors, and
 > rollback/push rules that future agents need.

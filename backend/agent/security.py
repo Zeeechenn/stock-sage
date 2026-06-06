@@ -2,7 +2,7 @@
 
 Local mode is intentionally trusted: Codex and Claude Code run on the owner's
 machine during development and trial use. Remote mode is opt-in and read-only
-by default. Legacy StockSage environment names remain accepted during the
+by default. Legacy StockSage (前身 StockSage) environment names remain accepted during the
 MingCang transition.
 """
 from __future__ import annotations
