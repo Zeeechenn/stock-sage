@@ -54,7 +54,7 @@ In addition, a regime sign-flip was detected: the quant factor's direction
 reversed between bull-market and range-bound windows, making a small non-zero
 weight worse than zero in expectation.
 
-Full methodology: [docs/evidence/m29_quant_off.md](../docs/evidence/m29_quant_off.md)
+Full methodology: [docs/evidence/m29_quant_off.md](https://github.com/Zeeechenn/MingCang/blob/main/docs/evidence/m29_quant_off.md)
 
 ### 2. Demo Closed Loop
 
@@ -66,7 +66,7 @@ The sample database demonstrates the full L0–L4 research loop:
 - **L0 (Memory gate)**: a `MemoryPromotionCandidate` in `pending` state —
   the system surfaces candidates but never auto-trusts them
 
-Full walkthrough: [docs/evidence/reproducible_closed_loop.md](../docs/evidence/reproducible_closed_loop.md)
+Full walkthrough: [docs/evidence/reproducible_closed_loop.md](https://github.com/Zeeechenn/MingCang/blob/main/docs/evidence/reproducible_closed_loop.md)
 
 ### 3. Forward Validation Methodology
 
@@ -76,7 +76,7 @@ A short methodology note covering:
 - Pre-registration before shadow runs
 - The three-phase validation cycle (pre-register → shadow run → promotion gate)
 
-Full methodology: [docs/evidence/sample_forward_validation.md](../docs/evidence/sample_forward_validation.md)
+Full methodology: [docs/evidence/sample_forward_validation.md](https://github.com/Zeeechenn/MingCang/blob/main/docs/evidence/sample_forward_validation.md)
 
 ---
 
