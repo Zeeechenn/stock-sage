@@ -6,6 +6,38 @@
 
 ---
 
+## [v0.3.3] 产品化收尾 + 证据可复现 + 稳定性硬化（2026-06-09）
+
+> **收尾 0.4–1.0 计划遗留项,不改信号。** 把产品化、可复现证据、社区入口和
+> 稳定性门禁里仍空缺的部分补齐。生产信号零漂移(技术 0.6 + 情感 0.4 + ATR 2.5,
+> `WEIGHT_QUANT=0.0`);`make verify` 无回归(后端 1101→1115,前端 19→33,
+> mypy 226 文件 clean),并新增 `make reproduce-evidence` 离线复现路径。
+
+### Added
+- **首次启动引导**(`FirstRunWizard`):5 步上手向导(选模式→导入标的→只读研究→示例复盘→免责),
+  localStorage 持久化,短屏竖向滚动防溢出。
+- **数据健康页**(`/health`):provider 回退链、freshness 策略、数据质量警告,复用现有 coverage 接口。
+- **per-signal 可追溯**:`SignalOut` 暴露 `rule_version`,前端信号卡显示规则版本 +「受 LLM 影响 / 纯规则」徽章。
+- **可复现证据**:`make reproduce-evidence` + `scripts/reproduce_evidence.py`(离线确定性复现 demo 闭环);
+  `docs/evidence/`(quant 关闭证据 + 闭环案例 + 前向验证方法论)。
+- **社区入口**:`examples/provider_plugin/` 示例 + `docs_public/CONTRIBUTING_GUIDE.md`(provider 插件 + action registry 指南);
+  `docs_public/EVIDENCE.md`、`docs_public/ARCHITECTURE.md` 调用关系图、mkdocs 导航。
+- `docs/API_CONTRACT.md`:公开端点、`X-Correlation-ID`、读写/确认边界。
+
+### Changed
+- ChatPage 移动端修复:去掉 `min-w-[760px]`,改 `flex-col` / `lg:grid` 响应式,375px 不再横向溢出;
+  pending action 由裸 JSON 改为 key/value 友好卡。
+- Watchlist / Reviews 空状态升级为可操作的下一步引导。
+- CI `dependency-audit` 去掉 `continue-on-error` 改为硬门禁 + step summary。
+- mypy 增量收紧:`backend.config` / `observability` / `tools.registry` 开启 `disallow_untyped_defs` + `warn_return_any`(全局默认仍保持宽松)。
+- 版本源统一到 `0.3.3`(package + pyproject)。
+
+### Evidence note
+- `docs/evidence/m29_quant_off.md` 记录 DSR 校正 caveat:裸用 IC<0.04 阈值已知有偏(N=12797 下 IC=0.0228 实际显著),
+  「quant 归零」结论靠分层非单调、regime sign-flip、残差≈0 等独立证据保留。
+
+---
+
 ## [v0.3.2] Reliability, traceability, and release hygiene（2026-06-09）
 
 > **补地基，不改信号。** 这一版把 v0.3.1 之后的工程地基、证据可信度、
