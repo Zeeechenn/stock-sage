@@ -260,7 +260,7 @@ export default function FirstRunWizard() {
       aria-label="首次使用引导"
     >
       {/* Modal panel */}
-      <div className={`${PANEL} w-full max-w-lg shadow-2xl`}>
+      <div className={`${PANEL} flex max-h-[90vh] w-full max-w-lg flex-col overflow-y-auto shadow-2xl`}>
         {/* Header */}
         <div className="flex items-center justify-between border-b border-stone-300/80 px-5 py-4 dark:border-slate-700">
           <div>

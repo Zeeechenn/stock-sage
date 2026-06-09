@@ -24,7 +24,7 @@ test('uiStore initial theme defaults to dark when storage is empty', () => {
   _storage.clear()
   // Re-read the current state (store was already created with whatever was in storage at import time).
   // For subsequent assertions we manipulate state directly.
-  const { setTheme, theme } = useUiStore.getState()
+  const { setTheme } = useUiStore.getState()
   // Reset to known baseline.
   setTheme('dark')
   assert.equal(useUiStore.getState().theme, 'dark')
