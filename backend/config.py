@@ -228,6 +228,10 @@ class Settings(BaseSettings):
     # 通过一票否决机制发挥作用，weight 设小以免反噬正向分。
     long_term_qfii_flow_enabled: bool = True
     long_term_qfii_flow_weight: float = 0.1
+    # M50 Serenity Chokepoint research analyst（observe-only，不进信号链）
+    long_term_serenity_enabled: bool = False
+    # M50 ResearchReportGate（写前检查，默认开启）
+    research_report_gate_enabled: bool = True
     qfii_flow_lookback_quarters: int = 4          # 回看几个季度
     qfii_flow_min_holders: int = 2                # 至少多少家不同 QFII 同时减仓
     qfii_flow_min_drop_quarters: int = 2          # 单家最长连续减仓季度

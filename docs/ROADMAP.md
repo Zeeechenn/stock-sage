@@ -8,252 +8,42 @@
 
 | 工作线 | 当前状态 | 第一动作 | 停止条件 |
 |---|---|---|---|
+| M50 Serenity 瓶颈 skill + 强制报告门 | Phase 0-1 done：SKILL.md + spec + 共享定义 + Serenity 结构化器（默认关）+ ResearchReportGate + deep_research 写前挂点 + 测试均已落地（50 M50 测试 green；structlog 未装故全量 verify 待补环境）。**Phase 2 next** | 下一步：P1 收尾（数据覆盖恢复 blocked + blocked 报告可区分）→ Phase 2 扩 ai_supply_chain 模板 → Phase 3 M45 importer source gate 增强 | 不接长期标签加权、不改 official signal/仓位/scheduler/test2、blocked 报告不落盘 |
+| M29 Forward Evidence | active / blocked for now：2026-06-09 只读 readiness 显示 `ready_to_run_forward_shadow=false`；100 标的完整覆盖只到 2026-06-02，1d/3d/5d 既有 forward artifacts 缺失 | 先只读/preview 诊断覆盖和 baseline artifact 缺口；ready 后才追加 1d/3d/5d shadow + ledger | 会恢复 quant、改 production profile、接 checkpoint、写真实 `sentiment_cache` 或调额外付费服务时先确认 |
 | v0.3.3 / 0.4-1.0 收尾 | complete：首次启动引导、数据健康页、per-signal rule/provenance 展示、离线复现证据、provider 插件示例、API contract、CI/dependency 硬门禁已落地；`main == origin/main`，HEAD 为 `v0.3.3` | 后续先做 M29 evidence ops 或用户反馈驱动的文档/界面微调；不要从 0.3.3 产品化收尾推出新信号行为 | 不改 production profile、不复活 quant/Kronos/Atlas、不把 demo/community 入口接到真实决策 |
 | M49 工具入口与可观测性 | complete：tools registry、`mingcang tools`、historical tools read/write 边界、correlation id 链路已落地 | 后续只按实际维护需要补 registry 或入口说明 | 不改变 signal、scheduler、production profile、memory promotion 行为 |
 | M46-M48 可信/可发现/前端可靠性 | complete：M46 demo/docs_public，M46.5 warning-only/no-blocker 审计与关键数字测试，M47 standing lookahead/data trust visibility，M48 TS/API/status primitive 基线均已收口 | 后续只按用户反馈补截图、说明或小型可靠性测试 | warning 不影响正式信号；blocked 仍不得自动 promotion；不把 README 变成大而全文档 |
 | M45 研究定位落地 | 主体完成：source-gated importer、falsification scoreboard、模块分诊、Stage 2b shadow 预注册都已落地；后续只保留守门合同 | 后续导入仍先 dry-run + source fidelity review；Stage 2b 只做 non-promoting shadow | 不复活 quant、不改 production profile、不让未过门 alpha 影响真实决策 |
 | M44 Atlas 合并 | complete / dormant：`9820143` 已包含在 `origin/main`；Atlas/test4 Stage 2b signal-overlay shadow starter 已可用；`ATLAS_ENABLED=false` | 只用 `backend.tools.atlas_test4_stage2b_shadow` 做 non-promoting shadow accrual；exit overlay 另走单独任务 | 任何 official signal / test2 / scheduler / shared-infra drift 先停下归因 |
-| M29 Forward Evidence | active / blocked for now：2026-06-09 只读 readiness 显示 `ready_to_run_forward_shadow=false`；100 标的完整覆盖只到 2026-06-02，1d/3d/5d 既有 forward artifacts 缺失 | 先只读/preview 诊断覆盖和 baseline artifact 缺口；ready 后才追加 1d/3d/5d shadow + ledger | 会恢复 quant、改 production profile、接 checkpoint、写真实 `sentiment_cache` 或调额外付费服务时先确认 |
 | 后置/低优先 | M24.3 / M25 / M21.4 / M12 / M10.5 / M4 / M5 | 只在触发条件满足时启动 | 不从历史摘要推出新的生产行为 |
 
 ---
 
-## M46 用户可发现性与上手路径【complete】
+## M50 Serenity 瓶颈研究 skill + UZI 强制报告门【Phase 0-1 done / Phase 2 next / non-promoting】
 
-Current fact pattern:
+Goal: 补两块研究方法真空 —— Serenity 风格供应链瓶颈拆解 + 证据分层纪律（借鉴 A老师"SKILL.md + 结构化 LLM 输出"的工程模式，但**不接入长期标签聚合**），以及 UZI 风格的**输出侧强制报告门**（检查不过的报告物理上写不出）。两者配套：Serenity 产检查项，Gate 负责强制执行。全程 observe-only / source-gated / non-promoting。来源是两份外部 skill 学习报告（Serenity 系列 S1–S8 + UZI）。
 
-- 0.3.1 trust patch and onboarding fix are complete: A0 baseline, naming/version cleanup, screenshot-backed README preview, `docs/WHY_NOT_AI_STOCK_PICKER.md`, `make demo`, frontend lint summary in `verify`, `mingcang stock`, and bilingual no-key demo path.
-- Next product gap from zero-background review: users need a task manual and a capability/status map, not more features or a giant README.
+Key design constraints（已对代码核实）:
 
-Decision: keep `README.md` / `README_EN.md` as thin GitHub routers; put task walkthroughs in `docs/USER_GUIDE.md`; put capability boundaries and key/provider needs in `docs/FEATURE_MAP.md`; keep architecture/roadmap as depth docs.
+- **Serenity 不复用 `role="track"`、不返回 `LongTermReport`、不进 `LongTermTeam._aggregate_score`**。`LongTermReport` 强制带 `score`/`label_vote`，且 `team.py` 把 track(A老师)/quality(piotroski)/boom(jingqi)/flow(QFII) 加权合成长期标签——Serenity 一旦走 track 槽就会污染长期标签，违背 non-promoting。改出独立 `SerenityChokepointReport`：`chokepoint_layer` / `chain_layers[]` / `evidence_tier` / `source_refs[]` / `substitute_risk` / `quick_filter_pass` / `falsification_questions[]` / `bear_case` / `research_priority_band`（枚举 `够查`/`暂缓`/`证据不足`，**非数字**）。不出 score/vote。
+- **ResearchReportGate** 落 `backend/research/research_report_gate.py`，沿用 M46.5/M47 的 `pass/warning/blocked` 口径。必须在 `deep_research.py` 的 `write_text()` **之前**执行（当前顺序 `_render_report()`→`write_text()`→`_persist_report()`；放 persist 前文件已落盘，达不到"物理上发不出"）。blocked 时不 `write_text` / 不 `record_decision_run` / 不 `remember_deep_research` / 不建 memory candidate。
+- **Gate 作用域 = 所有 deep research 报告**：以 `DeepResearchReport` + audits 为基线检查，Serenity 字段有则加严、无则按现有字段判（不假设 Serenity 一定跑过）。
+- **共享 module**：`source_tier` 枚举 + forbidden-wording 词表，被 Serenity 与 Gate 同时 import。与输入侧 `FORBIDDEN_TEMPLATE_KEYS` 职责切开——前者查输入字段名，后者查最终文本措辞，同一检查不两处写。
+- Serenity 调用方：主入口在 `deep_research.py` 内 `write_text()` 前；旁路入口为独立 CLI/tool 供单主题人工试跑，结果只回显不写 DB。
 
-Completed tasks:
+Phases:
 
-- [x] Enrich demo data so the first frontend screen does not look like an empty production database: demo seed now adds sample prices, latest signals, CSI 300 rows, and one demo position without touching real data or production providers.
-- [x] Rework public docs into docs-site shape under `docs_public/`: `index.md`, `USER_GUIDE.md`, `FEATURE_MAP.md`, `DEVELOPER_GUIDE.md`, `REFERENCE.md`, and `mkdocs.yml`.
-- [x] Create `docs_public/FEATURE_MAP.md` with per-feature explanations, entry points, status, side effects, signal impact, and key/provider requirements.
-- [x] Review docs navigation after user feedback; add screenshots, expected-output snippets, and a 15-minute walkthrough.
-- [x] Slim README after the two docs exist: README stays as a thin GitHub router and links deeper user/developer docs.
+0. ✅ done — 纯文档/prompt，零代码：`serenity-chokepoint/SKILL.md`（瓶颈分层 / quick filter 分层 / source tier / A股 source playbook / 贝叶斯追踪 / 反方先行 QA）+ Gate 检查清单 spec + 共享定义；固态电池主题人工试跑通过（证据/叙事/风险分清、零买卖语气、媒体-only 判 blocked）。
+1. ✅ done — 独立 Serenity 结构化器（flag 默认 False，不写 DB，不接 LongTermTeam）+ `research_evidence_defs.py` + `research_report_gate.py` + `deep_research` 写前挂点；50 M50 测试 green（schema 不生成 score/vote、Gate blocked 不落盘、聚合隔离均覆盖）。
+   - Phase 1 收尾（移后续批次）：① 数据覆盖检查恢复 spec 原义 blocked（需把 prices/financials 传入 gate，当前用 sections 代理降级为 warning）；② blocked 报告可被 API/UI 区分（独立诊断对象或 gate_status 字段）。
+2. 扩 `ai_supply_chain_template.py`：加 `chain_layers` / `source_tier` / `substitute_risk` / `source_freshness`；新合法字段**不得进** `FORBIDDEN_TEMPLATE_KEYS`；`observe_only/signal_impact/not_a_buy_score` 仍不可覆盖。
+3. M45 importer 现有 source gate **增强（非重写）**：加 `source_tier`（execute 不能只有 social）、`evidence_level != needs_check`；`source_kind=derived_summary`/`handoff_context` 仍只能 dry-run。
 
-Stop conditions:
+Not in this batch: research_priority 数字分（用档位防漂移）、TradingAgents 多 agent/checkpoint（重、撞 dormant Atlas、ReviewCase 已覆盖闭环）、QuantDinger action scope 细分（audit 字段加厚/可复现快照留 P2 顺手）、UZI 评委团人格、前端 evidence cards（P2）、Buffett 质量门（P1 下一批，做时须与 piotroski 交叉引用防双重扣分）。
 
-- Do not expose personal trading records, real databases, provider keys, or local-only paths in public docs.
-- Do not let demo/sample data affect production DB, scheduler jobs, official signals, or memory promotion.
-- Do not move internal Mxx/Atlas/test2 planning into user-facing docs except as clearly marked maintainer context.
+Stop conditions: 不改 official signal / 仓位 / 止盈止损 / scheduler / test2 / production weights；不进长期标签加权；不写 trusted memory（除非 ReviewCase + 人工确认）；blocked 报告不得落盘或 promotion；本地开发不加多余确认门。
 
----
-
-## M46.5 正确性底线：证据不泄漏、前端不误导【complete】
-
-Rationale: M46 improves discoverability (demo, screenshots, walkthrough). For a
-project whose value proposition is "evidence you can trust, no AI guessing", a
-lookahead leak or a wrong on-screen price/PnL is a foundation-level correctness
-defect. These two gates run in parallel with M46 and take precedence when they
-conflict.
-
-Completed tasks:
-
-- [x] Lookahead leakage one-time audit (audit first, do NOT build a tool):
-  answer the existing-data question — have past signals / memory-promotion
-  paths already been contaminated by future data? A one-off script/notebook is
-  fine; product-grade CLI is M47, not now.
-  - [x] Check whether news / announcement timestamps post-date the signals they
-    influenced.
-  - [x] Check whether qfq/hfq, restatement, earnings, or provider fallback fed
-    future data into backtest / review windows.
-  - [x] Check whether any LLM summary used information dated after the signal day.
-  - [x] Write the audit conclusion into a tracked doc (ADR 0001 is local /
-    git-ignored — do not rely on it as the only record).
-- [x] Key financial-number display tests (frontend): price, percentage, position
-  size, PnL, date, null/empty, qfq/hfq display. Wrong display destroys trust as
-  surely as a leak; this is pulled out of M48 so it is not deferred behind the
-  TypeScript migration.
-
-Audit conclusion (2026-06-09, `backend.tools.m46_5_lookahead_one_time_audit`,
-read-only immutable SQLite):
-
-- Overall status: `warning`, no `blocked` findings.
-- Pass: signal `data_timestamp` did not post-date signal day; every stored
-  signal had price data on/before signal day; financial `disclosure_date` was
-  not earlier than `report_date`; review cases did not reference future signals;
-  no trusted memory-promotion candidate lacked a review case; PIT guards cover
-  Price / Signal / LongTermLabel / FinancialMetric / IndexPrice / NewsItem.
-- Warning: 501 `signals.date` rows use timestamp-like strings instead of plain
-  `YYYY-MM-DD`; 223 sentiment-bearing signals have same-symbol next-day news
-  requiring lineage review; 395 financial rows lack exact `disclosure_date`;
-  843,391 price rows lack full `source` / `fetched_at` / `adjustment`
-  provenance; 2 review cases were created before their `as_of` date and should
-  stay non-promoting unless reviewed.
-- No signal freeze or memory-promotion pause was triggered because there were no
-  blocked findings. Warnings become M47 standing-check / visibility work, not
-  automatic production changes.
-
-Acceptance:
-
-- Audit produces a report that clearly separates pass / warning / blocked.
-- Any blocked finding freezes the related signal / pauses the matching memory
-  promotion BEFORE M46 demo work continues.
-- Key display components carry unit tests; a changed API number field surfaces
-  at the type or test layer.
-
-Stop conditions:
-
-- warning does not auto-affect production signals; blocked does not auto-trigger
-  memory promotion.
-- Do not promote the one-time audit into a productized feature here — that is M47.
-
----
-
-## M47 数据与证据可信度：lookahead 常驻化 + 健康可见【complete】
-
-Trigger: M46.5 audit口径 stable. Goal: turn the one-time leakage audit into a
-repeatable gate, and make data trust visible in the UI.
-
-Completed tasks:
-
-- [x] Integrate `mingcang evidence lookahead-check` as a standing CLI that
-  re-runs the M46.5 checks on demand and on sample/demo data.
-- [x] Surface data coverage / provider fallback / freshness in the frontend so a
-  user can see WHY a signal is or isn't trustworthy.
-- [x] Wire results into data coverage / FEATURE_MAP / review export.
-- [x] Record an explicit open decision: do we ever re-activate the dormant
-  "brain" (quant weight, Kronos, Atlas, non-promoted alpha)? This round: NO
-  (consistent with non-promoting gates). But log it as a decision, not a default
-  drift. The M29 IC/ICIR/monotonic-bucket/fresh-sample gate is the reactivation
-  path if it ever happens.
-
-Decision recorded: no dormant-brain reactivation in M47. Quant weight, Kronos,
-Atlas overlays, and non-promoted alpha remain dormant / shadow-only until the
-M29 promotion gate passes and the user explicitly confirms the reactivation.
-
-Acceptance:
-
-- lookahead-check runs on demo data and emits pass / warning / blocked.
-- warning does not affect production signal; blocked does not trigger promotion.
-- Reactivation decision is written down with its gate, not left implicit.
-
----
-
-## M48 前端可靠性【complete】
-
-WorkBuddy's frontend-weakness判断 still holds even with the TS / Zustand / UI
-primitive地基 in place. Key financial-number display tests已提前到 M46.5; M48
-carries the rest of frontend hardening.
-
-Completed tasks:
-
-- [x] Type API responses, covering signal / review / position / data coverage first.
-- [x] Extend frontend tests from the current set toward critical user paths:
-  `make frontend-test` now delegates to `npm test`, so `src/store/*.test.js`
-  is included in the project gate.
-- [x] Migrate key UI cards to TS/TSX without a big-bang page migration:
-  `SignalCard` and `EvidenceCard` now compile against typed signal, evidence,
-  research, and data coverage contracts.
-- [x] Consolidate SignalCard / EvidenceCard status pills onto a shared
-  `StatusBadge` primitive. There is no standalone `ReviewTable` component in
-  the current frontend; review responses are covered by the typed API layer.
-
-Acceptance:
-
-- A changed API field surfaces at the type or test layer.
-- No horizontal overflow / hidden critical state on mobile.
-
----
-
-## M49 工具入口与可观测性【complete / P2】
-
-Tools attic已开始 (`refactor(tools)` 归档零引用脚本)，但还需要系统治理。
-
-Open tasks:
-
-- [x] Build a tools classification table: stable / maintenance / evidence / attic (`backend.tools.registry`).
-- [x] Give stable capabilities a unified CLI or doc entry (`python3 -m backend.agent.cli tools`).
-- [x] Annotate historical Mxx scripts: still runnable? read-only? writes DB?
-- [x] Pass `correlation_id` through key API / export / memory-candidate paths (structlog地基已有).
-- [x] Continue converging runtime patch with Alembic migration discipline: M49 added no schema/runtime patch; future DB changes stay Alembic-first.
-
-Acceptance:
-
-- Every retained `backend/tools/` script has a purpose, read/write boundary, and
-  recommended entry point.
-- A single request / research run is traceable through logs.
-
-Completion notes:
-
-- `backend.tools.registry` is the M49 tool registry; `mingcang tools --pretty` exposes it to local agents/operators, with optional `--category stable|maintenance|evidence|attic`.
-- API requests now bind/echo `X-Correlation-ID`; exports preserve it in response headers, postmarket HTML includes it in report metadata, and memory-candidate creation writes it into the audit trail when present.
-- No signal, scheduler, production profile, or memory promotion behavior changed.
-
----
-
-## v0.3.3 产品化收尾与当前接手状态【complete】
-
-Current fact pattern:
-
-- `main` is aligned with `origin/main`; HEAD is tagged `v0.3.3`.
-- v0.3.3 closed the post-0.4/1.0 productization leftovers without production
-  signal drift: first-run wizard, data health page, per-signal rule/provenance,
-  reproducible offline evidence, community provider example, API contract, and
-  stricter CI/dependency gates.
-- Current production profile remains `new_framework`, `WEIGHT_QUANT=0.0`,
-  technical/sentiment `0.6 / 0.4`, Kronos off, Atlas dormant.
-- 2026-06-09 read-only M29 readiness is blocked:
-  `ready_to_run_forward_shadow=false`; latest price date is 2026-06-08, but full
-  100-symbol complete coverage is only through 2026-06-02, and recognizable
-  1d/3d/5d existing forward artifacts are missing.
-- M32 is not the next default: local review/thesis data is still thin
-  (`review_cases=2`, `forward_theses=2` as of 2026-06-09).
-
-Next default:
-
-1. Keep docs and handoffs anchored on `v0.3.3`.
-2. Diagnose M29 coverage/artifact gaps in read-only or preview mode.
-3. Run forward shadow only after readiness emits concrete next commands.
-4. Keep M24.3 shadow-only review behind its checkpoint and evidence trigger.
-
-Stop conditions:
-
-- Do not change production signal weights, thresholds, stops, scheduler, test2,
-  memory promotion, or position state from this status-sync work.
-- Do not treat readiness, productization, screenshots, or demo data as alpha
-  promotion evidence.
-- Do not create ad hoc planning files in the repo.
-
----
-
-## M45 研究定位落地：放大器为主、源受门控【complete / guardrails】
-
-Completed summary:
-
-- The direction is settled: 明仓是 human-judgment amplifier, not a price-pattern oracle. AI handles breadth, falsification, and short-term risk discipline; any alpha-like output must remain outcome-gated before it can influence real decisions.
-- `backend.tools.m45_import_ateacher_theses` is the canonical dry-run-first importer. Execute requires direct-source fidelity (`source_kind=direct_source`, verified source, explicit `source_ref`, locator) and writes only `ForwardThesis(draft)` plus L0 `pending`.
-- `backend.tools.m45_falsification_scoreboard` writes ReviewCase scoreboard events and optional pending promotion candidates; `not_due` rows never create promotion candidates.
-- Module ownership is triaged: dossier / deep research / long-term analyst channels are breadth; forward thesis / review loop / stress test / M45 tools are falsification; risk manager surfaces are short-term risk; weighted long-term-label voting remains legacy/quarantine unless re-gated.
-- Stage 2b is pre-registered as non-promoting shadow evidence: imported-human-thesis, falsification-warning, short-term-risk, and breadth-hit arms; small samples stay qualitative.
-
-Live contract for future work:
-
-- Later imports still require dry-run review before `--execute`; imported rows remain draft/pending and do not become trusted memory automatically.
-- Do not touch official signals, test2, scheduler jobs, production profile, stops, sizing, or position state from M45 tooling.
-- Promotion requires forward evidence plus explicit user confirmation; anecdotal wins are not enough.
-- ADR 0001 is local/git-ignored, so tracked docs and code comments must carry any conclusion future agents need.
-
----
-
-## M44 Atlas 合并与 L0-L4 主架构升级【complete / dormant】
-
-Current fact pattern:
-
-- `origin/main` now contains dormant Atlas merge `9820143`; `ATLAS_ENABLED=false` / `settings.atlas_enabled=False`.
-- Historical readiness package covered `make verify`, test2 raw zero diff at `--end 2026-06-05`, DB copy-smoke, dormant-context guard, official-signal fixture, and `git diff --check`.
-- Keep M31/M41/M42/M43 behavior protected. Phase 3-full remains 后置: legacy adapters/backfill, A-teacher/long-term/topic reports, native ResearchCase / ActionProposal L0 wiring.
-- Atlas/test4 Stage 2b has a signal-overlay shadow starter:
-  `backend.tools.atlas_test4_stage2b_shadow`. It emits non-promoting artifacts
-  under `/private/tmp` by default, leaves `ATLAS_ENABLED=false`, and does not
-  mutate `paper_trading/test2_ab_state.json`. Exit-overlay and entry+exit arms
-  are registered but not started.
-
-Still-live boundaries: no Atlas behavior in official signals, test2/test3, 标的1, scheduler, postmarket, stop/take, sizing, or production scoring while dormant. Shared-infra changes still need parity checks because the dormant flag does not protect database/runtime/dependency/API helper drift.
+> 完整 S1–S7 协同 / C1–C6 冲突矩阵与逐 Phase 验收在工作规划文档维护，本节只保留里程碑级承重点。
 
 ---
 
@@ -304,6 +94,7 @@ Stop before any production change, checkpoint wiring, Kronos long training, true
 Detailed history is intentionally not repeated here. Read `CHANGELOG.md` for:
 
 - M46 onboarding/demo clarity and user-discovery follow-up.
+- M46.5–M48 correctness floor (lookahead one-time audit + key-number display tests), standing `lookahead-check` + data-trust visibility, and frontend TS/API/primitive reliability.
 - v0.3.3 productization, reproducible evidence, community entry, and stability hardening.
 - M49 tools registry / observability.
 - M45 source-gated research positioning, importer, scoreboard, and Stage 2b shadow preregistration.

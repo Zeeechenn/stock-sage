@@ -57,6 +57,19 @@
 - API/export/memory-candidate correlation id：`X-Correlation-ID` 在请求、导出响应、
   盘后 HTML metadata 与 memory-candidate audit log 中可追踪。
 
+### Evidence note
+- M46.5 lookahead one-time audit（`backend.tools.m46_5_lookahead_one_time_audit`，
+  2026-06-09，只读 immutable SQLite）结论：整体 `warning`、无 `blocked`。
+  Pass：signal `data_timestamp` 未晚于信号日、每条信号在信号日及之前有价格、
+  财务 `disclosure_date` 不早于 `report_date`、review case 未引用未来信号、
+  无 trusted memory-promotion 候选缺 review case、PIT guard 覆盖
+  Price/Signal/LongTermLabel/FinancialMetric/IndexPrice/NewsItem。
+  Warning（转为 M47 常驻检查，不自动改生产）：501 `signals.date` 行用 timestamp 串而非
+  `YYYY-MM-DD`；223 条情感信号有同标的次日新闻需 lineage 复核；395 财务行缺确切
+  `disclosure_date`；843,391 价格行缺完整 `source`/`fetched_at`/`adjustment` provenance；
+  2 条 review case 创建早于其 `as_of`，未复核前保持 non-promoting。
+  无 blocked，故未触发信号冻结或 memory-promotion 暂停。
+
 ### Changed
 - package/API/frontend 版本源统一到 `0.3.2`。
 - `make verify` 继续作为发布质量门槛；前端 lint summary 保持 advisory，不阻塞构建。

@@ -1,4 +1,5 @@
 from datetime import datetime
+from unittest.mock import MagicMock, patch
 
 
 def test_run_deep_research_creates_report_and_decision_run(test_db, tmp_path, sample_stocks):
@@ -312,3 +313,193 @@ def test_run_deep_research_retries_tavily_after_empty_seed_queries(
     assert tavily_calls[1] != tavily_calls[0]
     assert report.source_count == 1
     assert "[通用 Tavily 查询补到光模块证据](https://example.com/tavily-retry)" in text
+
+
+# ---------------------------------------------------------------------------
+# M50 Phase 1: ResearchReportGate write-before hook tests
+# ---------------------------------------------------------------------------
+
+def test_gate_blocked_does_not_write_markdown(test_db, tmp_path, sample_stocks, monkeypatch):
+    """When gate blocks, the Markdown file must NOT be written."""
+    from backend.config import settings
+    from backend.research import deep_research
+
+    monkeypatch.setattr(settings, "research_report_gate_enabled", True)
+
+    # Inject a blocking gate verdict by patching run_research_report_gate
+    from backend.research.research_report_gate import GateVerdict
+
+    def fake_gate(report, audits, text, *, weak_source_count=0, serenity=None):
+        return GateVerdict(
+            status="blocked",
+            reasons=["test: forced block"],
+            warnings=[],
+        )
+
+    monkeypatch.setattr(
+        "backend.research.research_report_gate.run_research_report_gate",
+        fake_gate,
+    )
+    # Also patch the import inside deep_research module
+    import backend.research.research_report_gate as gate_mod
+    monkeypatch.setattr(gate_mod, "run_research_report_gate", fake_gate)
+
+    from backend.data.database import NewsItem
+
+    test_db.add(NewsItem(
+        symbol="300308",
+        title="中际旭创高速光模块订单",
+        url="https://finance.eastmoney.com/a/gate_block_test.html",
+        published_at=datetime(2026, 5, 17, 10, 0, 0),
+        source="东方财富",
+    ))
+    test_db.commit()
+
+    report = deep_research.run_deep_research(
+        topic="Gate拦截测试",
+        symbols=["300308"],
+        db=test_db,
+        output_dir=tmp_path,
+        as_of="2026-05-17",
+        persist=True,
+    )
+
+    # File must NOT exist when blocked
+    assert report.path is not None
+    assert not report.path.exists(), (
+        f"Gate-blocked report must not be written to disk, but found: {report.path}"
+    )
+
+
+def test_gate_blocked_does_not_persist(test_db, tmp_path, sample_stocks, monkeypatch):
+    """When gate blocks, _persist_report must NOT be called."""
+    from backend.config import settings
+    from backend.research import deep_research
+
+    monkeypatch.setattr(settings, "research_report_gate_enabled", True)
+
+    from backend.research.research_report_gate import GateVerdict
+
+    def fake_gate(report, audits, text, *, weak_source_count=0, serenity=None):
+        return GateVerdict(
+            status="blocked",
+            reasons=["test: forced block for persist check"],
+            warnings=[],
+        )
+
+    import backend.research.research_report_gate as gate_mod
+    monkeypatch.setattr(gate_mod, "run_research_report_gate", fake_gate)
+
+    persist_calls = []
+    original_persist = deep_research._persist_report
+
+    def spy_persist(db, report, audits, *, gate=None):
+        persist_calls.append("called")
+        return original_persist(db, report, audits, gate=gate)
+
+    monkeypatch.setattr(deep_research, "_persist_report", spy_persist)
+
+    from backend.data.database import NewsItem
+
+    test_db.add(NewsItem(
+        symbol="300308",
+        title="Gate拦截持久化测试",
+        url="https://finance.eastmoney.com/a/persist_block_test.html",
+        published_at=datetime(2026, 5, 17, 10, 0, 0),
+        source="东方财富",
+    ))
+    test_db.commit()
+
+    deep_research.run_deep_research(
+        topic="Gate持久化测试",
+        symbols=["300308"],
+        db=test_db,
+        output_dir=tmp_path,
+        as_of="2026-05-17",
+        persist=True,
+    )
+
+    assert not persist_calls, "_persist_report must not be called when gate blocks"
+
+
+def test_gate_warning_writes_markdown_with_annotations(
+    test_db, tmp_path, sample_stocks, monkeypatch
+):
+    """When gate warns, the Markdown file IS written with warning annotations."""
+    from backend.config import settings
+    from backend.research import deep_research
+
+    monkeypatch.setattr(settings, "research_report_gate_enabled", True)
+
+    from backend.research.research_report_gate import GateVerdict
+
+    def fake_gate(report, audits, text, *, weak_source_count=0, serenity=None):
+        return GateVerdict(
+            status="warning",
+            reasons=[],
+            warnings=["test: 来源质量偏低"],
+        )
+
+    import backend.research.research_report_gate as gate_mod
+    monkeypatch.setattr(gate_mod, "run_research_report_gate", fake_gate)
+
+    from backend.data.database import NewsItem
+
+    test_db.add(NewsItem(
+        symbol="300308",
+        title="中际旭创警告测试",
+        url="https://finance.eastmoney.com/a/warning_test.html",
+        published_at=datetime(2026, 5, 17, 10, 0, 0),
+        source="东方财富",
+    ))
+    test_db.commit()
+
+    report = deep_research.run_deep_research(
+        topic="Gate警告测试",
+        symbols=["300308"],
+        db=test_db,
+        output_dir=tmp_path,
+        as_of="2026-05-17",
+        persist=False,
+    )
+
+    assert report.path.exists(), "Warning path: file should still be written"
+    text = report.path.read_text(encoding="utf-8")
+    assert "来源质量偏低" in text, "Warning annotations should appear in written file"
+
+
+def test_gate_pass_preserves_original_behavior(test_db, tmp_path, sample_stocks, monkeypatch):
+    """When gate passes, original behavior (write + persist) is unchanged."""
+    from backend.config import settings
+    from backend.research import deep_research
+    from backend.data.database import NewsItem
+
+    monkeypatch.setattr(settings, "research_report_gate_enabled", True)
+
+    test_db.add(NewsItem(
+        symbol="300308",
+        title="中际旭创高速光模块正常测试",
+        url="https://finance.eastmoney.com/a/normal_test.html",
+        published_at=datetime(2026, 5, 17, 10, 0, 0),
+        source="东方财富",
+    ))
+    test_db.commit()
+
+    report = deep_research.run_deep_research(
+        topic="Gate通过测试",
+        symbols=["300308"],
+        db=test_db,
+        output_dir=tmp_path,
+        as_of="2026-05-17",
+        persist=True,
+    )
+
+    # File written
+    assert report.path.exists()
+    text = report.path.read_text(encoding="utf-8")
+    assert "Gate通过测试" in text
+
+    # DB persisted
+    from backend.decision.harness import get_decision_evidence
+    evidence = get_decision_evidence(test_db, "300308")
+    assert any(e["run_type"] == "deep_research" for e in evidence)

@@ -779,8 +779,8 @@ def run_deep_research(
         iterations=iterations,
         sections=sections,
     )
-    path.write_text(text, encoding="utf-8")
 
+    # M50 Phase 1: build report object BEFORE write so gate can inspect it.
     report = DeepResearchReport(
         topic=topic,
         symbols=clean_symbols,
@@ -792,12 +792,39 @@ def run_deep_research(
         retrieval_iterations=tuple(iterations),
         sections=tuple(_section_to_dict(section) for section in sections),
     )
+
+    # ResearchReportGate — write-before hook.
+    from backend.config import settings as _settings
+    if _settings.research_report_gate_enabled:
+        from backend.research.research_report_gate import (
+            GateVerdict,
+            _annotate_warnings,
+            run_research_report_gate,
+        )
+        verdict = run_research_report_gate(
+            report, audits, text, weak_source_count=weak_count
+        )
+        if verdict.status == "blocked":
+            logger.warning(
+                "ResearchReportGate BLOCKED report %r — reasons: %s",
+                topic,
+                verdict.reasons,
+            )
+            # Return report with gate diagnostic attached; do NOT write file,
+            # do NOT persist.  path field holds the intended (unwritten) path.
+            return report
+        if verdict.status == "warning":
+            text = _annotate_warnings(text, verdict)
+    else:
+        verdict = None  # type: ignore[assignment]
+
+    path.write_text(text, encoding="utf-8")
     if persist:
-        _persist_report(db, report, audits)
+        _persist_report(db, report, audits, gate=verdict)
     return report
 
 
-def _persist_report(db, report: DeepResearchReport, audits: list[NewsAudit]) -> None:
+def _persist_report(db, report: DeepResearchReport, audits: list[NewsAudit], *, gate=None) -> None:
     """Persist the report as decision evidence and research memory."""
     from backend.decision.harness import record_decision_run
     from backend.memory.research_memory import remember_deep_research
@@ -831,6 +858,8 @@ def _persist_report(db, report: DeepResearchReport, audits: list[NewsAudit]) -> 
             for audit in audits[:20]
         ],
         "sections": list(report.sections),
+        "gate_status": gate.status if gate is not None else "gate_disabled",
+        "gate_warnings": gate.warnings if gate is not None else [],
     }
     for symbol in report.symbols or [""]:
         record_decision_run(
