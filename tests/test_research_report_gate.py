@@ -12,7 +12,6 @@ from backend.research.research_report_gate import (
     run_research_report_gate,
 )
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -58,7 +57,6 @@ def _make_report(
     risk_flags=None,
     sections=None,
 ):
-    from dataclasses import dataclass
     from pathlib import Path
 
     # Minimal stand-in for DeepResearchReport (frozen dataclass)
@@ -432,3 +430,56 @@ class TestGateVerdict:
         v = GateVerdict(status="pass")
         assert v.reasons == []
         assert v.warnings == []
+
+
+class TestDataCoverageWithRealData:
+    """M50 Phase 1 收尾: when prices/financials are threaded into the gate, the
+    data-coverage check uses real availability and emits warning (never blocked)."""
+
+    def test_all_unavailable_emits_warning(self):
+        report = _make_report(symbols=["300308"], source_count=1)
+        audits = [_make_audit(usable=True)]
+        verdict = run_research_report_gate(
+            report, audits, CLEAN_TEXT,
+            prices=[{"symbol": "300308", "available": False}],
+            financials=[{"symbol": "300308", "available": False}],
+        )
+        assert verdict.status == "warning"
+        assert any("数据覆盖" in w for w in verdict.warnings)
+
+    def test_available_data_no_warning(self):
+        report = _make_report(symbols=["300308"], source_count=1)
+        audits = [_make_audit(usable=True)]
+        verdict = run_research_report_gate(
+            report, audits, CLEAN_TEXT,
+            prices=[{"symbol": "300308", "available": True}],
+            financials=[{"symbol": "300308", "available": False}],
+        )
+        assert verdict.status == "pass"
+
+    def test_pure_theme_no_symbols_skips_coverage(self):
+        # Pure-theme report (symbols=[]) must NOT be penalised for empty data:
+        # no 数据覆盖 warning and never blocked (other checks may still warn).
+        # Build directly because _make_report coerces falsy symbols to default.
+        from pathlib import Path
+
+        from backend.research.deep_research import DeepResearchReport
+        report = DeepResearchReport(
+            topic="纯主题", symbols=[], as_of="2026-05-17", summary="x",
+            path=Path("/tmp/t.md"), source_count=1, risk_flags=[],
+            sections=({"catalysts": ["x"], "evidence_snippets": []},),
+        )
+        audits = [_make_audit(usable=True)]
+        verdict = run_research_report_gate(
+            report, audits, CLEAN_TEXT, prices=[], financials=[],
+        )
+        assert verdict.status != "blocked"
+        assert not any("数据覆盖" in w for w in verdict.warnings)
+
+    def test_data_coverage_never_blocks(self):
+        report = _make_report(symbols=["300308"], source_count=1)
+        audits = [_make_audit(usable=True)]
+        verdict = run_research_report_gate(
+            report, audits, CLEAN_TEXT, prices=[], financials=[],
+        )
+        assert verdict.status != "blocked"

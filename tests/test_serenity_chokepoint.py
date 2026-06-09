@@ -6,8 +6,9 @@ Validates:
 - flag default False → analyze() returns None without calling LLM or writing DB
 - Schema tool definition has no forbidden keys
 """
+from unittest.mock import MagicMock
+
 import pytest
-from unittest.mock import MagicMock, patch
 
 
 class TestSerenitySchemaNoTradingFields:
@@ -29,6 +30,7 @@ class TestSerenitySchemaNoTradingFields:
 
     def test_report_dataclass_has_no_trading_fields(self):
         from dataclasses import fields
+
         from backend.research.serenity_chokepoint import SerenityChokepointReport
 
         field_names = {f.name for f in fields(SerenityChokepointReport)}
@@ -42,8 +44,8 @@ class TestSerenitySchemaNoTradingFields:
 
     def test_report_is_not_long_term_report(self):
         """SerenityChokepointReport must NOT be a subclass of LongTermReport."""
-        from backend.research.serenity_chokepoint import SerenityChokepointReport
         from backend.agents.long_term.base import LongTermReport
+        from backend.research.serenity_chokepoint import SerenityChokepointReport
 
         assert not issubclass(SerenityChokepointReport, LongTermReport), (
             "SerenityChokepointReport must not inherit LongTermReport"
@@ -68,7 +70,7 @@ class TestSerenityDisabledByDefault:
         # Patch get_provider at the module where serenity_chokepoint resolves it
         call_tracker = []
 
-        def fake_get_provider(s):
+        def fake_get_provider():
             call_tracker.append("called")
             return MagicMock()
 
@@ -110,7 +112,7 @@ class TestSerenityEnabledWithLLMUnavailable:
         )
         monkeypatch.setattr(
             "backend.llm.get_provider",
-            lambda s: MagicMock(),
+            lambda: MagicMock(),
         )
 
         import backend.research.serenity_chokepoint as sc_mod
@@ -123,7 +125,6 @@ class TestSerenityNoAggregationImports:
 
     def test_no_forbidden_imports(self):
         import ast
-        import importlib.util
         from pathlib import Path
 
         path = Path(__file__).parent.parent / "backend/research/serenity_chokepoint.py"

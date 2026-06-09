@@ -8,7 +8,7 @@ from __future__ import annotations
 import argparse
 import logging
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -34,6 +34,11 @@ class DeepResearchReport:
     risk_flags: list[str]
     retrieval_iterations: tuple[dict, ...] = ()  # evaluator/planner 闭环轨迹
     sections: tuple[dict, ...] = ()
+    # M50 ResearchReportGate verdict (default pass for backward compat).
+    # When gate_status == "blocked": file is NOT written; `path` holds the
+    # intended-but-unwritten path — callers must check gate_status, not path.
+    gate_status: str = "pass"            # pass / warning / blocked / gate_disabled
+    gate_reasons: tuple[str, ...] = ()   # blocked reasons or warning messages
 
 
 def default_output_dir() -> Path:
@@ -797,12 +802,14 @@ def run_deep_research(
     from backend.config import settings as _settings
     if _settings.research_report_gate_enabled:
         from backend.research.research_report_gate import (
-            GateVerdict,
             _annotate_warnings,
             run_research_report_gate,
         )
         verdict = run_research_report_gate(
-            report, audits, text, weak_source_count=weak_count
+            report, audits, text,
+            weak_source_count=weak_count,
+            prices=prices,
+            financials=financials,
         )
         if verdict.status == "blocked":
             logger.warning(
@@ -810,13 +817,19 @@ def run_deep_research(
                 topic,
                 verdict.reasons,
             )
-            # Return report with gate diagnostic attached; do NOT write file,
-            # do NOT persist.  path field holds the intended (unwritten) path.
-            return report
+            # Do NOT write file, do NOT persist.  Mark report blocked so callers
+            # can distinguish it; `path` still holds the intended (unwritten) path.
+            return replace(
+                report, gate_status="blocked", gate_reasons=tuple(verdict.reasons)
+            )
         if verdict.status == "warning":
             text = _annotate_warnings(text, verdict)
+        report = replace(
+            report, gate_status=verdict.status, gate_reasons=tuple(verdict.warnings)
+        )
     else:
-        verdict = None  # type: ignore[assignment]
+        verdict = None
+        report = replace(report, gate_status="gate_disabled")
 
     path.write_text(text, encoding="utf-8")
     if persist:

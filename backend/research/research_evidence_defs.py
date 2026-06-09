@@ -12,10 +12,10 @@ These are two different checks; do NOT merge or cross-import.
 from __future__ import annotations
 
 import re
-from enum import Enum
+from enum import StrEnum
 
 
-class SourceTier(str, Enum):
+class SourceTier(StrEnum):
     """Evidence source quality tiers, ordered strongest → weakest."""
 
     primary = "primary"       # 一手：原始公告/招股书/问询函/电话会记录

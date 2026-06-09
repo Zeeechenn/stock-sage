@@ -63,7 +63,7 @@ class TestScanForbiddenWording:
         warning_hits = [h for h in hits if h.endswith(":warning")]
         strong_hits = [h for h in hits if h.endswith(":strong")]
         assert warning_hits, f"Expected warning hit for bare '目标价', got: {hits}"
-        assert not strong_hits, f"Should not be strong hit for bare '目标价'"
+        assert not strong_hits, "Should not be strong hit for bare '目标价'"
 
     def test_strong_hit_目标价_with_number(self):
         """目标价 followed by a number should be a strong hit."""

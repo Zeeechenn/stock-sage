@@ -1,5 +1,4 @@
 from datetime import datetime
-from unittest.mock import MagicMock, patch
 
 
 def test_run_deep_research_creates_report_and_decision_run(test_db, tmp_path, sample_stocks):
@@ -329,7 +328,8 @@ def test_gate_blocked_does_not_write_markdown(test_db, tmp_path, sample_stocks, 
     # Inject a blocking gate verdict by patching run_research_report_gate
     from backend.research.research_report_gate import GateVerdict
 
-    def fake_gate(report, audits, text, *, weak_source_count=0, serenity=None):
+    def fake_gate(report, audits, text, *, weak_source_count=0,
+                  prices=None, financials=None, serenity=None):
         return GateVerdict(
             status="blocked",
             reasons=["test: forced block"],
@@ -380,7 +380,8 @@ def test_gate_blocked_does_not_persist(test_db, tmp_path, sample_stocks, monkeyp
 
     from backend.research.research_report_gate import GateVerdict
 
-    def fake_gate(report, audits, text, *, weak_source_count=0, serenity=None):
+    def fake_gate(report, audits, text, *, weak_source_count=0,
+                  prices=None, financials=None, serenity=None):
         return GateVerdict(
             status="blocked",
             reasons=["test: forced block for persist check"],
@@ -433,7 +434,8 @@ def test_gate_warning_writes_markdown_with_annotations(
 
     from backend.research.research_report_gate import GateVerdict
 
-    def fake_gate(report, audits, text, *, weak_source_count=0, serenity=None):
+    def fake_gate(report, audits, text, *, weak_source_count=0,
+                  prices=None, financials=None, serenity=None):
         return GateVerdict(
             status="warning",
             reasons=[],
@@ -471,8 +473,8 @@ def test_gate_warning_writes_markdown_with_annotations(
 def test_gate_pass_preserves_original_behavior(test_db, tmp_path, sample_stocks, monkeypatch):
     """When gate passes, original behavior (write + persist) is unchanged."""
     from backend.config import settings
-    from backend.research import deep_research
     from backend.data.database import NewsItem
+    from backend.research import deep_research
 
     monkeypatch.setattr(settings, "research_report_gate_enabled", True)
 
@@ -503,3 +505,64 @@ def test_gate_pass_preserves_original_behavior(test_db, tmp_path, sample_stocks,
     from backend.decision.harness import get_decision_evidence
     evidence = get_decision_evidence(test_db, "300308")
     assert any(e["run_type"] == "deep_research" for e in evidence)
+
+
+def test_gate_blocked_report_is_distinguishable_via_status(
+    test_db, tmp_path, sample_stocks, monkeypatch
+):
+    """M50 Phase 1 收尾: blocked report carries gate_status='blocked' so callers
+    can distinguish it from a normal report (path points to unwritten file)."""
+    from datetime import datetime
+
+    from backend.config import settings
+    from backend.data.database import NewsItem
+    from backend.research import deep_research
+    from backend.research.research_report_gate import GateVerdict
+
+    monkeypatch.setattr(settings, "research_report_gate_enabled", True)
+
+    def fake_gate(report, audits, text, *, weak_source_count=0,
+                  prices=None, financials=None, serenity=None):
+        return GateVerdict(status="blocked", reasons=["forced"], warnings=[])
+
+    import backend.research.research_report_gate as gate_mod
+    monkeypatch.setattr(gate_mod, "run_research_report_gate", fake_gate)
+
+    test_db.add(NewsItem(
+        symbol="300308", title="可区分性测试",
+        url="https://finance.eastmoney.com/a/distinguish.html",
+        published_at=datetime(2026, 5, 17, 10, 0, 0), source="东方财富",
+    ))
+    test_db.commit()
+
+    report = deep_research.run_deep_research(
+        topic="可区分性测试", symbols=["300308"], db=test_db,
+        output_dir=tmp_path, as_of="2026-05-17", persist=True,
+    )
+    assert report.gate_status == "blocked"
+    assert report.gate_reasons == ("forced",)
+    assert not report.path.exists()
+
+
+def test_gate_pass_sets_status_pass(test_db, tmp_path, sample_stocks, monkeypatch):
+    """A passing report carries gate_status='pass'."""
+    from datetime import datetime
+
+    from backend.config import settings
+    from backend.data.database import NewsItem
+    from backend.research import deep_research
+
+    monkeypatch.setattr(settings, "research_report_gate_enabled", True)
+    test_db.add(NewsItem(
+        symbol="300308", title="中际旭创高速光模块正常测试",
+        url="https://finance.eastmoney.com/a/status_pass.html",
+        published_at=datetime(2026, 5, 17, 10, 0, 0), source="东方财富",
+    ))
+    test_db.commit()
+
+    report = deep_research.run_deep_research(
+        topic="状态pass测试", symbols=["300308"], db=test_db,
+        output_dir=tmp_path, as_of="2026-05-17", persist=False,
+    )
+    assert report.gate_status in ("pass", "warning")
+    assert report.path.exists()

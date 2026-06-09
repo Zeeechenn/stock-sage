@@ -12,10 +12,10 @@ Entry point: analyze(topic, symbols, db) -> SerenityChokepointReport | None
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +67,7 @@ def _load_skill_system_prompt() -> str:
 # Tool schema (no score / label_vote / trading fields — enforced by schema)
 # ---------------------------------------------------------------------------
 
-_SERENITY_TOOL = {
+_SERENITY_TOOL: dict[str, Any] = {
     "name": "serenity_chokepoint_analysis",
     "description": "供应链瓶颈六步框架结构化输出（observe-only）",
     "input_schema": {
@@ -254,7 +254,7 @@ def analyze(
 
     from backend.llm import get_provider, runtime_readiness
 
-    llm = get_provider(settings)
+    llm = get_provider()
     readiness = runtime_readiness(settings)
     if not readiness.get("usable"):
         logger.warning("serenity_chokepoint: LLM not usable — %s", readiness.get("reason"))

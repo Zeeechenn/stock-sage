@@ -73,7 +73,7 @@ strong buy / must rise / guaranteed / load up / price target
 | 来源完整性 | `source_count == 0` 或无任何 `audit.usable` | 有源但全是非直接来源（audit 含 `网传/传闻` risk_flag） | `source_count`、`audits[].usable`、`audits[].risk_flags`、`audits[].news.url/source` |
 | 时间线（lookahead） | 任一关键证据日期晚于 `as_of` | 证据粒度只到月/季 | `as_of`、`audits[].news.published_at`、`financials[].report_date` |
 | 主题/标的匹配 | 标的行业与论题核心链路明显冲突 | 暴露度不清 | `topic`、`symbols`、（行业需 join Stock.industry） |
-| 数据覆盖 | （Phase 2）prices/financials 全空 | **Phase 1：sections 无 catalysts/evidence → warning** | Phase 1 用 `report.sections` 代理；prices/financials 未传入 gate |
+| 数据覆盖 | **永不 blocked**（最终决定，见下） | symbols 指定且 prices+financials 全不可用 → warning | `report.symbols` + 从 hook 传入的 `prices[].available`/`financials[].available`（无则回退 sections 代理） |
 | 叙事证据 | 只有媒体叙事、无公告/财报/订单（最强证据 = `social_lead`/`industry`） | 弱证据（`weak_source_count`）占比过高 | `audits`、Serenity `evidence_tier`（若有）、`weak_source_count` |
 | LLM 越界措辞 | 文本出现荐股式断言（`FORBIDDEN_REPORT_WORDING` 强命中） | 语气过强 | 渲染出的 `text`（render 后、write 前） |
 | 复盘闭环 | promotion 候选缺 ReviewCase | ReviewCase 证据不足 | 仅当该路径要创建 memory candidate 时检查；纯报告默认 N/A |
@@ -119,9 +119,9 @@ if persist: _persist_report(db, report, audits, gate=verdict)  # snapshot 带 ve
 
 blocked 时连锁不发生：不 `write_text`、不 `record_decision_run`、不 `remember_deep_research`、不建 memory candidate。
 
-**Phase 1 已实现/已决定的两点**：
-1. 数据覆盖检查在 Phase 1 用 `report.sections`（catalysts/evidence）做代理、降级为 warning（见 §2）；"证据全空"的硬阻断由「来源完整性」`source_count==0` blocked 兜底，不冗余。**Phase 2** 再把 prices/financials 传入 gate 恢复 spec 原义的 blocked。
-2. blocked 当前返回**同一个** frozen `DeepResearchReport`，其 `path` 指向未写出的文件——Phase 1 无测试依赖此区分，但 **Phase 2（API/UI 接线）必须**让调用方能区分 blocked/pass（独立诊断对象或 `gate_status` 字段），否则 `report.path.exists()` 类断言会踩坑。
+**Phase 1 收尾两点（已解决）**：
+1. **数据覆盖 = warning，永不 blocked（最终决定，非 Phase 2 TODO）**。gate 现接收 hook 传入的真实 `prices`/`financials`，当 symbols 指定且二者全不可用时出 warning；纯主题报告（symbols=[]）跳过不罚。撤销 spec 原义的 blocked，理由：①"证据全空"已由「来源完整性」`source_count==0` 硬 blocked 兜底；②缺价/财对**有可靠来源**的定性供应链研究不构成不可信（`test_gate_pass_preserves_original_behavior`：300308 无价/财 + 1 源 → pass 即证）。无 prices/financials 传入时回退 sections 代理。
+2. **blocked 可区分（已实现）**：`DeepResearchReport` 新增 `gate_status`（pass/warning/blocked/gate_disabled）+ `gate_reasons`。blocked 时 `gate_status="blocked"`、不写文件、不 persist；`path` 仍保留为"将写未写"路径（既有测试 `test_gate_blocked_does_not_write_markdown` 断言 `path is not None`）。**调用方一律用 `report.gate_status` 区分，不要靠 `path.exists()`。**
 
 ---
 

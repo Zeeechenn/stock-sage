@@ -19,7 +19,6 @@ This module has ZERO imports from:
 from __future__ import annotations
 
 import logging
-import re
 from dataclasses import dataclass, field
 from datetime import date, datetime
 from typing import TYPE_CHECKING
@@ -56,12 +55,14 @@ class GateVerdict:
 # ---------------------------------------------------------------------------
 
 def run_research_report_gate(
-    report: "DeepResearchReport",
-    audits: list["NewsAudit"],
+    report: DeepResearchReport,
+    audits: list[NewsAudit],
     rendered_text: str,
     *,
     weak_source_count: int = 0,
-    serenity: "SerenityChokepointReport | None" = None,
+    prices: list[dict] | None = None,
+    financials: list[dict] | None = None,
+    serenity: SerenityChokepointReport | None = None,
 ) -> GateVerdict:
     """Run all gate checks and return a single GateVerdict.
 
@@ -78,7 +79,7 @@ def run_research_report_gate(
 
     _check_source_integrity(report, audits, blocked, warnings)
     _check_timeline(report, audits, blocked, warnings)
-    _check_data_coverage(report, blocked, warnings)
+    _check_data_coverage(report, prices, financials, blocked, warnings)
     _check_narrative_evidence(report, audits, weak_source_count, blocked, warnings)
     _check_forbidden_wording(rendered_text, blocked, warnings)
 
@@ -97,8 +98,8 @@ def run_research_report_gate(
 # ---------------------------------------------------------------------------
 
 def _check_source_integrity(
-    report: "DeepResearchReport",
-    audits: list["NewsAudit"],
+    report: DeepResearchReport,
+    audits: list[NewsAudit],
     blocked: list[str],
     warnings: list[str],
 ) -> None:
@@ -125,8 +126,8 @@ def _check_source_integrity(
 
 
 def _check_timeline(
-    report: "DeepResearchReport",
-    audits: list["NewsAudit"],
+    report: DeepResearchReport,
+    audits: list[NewsAudit],
     blocked: list[str],
     warnings: list[str],
 ) -> None:
@@ -168,36 +169,56 @@ def _check_timeline(
 
 
 def _check_data_coverage(
-    report: "DeepResearchReport",
+    report: DeepResearchReport,
+    prices: list[dict] | None,
+    financials: list[dict] | None,
     blocked: list[str],
     warnings: list[str],
 ) -> None:
-    """Check 3: Data coverage — prices and financials."""
-    # DeepResearchReport does not directly expose prices/financials as fields.
-    # They are passed into _render_report but not stored on the frozen dataclass.
-    # We use source_count as a proxy; detailed coverage is checked via sections.
-    # If the report has sections with evidence_snippets or catalysts, data was
-    # present. We skip a hard-block here since source_count==0 is already
-    # caught in check 1, and the sections structure is opaque at gate level.
-    # Only emit a warning when source_count is very low.
-    if report.source_count == 0:
-        # Already blocked in check 1; don't double-report.
+    """Check 3: Data coverage — prices and financials.
+
+    Design decision (M50 Phase 1 收尾): this check emits **warning only, never
+    blocked**.  Rationale: an evidence-empty report is already hard-blocked by
+    check 1 (source_count == 0); the absence of price/financial rows does NOT
+    make a qualitative supply-chain thesis untrustworthy when it has good
+    sources (a pure-theme report legitimately has symbols=[] and no prices).
+    See docs/dev/m50_research_report_gate_spec.md §2.
+
+    When prices/financials are passed (from the deep_research hook) we use real
+    availability; otherwise we fall back to the sections proxy for direct
+    callers that don't thread the raw context.
+    """
+    # Only meaningful when the report claims to research specific symbols.
+    if not report.symbols:
         return
 
-    # Look for any section with available data markers in sections dict
+    if prices is not None or financials is not None:
+        prices = prices or []
+        financials = financials or []
+        any_price = any(p.get("available") for p in prices)
+        any_financial = any(f.get("available") for f in financials)
+        if not any_price and not any_financial:
+            warnings.append(
+                "数据覆盖：所研标的均无价格/财务数据，结论缺量化支撑，建议补充"
+            )
+        return
+
+    # Fallback: sections proxy (no raw prices/financials threaded in).
+    if report.source_count == 0:
+        return
     sections = report.sections or ()
-    has_price_data = any(
+    has_data = any(
         s.get("catalysts") or s.get("evidence_snippets")
         for s in sections
         if isinstance(s, dict)
     )
-    if not has_price_data and sections:
+    if not has_data and sections:
         warnings.append("数据覆盖：sections 中未检测到价格/财务证据片段，建议补充结构化数据")
 
 
 def _check_narrative_evidence(
-    report: "DeepResearchReport",
-    audits: list["NewsAudit"],
+    report: DeepResearchReport,
+    audits: list[NewsAudit],
     weak_source_count: int,
     blocked: list[str],
     warnings: list[str],
@@ -209,7 +230,7 @@ def _check_narrative_evidence(
         return
 
     # Determine source URL/source field to classify tier
-    def _is_narrative_only(audit: "NewsAudit") -> bool:
+    def _is_narrative_only(audit: NewsAudit) -> bool:
         src = (audit.news.source or "").lower()
         url = (audit.news.url or "").lower()
         weak_kws = ("股吧", "雪球", "论坛", "自媒体", "social", "weibo",
@@ -255,7 +276,7 @@ def _check_forbidden_wording(
 
 
 def _check_serenity_layer(
-    serenity: "SerenityChokepointReport",
+    serenity: SerenityChokepointReport,
     blocked: list[str],
     warnings: list[str],
 ) -> None:
