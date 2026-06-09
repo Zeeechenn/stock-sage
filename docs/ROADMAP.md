@@ -8,11 +8,12 @@
 
 | 工作线 | 当前状态 | 第一动作 | 停止条件 |
 |---|---|---|---|
-| M46.5 正确性底线 | complete：一次性审计已完成，真实库为 warning-only / no blockers；前端关键数字显示已有纯函数测试兜底 | M47 接手常驻化：`mingcang evidence lookahead-check`、lineage / provenance 可见化、UI/export 披露 | warning 不影响正式信号；blocked 仍不得自动 promotion；一次性审计不作为产品入口 |
-| M46 用户可发现性与上手路径 | complete：README 保持极简分流器，`docs_public` 已有任务手册 / 功能地图 / walkthrough，demo 首屏有信号、行情和示例持仓 | 后续只按用户反馈补截图或微调导航 | 不把 README 变成大而全文档；不把维护者路线图当普通用户下一步 |
+| v0.3.3 / 0.4-1.0 收尾 | complete：首次启动引导、数据健康页、per-signal rule/provenance 展示、离线复现证据、provider 插件示例、API contract、CI/dependency 硬门禁已落地；`main == origin/main`，HEAD 为 `v0.3.3` | 后续先做 M29 evidence ops 或用户反馈驱动的文档/界面微调；不要从 0.3.3 产品化收尾推出新信号行为 | 不改 production profile、不复活 quant/Kronos/Atlas、不把 demo/community 入口接到真实决策 |
+| M49 工具入口与可观测性 | complete：tools registry、`mingcang tools`、historical tools read/write 边界、correlation id 链路已落地 | 后续只按实际维护需要补 registry 或入口说明 | 不改变 signal、scheduler、production profile、memory promotion 行为 |
+| M46-M48 可信/可发现/前端可靠性 | complete：M46 demo/docs_public，M46.5 warning-only/no-blocker 审计与关键数字测试，M47 standing lookahead/data trust visibility，M48 TS/API/status primitive 基线均已收口 | 后续只按用户反馈补截图、说明或小型可靠性测试 | warning 不影响正式信号；blocked 仍不得自动 promotion；不把 README 变成大而全文档 |
 | M45 研究定位落地 | 主体完成：source-gated importer、falsification scoreboard、模块分诊、Stage 2b shadow 预注册都已落地；后续只保留守门合同 | 后续导入仍先 dry-run + source fidelity review；Stage 2b 只做 non-promoting shadow | 不复活 quant、不改 production profile、不让未过门 alpha 影响真实决策 |
 | M44 Atlas 合并 | complete / dormant：`9820143` 已包含在 `origin/main`；Atlas/test4 Stage 2b signal-overlay shadow starter 已可用；`ATLAS_ENABLED=false` | 只用 `backend.tools.atlas_test4_stage2b_shadow` 做 non-promoting shadow accrual；exit overlay 另走单独任务 | 任何 official signal / test2 / scheduler / shared-infra drift 先停下归因 |
-| M29 Forward Evidence | routine read-only check；所有 alpha 证据仍 non-promoting，fresh forward coverage 尚未 ready | 只读跑 `backend.tools.m29_forward_readiness --db-url ...`；ready 后才追加 1d/3d/5d shadow + ledger | 会恢复 quant、改 production profile、接 checkpoint、写真实 `sentiment_cache` 或调额外付费服务时先确认 |
+| M29 Forward Evidence | active / blocked for now：2026-06-09 只读 readiness 显示 `ready_to_run_forward_shadow=false`；100 标的完整覆盖只到 2026-06-02，1d/3d/5d 既有 forward artifacts 缺失 | 先只读/preview 诊断覆盖和 baseline artifact 缺口；ready 后才追加 1d/3d/5d shadow + ledger | 会恢复 quant、改 production profile、接 checkpoint、写真实 `sentiment_cache` 或调额外付费服务时先确认 |
 | 后置/低优先 | M24.3 / M25 / M21.4 / M12 / M10.5 / M4 / M5 | 只在触发条件满足时启动 | 不从历史摘要推出新的生产行为 |
 
 ---
@@ -185,6 +186,41 @@ Completion notes:
 
 ---
 
+## v0.3.3 产品化收尾与当前接手状态【complete】
+
+Current fact pattern:
+
+- `main` is aligned with `origin/main`; HEAD is tagged `v0.3.3`.
+- v0.3.3 closed the post-0.4/1.0 productization leftovers without production
+  signal drift: first-run wizard, data health page, per-signal rule/provenance,
+  reproducible offline evidence, community provider example, API contract, and
+  stricter CI/dependency gates.
+- Current production profile remains `new_framework`, `WEIGHT_QUANT=0.0`,
+  technical/sentiment `0.6 / 0.4`, Kronos off, Atlas dormant.
+- 2026-06-09 read-only M29 readiness is blocked:
+  `ready_to_run_forward_shadow=false`; latest price date is 2026-06-08, but full
+  100-symbol complete coverage is only through 2026-06-02, and recognizable
+  1d/3d/5d existing forward artifacts are missing.
+- M32 is not the next default: local review/thesis data is still thin
+  (`review_cases=2`, `forward_theses=2` as of 2026-06-09).
+
+Next default:
+
+1. Keep docs and handoffs anchored on `v0.3.3`.
+2. Diagnose M29 coverage/artifact gaps in read-only or preview mode.
+3. Run forward shadow only after readiness emits concrete next commands.
+4. Keep M24.3 shadow-only review behind its checkpoint and evidence trigger.
+
+Stop conditions:
+
+- Do not change production signal weights, thresholds, stops, scheduler, test2,
+  memory promotion, or position state from this status-sync work.
+- Do not treat readiness, productization, screenshots, or demo data as alpha
+  promotion evidence.
+- Do not create ad hoc planning files in the repo.
+
+---
+
 ## M45 研究定位落地：放大器为主、源受门控【complete / guardrails】
 
 Completed summary:
@@ -237,9 +273,13 @@ Current execution:
 
 1. Read `STATUS.md` and this section, then run `git status --short`.
 2. First action is read-only: `backend.tools.m29_forward_readiness --db-url ...`.
-3. If not ready, stop and wait. Do not treat partial local data as fresh evidence.
-4. If ready, run 1d/3d/5d forward shadow bundle and add artifacts to `m29_evidence_ledger`.
-5. Update M29.5 residual attribution in the same forward window. If still non-promoting, keep quant off.
+3. Current 2026-06-09 readiness artifact is not ready:
+   `ready_to_run_forward_shadow=false`, full 100-symbol complete coverage only
+   through 2026-06-02, missing existing 1d/3d/5d forward artifacts. Diagnose or
+   repair those inputs before any shadow bundle.
+4. If not ready, stop and wait. Do not treat partial local data as fresh evidence.
+5. If ready, run 1d/3d/5d forward shadow bundle and add artifacts to `m29_evidence_ledger`.
+6. Update M29.5 residual attribution in the same forward window. If still non-promoting, keep quant off.
 
 Stop before any production change, checkpoint wiring, Kronos long training, true `sentiment_cache` writes, new dependency download, or extra paid external service.
 
@@ -264,6 +304,8 @@ Stop before any production change, checkpoint wiring, Kronos long training, true
 Detailed history is intentionally not repeated here. Read `CHANGELOG.md` for:
 
 - M46 onboarding/demo clarity and user-discovery follow-up.
+- v0.3.3 productization, reproducible evidence, community entry, and stability hardening.
+- M49 tools registry / observability.
 - M45 source-gated research positioning, importer, scoreboard, and Stage 2b shadow preregistration.
 - M44 dormant Atlas L0-L4 merge.
 - M30 engineering quality convergence.

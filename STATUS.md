@@ -8,9 +8,9 @@ MingCang is an agent-ready, local-first A-share research workspace. It supports
 research, backtests, local validation, memory/context inspection, and code
 maintenance. It does not place real trades or provide financial advice.
 
-Current release surface: package/API/frontend versions are `0.3.2`; the latest
-documented patch is `v0.3.2` reliability and observability cleanup in
-`CHANGELOG.md`.
+Current release surface: package/API/frontend versions are `0.3.3`; the latest
+documented patch is `v0.3.3` productization, reproducible-evidence, community
+entry, and stability hardening in `CHANGELOG.md`.
 
 ## Current State
 
@@ -21,6 +21,8 @@ documented patch is `v0.3.2` reliability and observability cleanup in
 | technical / sentiment weights | `0.6 / 0.4` |
 | entry threshold | `NEW_FRAMEWORK_ENTRY_THRESHOLD=25.0` |
 | Kronos | disabled for production |
+| v0.3.3 | complete: first-run wizard, data health page, per-signal provenance, reproducible evidence path, community provider example, API contract, and stricter CI/dependency gates |
+| M49 | complete: retained backend tools classified with purpose/read-write boundaries; `mingcang tools` JSON entry added; request/export/memory-candidate correlation IDs wired |
 | M46.5 | complete: one-time lookahead audit found warning-only gaps, no blockers; frontend key-number display tests added |
 | M46 | complete: docs_public router/manual/feature map + no-key demo first-screen data |
 | M47 | complete: `mingcang evidence lookahead-check` productized; coverage snapshot warnings/freshness/provider chain visible in API, UI, and export |
@@ -58,10 +60,10 @@ Stop loss / take profit remain ATR-derived project rules, not LLM predictions.
 
 | Workstream | First action | Stop condition |
 |---|---|---|
-| M49 tooling observability | complete: retained backend tools classified with purpose/read-write boundaries; `mingcang tools` JSON entry added; request/export/memory-candidate correlation IDs wired | No signal behavior, scheduler behavior, production profile, or memory promotion policy changed |
+| post-v0.3.3 status sync | complete this doc/router calibration and keep future handoffs anchored on `v0.3.3` truth | Do not invent new production behavior from completed productization work |
+| M29 forward evidence ops | First fix or diagnose readiness blockers: full 100-symbol coverage after 2026-06-02 and recognizable 1d/3d/5d baseline artifacts are missing | Stop if fresh coverage is incomplete, artifacts are partial, or a change would re-enable quant / Kronos / production scoring |
 | M45 research-positioning follow-up | Use dry-run-first importer / scoreboard only with direct source fidelity | Do not promote trusted memory, official signals, production profile, scheduler, test2, stops, sizing, or positions |
-| M29 forward evidence | Run readiness checks read-only before any shadow bundle | Stop if fresh coverage is incomplete or if a change would re-enable quant / Kronos / production scoring |
-| M32 hypothesis bridge | Start only after review data is thick enough | Output falsifiable theses, not Strong Buy labels |
+| M32 hypothesis bridge | Start only after review data is thick enough; current local DB has only a small seed set (`review_cases=2`, `forward_theses=2` as of 2026-06-09) | Output falsifiable theses, not Strong Buy labels |
 | M44 Atlas | Use `backend.tools.atlas_test4_stage2b_shadow` only for non-promoting signal-overlay shadow accrual | Stop on any official-signal / test2 / scheduler / shared-infra drift |
 
 For detailed current sequencing, read `docs/ROADMAP.md`. For Atlas/M44 detail,
@@ -80,10 +82,10 @@ MYPY_CACHE_DIR=/private/tmp/mingcang_mypy_cache \
 make verify PYTEST='.venv/bin/python -m pytest -p no:cacheprovider'
 ```
 
-Last full recorded gate for v0.3.2 on 2026-06-09:
+Last full recorded gate for v0.3.3 on 2026-06-09:
 ruff passed, mypy passed, backend pytest `1115 passed, 5 skipped`, frontend
-node tests `30 passed`, Vite build passed, and ESLint summary reported
-`0 errors / 1 warning` in advisory mode.
+node tests `33 passed`, Vite build passed, followed by the `v0.3.3`
+lock/docs-public CI fix at HEAD.
 
 For release-quality work, treat `make verify` as the canonical gate.
 
