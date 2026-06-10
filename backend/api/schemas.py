@@ -322,6 +322,12 @@ class DeepResearchResponse(BaseModel):
     source_count: int = 0
     risk_flags: list[str] = []
     readiness: dict = {}
+    # M50 F2: gate verdict fields — always present for consumer awareness.
+    # gate_status values: "pass" / "warning" / "blocked" / "gate_disabled"
+    # When gate_status == "blocked", report_path is None (file was not written).
+    gate_status: str = "gate_disabled"
+    gate_reasons: list[str] = []
+    gate_warnings: list[str] = []
 
 
 class StressTestResponse(BaseModel):

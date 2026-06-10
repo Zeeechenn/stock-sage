@@ -186,3 +186,73 @@ class TestSerenityReportConstruction:
         import dataclasses
         with pytest.raises(dataclasses.FrozenInstanceError):
             report.topic = "changed"  # type: ignore[misc]
+
+
+class TestSerenityProjectRootPath:
+    """F6 fix: _PROJECT_ROOT must resolve to the repo root, not home dir."""
+
+    def test_project_root_is_repo_root(self):
+        from pathlib import Path
+
+        from backend.research.serenity_chokepoint import _PROJECT_ROOT
+
+        # Repo root should contain pyproject.toml or AGENTS.md, NOT be home dir
+        assert _PROJECT_ROOT != Path.home(), (
+            "_PROJECT_ROOT must not be home directory (parents[3] was wrong for backend/research/)"
+        )
+        # parents[2] from backend/research/serenity_chokepoint.py => repo root
+        # Verify it points to stock-sage repo root (has AGENTS.md or backend/ subdir)
+        assert (_PROJECT_ROOT / "backend").is_dir(), (
+            f"_PROJECT_ROOT={_PROJECT_ROOT} does not contain 'backend/' — parents[2] may be wrong"
+        )
+
+    def test_skill_md_candidate_is_reachable(self):
+        from backend.research.serenity_chokepoint import SKILL_MD_CANDIDATES
+
+        # First candidate should point into the repo .pi/ tree
+        first = SKILL_MD_CANDIDATES[0]
+        assert first.exists(), (
+            f"Primary SKILL.md candidate not found at {first} — check _PROJECT_ROOT"
+        )
+
+
+class TestSerenityEvidenceTierFromSourceTier:
+    """F10 fix: evidence_tier schema enum must be derived from SourceTier."""
+
+    def test_evidence_tier_enum_matches_source_tier(self):
+        from backend.research.research_evidence_defs import SourceTier
+        from backend.research.serenity_chokepoint import _SERENITY_TOOL
+
+        schema_enum = _SERENITY_TOOL["input_schema"]["properties"]["evidence_tier"]["enum"]
+        expected = [t.value for t in SourceTier]
+        assert schema_enum == expected, (
+            f"evidence_tier enum {schema_enum!r} must equal SourceTier values {expected!r}"
+        )
+
+
+class TestSerenityLLMOrderingF7:
+    """F7 fix: runtime_readiness must be checked before get_provider is called."""
+
+    def test_get_provider_not_called_when_llm_not_usable(self, monkeypatch):
+        from backend.config import settings
+        monkeypatch.setattr(settings, "long_term_serenity_enabled", True)
+
+        monkeypatch.setattr(
+            "backend.llm.runtime_readiness",
+            lambda s: {"usable": False, "reason": "no API key"},
+        )
+
+        get_provider_calls = []
+
+        def fake_get_provider():
+            get_provider_calls.append("called")
+            return MagicMock()
+
+        monkeypatch.setattr("backend.llm.get_provider", fake_get_provider)
+
+        import backend.research.serenity_chokepoint as sc_mod
+        result = sc_mod.analyze("光模块供应链", ["300308"], db=None)
+        assert result is None
+        assert not get_provider_calls, (
+            "get_provider must NOT be called when runtime_readiness reports not usable"
+        )

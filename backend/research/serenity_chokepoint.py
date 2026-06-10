@@ -17,13 +17,23 @@ from datetime import date
 from pathlib import Path
 from typing import Any, Literal
 
+from backend.research.research_evidence_defs import SourceTier
+
+try:
+    from backend.research.research_evidence_defs import ResearchPriorityBand
+    _PRIORITY_BAND_VALUES = [b.value for b in ResearchPriorityBand]
+except ImportError:
+    ResearchPriorityBand = None  # type: ignore[assignment,misc]
+    _PRIORITY_BAND_VALUES = ["够查", "暂缓", "证据不足"]
+
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # SKILL.md loader (mirrors a_teacher_analyst._load_skill_system_prompt)
 # ---------------------------------------------------------------------------
 
-_PROJECT_ROOT = Path(__file__).resolve().parents[3]
+# backend/research/serenity_chokepoint.py: parents[0]=research, parents[1]=backend, parents[2]=repo root
+_PROJECT_ROOT = Path(__file__).resolve().parents[2]
 SKILL_MD_CANDIDATES = (
     _PROJECT_ROOT / ".pi" / "skills" / "serenity-chokepoint" / "SKILL.md",
     Path.home() / ".claude" / "skills" / "serenity-chokepoint" / "SKILL.md",
@@ -120,7 +130,7 @@ _SERENITY_TOOL: dict[str, Any] = {
             },
             "evidence_tier": {
                 "type": "string",
-                "enum": ["primary", "official", "filing", "ir", "industry", "social_lead"],
+                "enum": [t.value for t in SourceTier],
                 "description": "当前最强证据等级",
             },
             "source_refs": {
@@ -167,7 +177,7 @@ _SERENITY_TOOL: dict[str, Any] = {
             },
             "research_priority_band": {
                 "type": "string",
-                "enum": ["够查", "暂缓", "证据不足"],
+                "enum": _PRIORITY_BAND_VALUES,
                 "description": "研究优先级档位",
             },
         },
@@ -254,11 +264,12 @@ def analyze(
 
     from backend.llm import get_provider, runtime_readiness
 
-    llm = get_provider()
     readiness = runtime_readiness(settings)
     if not readiness.get("usable"):
         logger.warning("serenity_chokepoint: LLM not usable — %s", readiness.get("reason"))
         return None
+
+    llm = get_provider()
 
     day = as_of or date.today().isoformat()
     system_prompt = _load_skill_system_prompt()

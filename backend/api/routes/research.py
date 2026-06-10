@@ -248,18 +248,23 @@ def run_deep_research_endpoint(
         persist=True,
     )
     readiness = runtime_readiness()
+    is_blocked = getattr(report, "gate_status", None) == "blocked"
     return DeepResearchResponse(
         topic=report.topic,
         symbols=report.symbols,
         as_of=report.as_of,
         summary=report.summary,
-        report_path=str(report.path) if report.path else None,
+        # F2: blocked reports must NOT expose the unwritten path to callers.
+        report_path=None if is_blocked else (str(report.path) if report.path else None),
         source_count=report.source_count,
         risk_flags=report.risk_flags,
         readiness={
             "llm": readiness,
             "search_configured": bool(readiness.get("search", {}).get("tavily") or readiness.get("search", {}).get("anspire")),
         },
+        gate_status=getattr(report, "gate_status", "gate_disabled"),
+        gate_reasons=list(getattr(report, "gate_reasons", ())),
+        gate_warnings=list(getattr(report, "gate_warnings", ())),
     )
 
 

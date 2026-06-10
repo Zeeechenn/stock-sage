@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 
 def test_run_deep_research_creates_report_and_decision_run(test_db, tmp_path, sample_stocks):
@@ -328,8 +328,7 @@ def test_gate_blocked_does_not_write_markdown(test_db, tmp_path, sample_stocks, 
     # Inject a blocking gate verdict by patching run_research_report_gate
     from backend.research.research_report_gate import GateVerdict
 
-    def fake_gate(report, audits, text, *, weak_source_count=0,
-                  prices=None, financials=None, serenity=None):
+    def fake_gate(report, audits, text, **kwargs):
         return GateVerdict(
             status="blocked",
             reasons=["test: forced block"],
@@ -380,8 +379,7 @@ def test_gate_blocked_does_not_persist(test_db, tmp_path, sample_stocks, monkeyp
 
     from backend.research.research_report_gate import GateVerdict
 
-    def fake_gate(report, audits, text, *, weak_source_count=0,
-                  prices=None, financials=None, serenity=None):
+    def fake_gate(report, audits, text, **kwargs):
         return GateVerdict(
             status="blocked",
             reasons=["test: forced block for persist check"],
@@ -434,8 +432,7 @@ def test_gate_warning_writes_markdown_with_annotations(
 
     from backend.research.research_report_gate import GateVerdict
 
-    def fake_gate(report, audits, text, *, weak_source_count=0,
-                  prices=None, financials=None, serenity=None):
+    def fake_gate(report, audits, text, **kwargs):
         return GateVerdict(
             status="warning",
             reasons=[],
@@ -521,8 +518,7 @@ def test_gate_blocked_report_is_distinguishable_via_status(
 
     monkeypatch.setattr(settings, "research_report_gate_enabled", True)
 
-    def fake_gate(report, audits, text, *, weak_source_count=0,
-                  prices=None, financials=None, serenity=None):
+    def fake_gate(report, audits, text, **kwargs):
         return GateVerdict(status="blocked", reasons=["forced"], warnings=[])
 
     import backend.research.research_report_gate as gate_mod
@@ -542,6 +538,79 @@ def test_gate_blocked_report_is_distinguishable_via_status(
     assert report.gate_status == "blocked"
     assert report.gate_reasons == ("forced",)
     assert not report.path.exists()
+
+
+# ---------------------------------------------------------------------------
+# F3 / F4: timezone and upper-bound filter regression tests
+# ---------------------------------------------------------------------------
+
+def test_collect_news_upper_bound_excludes_future_items(test_db, tmp_path, sample_stocks):
+    """F4: _collect_news with a past as_of must NOT include items published after as_of."""
+    from backend.data.database import NewsItem
+    from backend.research.deep_research import _collect_news
+
+    as_of_str = "2026-05-10"
+    as_of_dt = datetime.strptime(as_of_str, "%Y-%m-%d")
+
+    # Add one old item (within window) and one future item (after as_of)
+    test_db.add(NewsItem(
+        symbol="300308",
+        title="在窗口内的旧新闻",
+        url="https://finance.eastmoney.com/a/old.html",
+        published_at=datetime(2026, 5, 9, 10, 0, 0),
+        source="东方财富",
+    ))
+    test_db.add(NewsItem(
+        symbol="300308",
+        title="在as_of之后的未来新闻",
+        url="https://finance.eastmoney.com/a/future.html",
+        published_at=datetime(2026, 5, 15, 10, 0, 0),   # > as_of 2026-05-10
+        source="东方财富",
+    ))
+    test_db.commit()
+
+    items, audits = _collect_news(
+        test_db, ["300308"], as_of_dt, window_days=14
+    )
+    titles = [item.title for item in items]
+    assert "在窗口内的旧新闻" in titles, "Old item should be included"
+    assert "在as_of之后的未来新闻" not in titles, (
+        "F4: item published after as_of must be excluded by upper bound filter"
+    )
+
+
+def test_collect_news_memory_items_also_upper_bounded(test_db, tmp_path, sample_stocks):
+    """F4: memory_items passed to _collect_news are also filtered by the upper bound."""
+    from backend.data.news import RawNews
+    from backend.research.deep_research import _collect_news
+
+    as_of_str = "2026-05-10"
+    as_of_dt = datetime.strptime(as_of_str, "%Y-%m-%d")
+
+    within_window = RawNews(
+        title="内存旧新闻",
+        url="https://example.com/old",
+        published_at=datetime(2026, 5, 8, 10, 0, 0),
+        source="tavily_web",
+        symbol=None,
+    )
+    after_as_of = RawNews(
+        title="内存未来新闻",
+        url="https://example.com/future",
+        published_at=datetime(2026, 5, 17, 10, 0, 0),
+        source="tavily_web",
+        symbol=None,
+    )
+
+    items, _ = _collect_news(
+        test_db, [], as_of_dt, window_days=14,
+        memory_items=[within_window, after_as_of],
+    )
+    titles = [item.title for item in items]
+    assert "内存旧新闻" in titles
+    assert "内存未来新闻" not in titles, (
+        "F4: memory_item published after as_of must be excluded by upper bound"
+    )
 
 
 def test_gate_pass_sets_status_pass(test_db, tmp_path, sample_stocks, monkeypatch):
@@ -566,3 +635,49 @@ def test_gate_pass_sets_status_pass(test_db, tmp_path, sample_stocks, monkeypatc
     )
     assert report.gate_status in ("pass", "warning")
     assert report.path.exists()
+
+
+def test_api_endpoint_blocked_report_returns_null_path_with_gate_fields(
+    test_db, tmp_path, sample_stocks, monkeypatch
+):
+    """F2: when gate blocks a report, the API endpoint must return report_path=None
+    and expose gate_status='blocked' + gate_reasons so callers are not misled."""
+    from datetime import datetime
+
+    from backend.api.routes import run_deep_research_endpoint
+    from backend.api.schemas import DeepResearchRequest
+    from backend.config import settings
+    from backend.data.database import NewsItem
+    from backend.research.research_report_gate import GateVerdict
+
+    monkeypatch.setattr(settings, "research_report_gate_enabled", True)
+    monkeypatch.setattr("backend.research.deep_research.default_output_dir", lambda: tmp_path)
+
+    import backend.research.research_report_gate as gate_mod
+
+    def fake_gate(report, audits, text, **kwargs):
+        return GateVerdict(status="blocked", reasons=["test-block-reason"], warnings=[])
+
+    monkeypatch.setattr(gate_mod, "run_research_report_gate", fake_gate)
+
+    test_db.add(NewsItem(
+        symbol="603986", title="兆易创新F2测试新闻",
+        url="https://finance.eastmoney.com/a/f2_test.html",
+        published_at=datetime(2026, 5, 17, 10, 0, 0), source="东方财富",
+    ))
+    test_db.commit()
+
+    response = run_deep_research_endpoint(
+        DeepResearchRequest(topic="F2端点拦截测试", symbols=["603986"]),
+        db=test_db,
+    )
+
+    assert response.gate_status == "blocked", (
+        "F2: endpoint must surface gate_status='blocked' when report was blocked"
+    )
+    assert "test-block-reason" in response.gate_reasons, (
+        "F2: gate_reasons must be forwarded to API response"
+    )
+    assert response.report_path is None, (
+        "F2: blocked report must return report_path=None, not the unwritten file path"
+    )

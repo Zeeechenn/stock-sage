@@ -26,6 +26,20 @@ class SourceTier(StrEnum):
     social_lead = "social_lead"  # 社媒/KOL/传闻 —— 仅 lead，不能作唯一证据
 
 
+class ResearchPriorityBand(StrEnum):
+    """Research priority band values used by SerenityChokepointReport.
+
+    Collects all valid ``research_priority_band`` string values in one place so
+    gate comparisons and serenity builders can reference the enum instead of
+    hard-coding bare strings.
+    """
+
+    sufficient = "够查"          # Evidence sufficient to proceed with research
+    watchlist = "观察"           # Borderline — add to watchlist, revisit later
+    insufficient = "证据不足"    # Evidence too thin to support a research memo
+    high_priority = "高优先"     # Strong chokepoint signal, prioritise immediately
+
+
 # Strength order: primary > official > filing > ir > industry > social_lead
 SOURCE_TIER = SourceTier
 

@@ -1,6 +1,7 @@
 """Tests for backend/research/research_evidence_defs.py."""
 from backend.research.research_evidence_defs import (
     SOURCE_TIER,
+    ResearchPriorityBand,
     SourceTier,
     scan_forbidden_wording,
     stronger_than,
@@ -97,3 +98,23 @@ class TestScanForbiddenWording:
         hits = scan_forbidden_wording(text)
         strong = [h for h in hits if h.endswith(":strong")]
         assert strong
+
+
+class TestResearchPriorityBand:
+    """F10: ResearchPriorityBand StrEnum collects all band values."""
+
+    def test_enum_values_exist(self):
+        assert ResearchPriorityBand.insufficient.value == "证据不足"
+        assert ResearchPriorityBand.sufficient.value == "够查"
+        assert ResearchPriorityBand.watchlist.value == "观察"
+        assert ResearchPriorityBand.high_priority.value == "高优先"
+
+    def test_insufficient_equals_bare_string(self):
+        """StrEnum: enum value must compare equal to its string literal."""
+        assert ResearchPriorityBand.insufficient == "证据不足"
+        assert ResearchPriorityBand.sufficient == "够查"
+
+    def test_str_enum_identity(self):
+        """Values are strings — can be used directly in string comparisons."""
+        band = "证据不足"
+        assert band == ResearchPriorityBand.insufficient

@@ -23,7 +23,8 @@ from dataclasses import dataclass, field
 from datetime import date, datetime
 from typing import TYPE_CHECKING
 
-from backend.research.research_evidence_defs import scan_forbidden_wording
+from backend.data.news_audit import WEAK_SOURCE_KEYWORDS
+from backend.research.research_evidence_defs import ResearchPriorityBand, scan_forbidden_wording
 
 if TYPE_CHECKING:
     from backend.data.news_audit import NewsAudit
@@ -31,9 +32,6 @@ if TYPE_CHECKING:
     from backend.research.serenity_chokepoint import SerenityChokepointReport
 
 logger = logging.getLogger(__name__)
-
-# Tier names that are considered "only narrative / social evidence"
-_NARRATIVE_ONLY_TIERS = {"social_lead", "industry"}
 
 
 @dataclass(frozen=True)
@@ -59,6 +57,7 @@ def run_research_report_gate(
     audits: list[NewsAudit],
     rendered_text: str,
     *,
+    llm_text: str | None = None,
     weak_source_count: int = 0,
     prices: list[dict] | None = None,
     financials: list[dict] | None = None,
@@ -73,6 +72,13 @@ def run_research_report_gate(
     4. Narrative evidence quality
     5. LLM out-of-bounds wording
     6. Serenity strictness layer (only if serenity is not None)
+
+    ``rendered_text`` is the full rendered Markdown (used for non-wording checks
+    that may need it in future).  ``llm_text`` is the LLM-generated content only
+    (sections / summary / catalysts / risks) — the forbidden-wording scan runs
+    against ``llm_text`` so that news titles embedded in the source-audit section
+    do NOT cause false positives.  When ``llm_text`` is None the gate falls back
+    to ``rendered_text`` for backward compatibility.
     """
     blocked: list[str] = []
     warnings: list[str] = []
@@ -81,7 +87,10 @@ def run_research_report_gate(
     _check_timeline(report, audits, blocked, warnings)
     _check_data_coverage(report, prices, financials, blocked, warnings)
     _check_narrative_evidence(report, audits, weak_source_count, blocked, warnings)
-    _check_forbidden_wording(rendered_text, blocked, warnings)
+    # F1: scan only LLM-generated text, never the full rendered output that
+    # contains raw news titles from the source-audit section.
+    wording_target = llm_text if llm_text is not None else rendered_text
+    _check_forbidden_wording(wording_target, blocked, warnings)
 
     if serenity is not None:
         _check_serenity_layer(serenity, blocked, warnings)
@@ -103,25 +112,34 @@ def _check_source_integrity(
     blocked: list[str],
     warnings: list[str],
 ) -> None:
-    """Check 1: Source integrity."""
-    # Blocked: zero sources or no usable audit
+    """Check 1: Source integrity.
+
+    F5: source_count == 0 (no news found) is a *warning*, not a hard block.
+    A pure-framework / offline report with no recent news is legitimate; the
+    caller renders it with "本地数据库暂无近 14 日新闻" and that is fine.
+    Hard-blocking only happens when there ARE audit records but none is usable.
+    """
     if report.source_count == 0:
-        blocked.append("来源完整性：source_count == 0，无任何可用来源")
+        # F5: downgrade to warning — pure-framework report is allowed through.
+        warnings.append(
+            "来源完整性：source_count == 0，无近期新闻；报告仅保留结构化研究框架"
+        )
         return
 
     has_usable = any(a.usable for a in audits)
-    if not has_usable:
+    if not has_usable and audits:
+        # There ARE audit records, but all failed quality checks → hard block.
         blocked.append("来源完整性：所有审计来源均不可用（usable=False）")
         return
 
-    # Warning: all usable sources are "网传/传闻"
-    rumour_flags = {"网传", "传闻", "weak_source"}
+    # Warning: all usable sources carry the weak_source risk flag (F9: use only
+    # the structured flag emitted by news_audit, not a hand-rolled keyword list).
     all_rumour = all(
-        any(f in a.risk_flags for f in rumour_flags)
+        "weak_source" in a.risk_flags
         for a in audits
         if a.usable
     )
-    if all_rumour and audits:
+    if all_rumour and any(a.usable for a in audits):
         warnings.append("来源完整性：所有可用来源均含网传/传闻风险标记，建议补充直接来源")
 
 
@@ -139,7 +157,6 @@ def _check_timeline(
         return
 
     future_titles: list[str] = []
-    month_only_count = 0
     for audit in audits:
         if not audit.usable:
             continue
@@ -155,17 +172,15 @@ def _check_timeline(
             continue
         if pub_date > as_of_date:
             future_titles.append(audit.title[:60])
-        # Heuristic: published_at at day=1 suggests month-only granularity
-        if pub_date.day == 1:
-            month_only_count += 1
+    # F8: Removed unreliable day==1 month-granularity heuristic.
+    # RawNews / NewsAudit have no granularity field, and day==1 is a false
+    # positive for legitimate news published on the first of any month.
 
     if future_titles:
         blocked.append(
             f"时间线 lookahead：{len(future_titles)} 条关键证据日期晚于 as_of ({report.as_of})："
             f" {future_titles[:3]}"
         )
-    elif month_only_count and month_only_count == sum(1 for a in audits if a.usable):
-        warnings.append("时间线：所有证据粒度仅到月/季，无法精确 lookahead 检查")
 
 
 def _check_data_coverage(
@@ -229,13 +244,15 @@ def _check_narrative_evidence(
         # Already handled in source integrity; skip here.
         return
 
-    # Determine source URL/source field to classify tier
+    # Determine source URL/source field to classify tier.
+    # F9: prefer structured 'weak_source' risk flag; fall back to imported
+    # WEAK_SOURCE_KEYWORDS from news_audit (single source of truth, no fork).
     def _is_narrative_only(audit: NewsAudit) -> bool:
+        if "weak_source" in audit.risk_flags:
+            return True
         src = (audit.news.source or "").lower()
         url = (audit.news.url or "").lower()
-        weak_kws = ("股吧", "雪球", "论坛", "自媒体", "social", "weibo",
-                    "网传", "传闻", "xhs", "xiaohongshu")
-        return any(kw in src or kw in url for kw in weak_kws)
+        return any(kw in src or kw in url for kw in WEAK_SOURCE_KEYWORDS)
 
     narrative_count = sum(1 for a in usable_audits if _is_narrative_only(a))
     total_usable = len(usable_audits)
@@ -288,10 +305,10 @@ def _check_serenity_layer(
             f"主题未通过快速筛选"
         )
 
-    # research_priority_band == "证据不足" → blocked (when heading to promotion)
-    # Phase 1: pure report path — treat as warning, not blocked
-    # (blocked only when memory promotion is actually triggered; that's Phase 2)
-    if serenity.research_priority_band == "证据不足":
+    # research_priority_band == ResearchPriorityBand.insufficient → blocked (when
+    # heading to promotion). Phase 1: pure report path — treat as warning, not
+    # blocked (blocked only when memory promotion is triggered; that's Phase 2).
+    if serenity.research_priority_band == ResearchPriorityBand.insufficient:
         warnings.append(
             "Serenity 加严：research_priority_band=证据不足，不建议将此报告升级为 memory candidate"
         )

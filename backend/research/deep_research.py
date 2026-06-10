@@ -9,7 +9,7 @@ import argparse
 import logging
 import re
 from dataclasses import dataclass, replace
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from backend.config import BASE_DIR
@@ -120,9 +120,18 @@ def _collect_news(
 ) -> tuple[list[RawNews], list[NewsAudit]]:
     """Collect recent stored news and audit the source trail."""
     cutoff = as_of_dt - timedelta(days=window_days)
+    # F4: add upper bound so replayed/backfilled runs with a past as_of don't
+    # pick up newer news, which would trigger gate lookahead blocks.
+    # as_of_dt is naive (matches Anspire published_at semantics); ceiling is
+    # end-of-day 23:59:59 on the as_of date.
+    upper = as_of_dt.replace(hour=23, minute=59, second=59, microsecond=0)
     rows = (
         db.query(NewsItem)
-        .filter(NewsItem.symbol.in_(symbols), NewsItem.published_at >= cutoff)
+        .filter(
+            NewsItem.symbol.in_(symbols),
+            NewsItem.published_at >= cutoff,
+            NewsItem.published_at <= upper,
+        )
         .order_by(NewsItem.published_at.desc())
         .limit(limit)
         .all()
@@ -138,7 +147,10 @@ def _collect_news(
         for row in rows
     ]
     if memory_items:
-        items.extend(item for item in memory_items if item.published_at >= cutoff)
+        items.extend(
+            item for item in memory_items
+            if cutoff <= item.published_at <= upper
+        )
     return items, audit_news_items(items, now=as_of_dt)
 
 
@@ -641,6 +653,26 @@ def _format_source_title(title: str, url: str, source: str) -> str:
     return f"{title}｜{url}"
 
 
+def _build_llm_text(summary: str, sections: list[ResearchSection]) -> str:
+    """Build a text blob containing only LLM-generated structured fields.
+
+    Used by the ResearchReportGate forbidden-wording scanner (F1): the scan must
+    target only what the LLM wrote (summary, section content, catalysts, risks,
+    valuation_anchor), never the raw news titles embedded in the source-audit
+    section which are user/data-source content and may legitimately contain words
+    such as 加仓/减仓/抄底/满仓.
+    """
+    parts: list[str] = [summary]
+    for section in sections:
+        if section.content:
+            parts.append(section.content)
+        parts.extend(section.catalysts)
+        parts.extend(section.risks)
+        if section.valuation_anchor:
+            parts.append(section.valuation_anchor)
+    return "\n".join(parts)
+
+
 def run_deep_research(
     *,
     topic: str,
@@ -663,7 +695,10 @@ def run_deep_research(
       4. execute the plan and re-evaluate
     """
     clean_symbols = [s.strip() for s in symbols if s.strip()]
-    day = as_of or datetime.now(UTC).replace(tzinfo=None).strftime("%Y-%m-%d")
+    # F3: default as_of uses Beijing local date so it matches Anspire published_at
+    # (which is naive Beijing time), preventing false lookahead blocks at 00-08 UTC.
+    _CST = timezone(timedelta(hours=8))
+    day = as_of or datetime.now(_CST).strftime("%Y-%m-%d")
     as_of_dt = datetime.strptime(day, "%Y-%m-%d")
     names = _symbol_names(db, clean_symbols)
     prices = [_latest_price_context(db, symbol) for symbol in clean_symbols]
@@ -805,8 +840,14 @@ def run_deep_research(
             _annotate_warnings,
             run_research_report_gate,
         )
+        # F1: build llm_text from LLM-generated structured fields only.
+        # This must NOT include raw news titles from the source-audit section —
+        # those are user-submitted content and commonly contain words like
+        # 加仓/减仓/抄底/满仓 that would cause false forbidden-wording blocks.
+        llm_text = _build_llm_text(summary, sections)
         verdict = run_research_report_gate(
             report, audits, text,
+            llm_text=llm_text,
             weak_source_count=weak_count,
             prices=prices,
             financials=financials,
