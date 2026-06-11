@@ -212,10 +212,55 @@ python3 -m backend.agent.cli memory-snapshot --pretty
 <details>
 <summary><b>本地与远程配置</b></summary>
 
+真实 key 只放本机 `.env` 或部署平台的 secret manager，不要提交到 Git。可以从 `.env.example` 复制一份开始：
+
 ```env
 AI_PROVIDER=local_cli
 DATABASE_URL=sqlite:////absolute/path/to/mingcang.db
 MINGCANG_AGENT_MODE=local
+```
+
+### API Key 设置
+
+默认本地模式使用 `AI_PROVIDER=local_cli`，优先走本机已登录的 Codex CLI，不需要云端 LLM key。只有启用对应 provider / 功能时，才需要填写下面的 key：
+
+| 变量 | 默认 | 何时填写 | 说明 |
+|---|---|---|---|
+| `ANTHROPIC_API_KEY` | empty | `AI_PROVIDER=anthropic` | Anthropic Claude 运行时 key；可配 `ANTHROPIC_MODEL_FAST` / `ANTHROPIC_MODEL_CAPABLE`。 |
+| `OPENAI_API_KEY` | empty | `AI_PROVIDER=openai` | OpenAI 或兼容接口 key；DeepSeek、Moonshot、通义千问、Azure OpenAI 等兼容服务也走这里。 |
+| `OPENAI_BASE_URL` | empty | 使用 OpenAI 兼容网关时 | 留空表示 OpenAI 官方地址；兼容服务填对应 base URL。 |
+| `TUSHARE_TOKEN` | empty | 需要 Tushare Pro A 股数据补充时 | 可选行情 provider；`TUSHARE_QFQ_ENABLED=true` 才启用 qfq daily fallback。 |
+| `TICKFLOW_API_KEY` | empty | `TICKFLOW_ENABLED=true` | TickFlow 行情 provider key；启用后作为 CN daily 优先来源。 |
+| `IFIND_MCP_TOKEN` | empty | `IFIND_MCP_ENABLED=true` | iFinD MCP observe-only 适配器 token；用于显式 probe，不默认写入行情链路。 |
+| `TAVILY_API_KEY` | empty | 需要实时新闻/搜索补充时 | DB 新闻不足时可补充 Tavily；阈值由 `TAVILY_SUPPLEMENT_THRESHOLD` 控制。 |
+| `ANSPIRE_API_KEY` | empty | deep research 或严格事件新闻抓取 | Anspire 搜索 key；窗口和数量由 `ANSPIRE_NEWS_*` 控制。 |
+| `BARK_KEY` | empty | 需要 iOS Bark 推送时 | 可选通知 key；自建服务可改 `BARK_SERVER`。 |
+| `MINGCANG_AGENT_API_KEY` | empty | `MINGCANG_AGENT_MODE=remote` | 远程 agent 暴露必须设置；本地 `local` 模式不需要。 |
+| `STOCKSAGE_AGENT_API_KEY` | empty | 旧部署兼容 | 旧 StockSage 变量名仍可读取，新部署优先用 `MINGCANG_AGENT_API_KEY`。 |
+
+相关开关和限制：
+
+```env
+# 本地 LLM：默认不需要云 key
+AI_PROVIDER=local_cli
+LOCAL_CLI_PREFER_CODEX=true
+
+# 云 LLM 二选一
+# AI_PROVIDER=anthropic
+# ANTHROPIC_API_KEY=...
+# AI_PROVIDER=openai
+# OPENAI_API_KEY=...
+# OPENAI_BASE_URL=
+
+# 可选数据/搜索/通知 provider
+TUSHARE_TOKEN=
+TICKFLOW_ENABLED=false
+TICKFLOW_API_KEY=
+IFIND_MCP_ENABLED=false
+IFIND_MCP_TOKEN=
+# TAVILY_API_KEY=
+# ANSPIRE_API_KEY=
+# BARK_KEY=
 ```
 
 远程暴露是 opt-in，默认只读：
