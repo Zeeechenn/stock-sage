@@ -19,7 +19,7 @@
 
 ---
 
-## It learns from every outcome
+## MingCang learns from every outcome
 
 MingCang turns "I like this stock" into a loop that replays, owns its mistakes, and compounds. The signal is just the start — **the most valuable part is what it learns from a loss.** After an outcome lands it attributes, scores, and distills the lesson into memory you can use next time.
 
@@ -56,7 +56,7 @@ Scan the whole day at a glance:
 
 > Tiers and discipline levels only — **never "buy / guaranteed gains."** News sentiment is scored by an LLM reading the day's news; stops/targets are ATR rules. Today's production signal is a plain formula (technical 0.6 + news 0.4 + ATR 2.5 trailing) — **the real value is in the learning loop above.**
 
-## It shows its own track record (losses included)
+## MingCang shows its own track record (losses included)
 
 ```
 ┌─ 📒 Test 1 · paper-trading final review ── 2026-05-12 ~ 06-01 ─┐
@@ -89,7 +89,22 @@ MingCang **encodes mature research methodologies into reusable analyst modules**
 
 ---
 
-## What it helps you do
+## The data layer: not just reading an API key
+
+The signals and judgments above sit on an **audited data foundation**, not raw key reads:
+
+| Capability | What it does |
+|---|---|
+| 🔀 **Multi-source + auto-fallback** | a provider registry; on failure it switches to a backup source with cooldowns |
+| ⏳ **Point-in-Time (PIT)** | backtests read data as-of the decision date — no "cheating" with future data |
+| 🧪 **Quality gates + coverage reports** | price-quality checks, data-coverage and source-reliability reports, auto-alerts on dirty data |
+| 🗃️ **Cache & freshness policy** | a declarative contract for when remote data may be fetched |
+
+> No matter how good the signals are, **dirty data makes it all a castle in the air.** This foundation keeps every judgment above standing on reproducible, lookahead-free data.
+
+---
+
+## What MingCang helps you do
 
 | You want to... | How MingCang plugs in |
 |---|---|
