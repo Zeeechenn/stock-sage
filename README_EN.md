@@ -37,12 +37,13 @@ MingCang turns "I like this stock" into a loop that replays, owns its mistakes, 
 ## What you get daily: one signal card
 
 ```
-┌─ 600584 JCET ────────────────────── 2026-06-02 ─┐
-│   Composite  25.8       Call  🟡 Small starter    │
-│   ───────────────────────────────────────────    │
-│   Technical 28.6 · Quant 25.8 · News sent. +18.0  │
-│   Stop 64.66   Target 98.17   (ATR 2.5 trailing)  │
-└──────── rule: aggregate_v1 · stays on your box ───┘
+  600584 JCET                                       2026-06-02
+  ────────────────────────────────────────────────────────────
+  Composite 25.8        Call  🟡 Small starter
+  Technical 28.6  ·  Quant 25.8  ·  News sent. +18.0
+  Stop 64.66    Target 98.17    (ATR 2.5 trailing)
+  ────────────────────────────────────────────────────────────
+  rule: aggregate_v1  ·  stays on your box
 ```
 
 Scan the whole day at a glance:
@@ -52,28 +53,33 @@ Scan the whole day at a glance:
 | 600584 | JCET | **25.8** | 🟡 Small starter | 28.6 | 25.8 | +18.0 | 64.66 | 98.17 |
 | 603986 | GigaDevice | 4.3 | 🔵 Watch | 26.4 | 4.5 | −55.2 | 414.86 | 603.09 |
 | 300750 | CATL | −1.7 | ⚪ Stand by | −12.5 | 1.3 | +18.0 | 397.42 | 488.68 |
-| 002050 | Sanhua | −7.9 | ⚪ Stand by | 6.4 | 5.2 | −85.3 | — | — |
 
-> Tiers and discipline levels only — **never "buy / guaranteed gains."** News sentiment is scored by an LLM reading the day's news; stops/targets are ATR rules. Today's production signal is a plain formula (technical 0.6 + news 0.4 + ATR 2.5 trailing) — **the real value is in the learning loop above.**
+> Tiers and discipline levels only — **never "buy / guaranteed gains."** News sentiment is scored by an LLM reading the day's news; stops/targets are ATR rules — **the real value is in the learning loop above.**
 
 ## MingCang shows its own track record (losses included)
 
 ```
-┌─ 📒 Test 1 · paper-trading final review ── 2026-05-12 ~ 06-01 ─┐
-│   7 trades all closed · 20% size each                          │
-│   Position-weighted total  +3.79%     Sum of 7 names  +18.94%  │
-│   ──────────────────────────────────────────────────────────  │
-│   🟢 2 winners   GigaDevice +34.26%  ·  JCET +11.33%           │
-│   🛑 5 stops     avg −5.33% (max −9.20%, none ran away)        │
-│   Cut small, let winners run:  +22.8% / −5.3% ≈ 4.3 : 1        │
-└─ paper-trading replay · not real money · history not rewritten ┘
+  📒 Test 1 · paper-trading final review        2026-05-12 ~ 06-01
+  ────────────────────────────────────────────────────────────
+  7 trades all closed · 20% size each
+  Position-weighted total  +3.79%      Sum of 7 names  +18.94%
+  ────────────────────────────────────────────────────────────
+  🟢 2 winners   GigaDevice +34.26%   ·   JCET +11.33%
+  🛑 5 stops     avg −5.33% (max −9.20%, none ran away)
+
+  Cut small, let winners run:  +22.8% / −5.3% ≈ 4.3 : 1
+  ────────────────────────────────────────────────────────────
+  paper-trading replay · not real money · history not rewritten
 ```
 
 > **We list every single stop, exactly as it happened.** All 5 stops were cut small (max −9.2%), 2 winners ran to +22.8% — a loss isn't a stain, it's proof the ATR stop discipline works.
 >
-> 🔎 How? See the [research-to-decision loop](#architecture-the-research-to-decision-loop) below — L0 memory · L1 evidence · L2 thesis · L3 signal/position · L4 review.
+> 🔎 How? See the [research-to-decision loop](#architecture-the-research-to-decision-loop) below.
 
-## A built-in team of research-framework analysts
+<details>
+<summary><b>🔬 One layer deeper than the signal: research-framework analysts + data layer (click to expand)</b></summary>
+
+### A built-in team of research-framework analysts
 
 MingCang **encodes mature research methodologies into reusable analyst modules** that each judge a stock from a different angle, then fuses them:
 
@@ -87,9 +93,7 @@ MingCang **encodes mature research methodologies into reusable analyst modules**
 >
 > Note: this is a **long-term research layer** separate from the **daily signal (plain formula)** — it never changes the daily signal directly. These frameworks are also exposed as **skills / CLI / MCP**, callable from Claude Code / Codex / Cursor.
 
----
-
-## The data layer: not just reading an API key
+### The data layer: not just reading an API key
 
 The signals and judgments above sit on an **audited data foundation**, not raw key reads:
 
@@ -101,6 +105,8 @@ The signals and judgments above sit on an **audited data foundation**, not raw k
 | 🗃️ **Cache & freshness policy** | a declarative contract for when remote data may be fetched |
 
 > No matter how good the signals are, **dirty data makes it all a castle in the air.** This foundation keeps every judgment above standing on reproducible, lookahead-free data.
+
+</details>
 
 ---
 
@@ -115,6 +121,8 @@ The signals and judgments above sit on an **audited data foundation**, not raw k
 | **Let AI do all of the above** | A built-in `mingcang` Pi terminal, plus Claude Code / Codex / Cursor via CLI / MCP |
 
 MingCang never decides for you: **LLMs don't predict prices, don't place orders, and don't silently change signals.** Stops are ATR-derived rules, and memory only promotes after outcomes and human confirmation.
+
+**Under the hood**: local SQLite (prices / news / financials / QFII + A/HK/US read-only global data, never the cloud) · React frontend + REST API · layered memory + auditable logs · `mingcang` Pi terminal / MCP / CLI.
 
 ---
 
@@ -166,19 +174,6 @@ Import (data + news + your judgment + external theses)
 - **What memory is for** → **L0 + L4**: rules, lessons, and research indexes are stored in layers; only ReviewCase-attributed, human-confirmed outcomes promote from `pending` to trusted, then feed back as context for the next judgment — that's why the loop grows.
 
 > **Status**: this case-based loop has landed but is **dormant by default** — the skeleton comes first with zero production-signal change, activating layer by layer as the forward-evidence gate clears. Production signals remain technical 0.6 + sentiment 0.4 + ATR 2.5 trailing stop; quant stays off pending evidence.
-
----
-
-## What's working now
-
-| Layer | What it does |
-|---|---|
-| Data | Market, news, fundamentals, QFII, A/HK/US read-only global data — local SQLite, stays on your machine |
-| Signals | Technical factors + LLM news sentiment, weighted 0.6 / 0.4 in production, ATR 2.5 trailing stop |
-| Research | Stock dossier, deep research, thesis import, falsification scoreboard, external analyst / institutional ingest |
-| Memory | Layered memory, outcome-gated promotion, full audit log |
-| Agent | Built-in `mingcang` Pi terminal + MCP / CLI for Claude Code, Codex, Cursor |
-| UI | React frontend + REST API, local-first |
 
 ---
 
