@@ -1,6 +1,6 @@
-// 全局引导：原型代码以 window.React / window.ReactDOM 全局风格编写,
-// 这里把 npm 包挂到 window 上,保持原型源码零改动可运行。
-// 必须最先被 main.jsx import。
+// 历史兼容：原型代码曾以 window.React / window.ReactDOM 全局风格编写。
+// TS 迁移后所有模块已直接 import react,这里的 window 挂载仅为
+// 外部脚本/控制台调试兼容保留,源码内不要再读这两个全局。
 import React from 'react'
 import * as ReactDOMNS from 'react-dom'
 import { createRoot } from 'react-dom/client'

@@ -2,9 +2,9 @@
 
 import React from 'react';
 /* BEGIN USAGE */
-// tweaks-panel.jsx
+// tweaks-panel.tsx
 // Reusable Tweaks shell + form-control helpers.
-// Exports (to window): useTweaks, TweaksPanel, TweakSection, TweakRow, TweakSlider,
+// Exports: useTweaks, TweaksPanel, TweakSection, TweakRow, TweakSlider,
 //   TweakToggle, TweakRadio, TweakSelect, TweakText, TweakNumber, TweakColor, TweakButton.
 //
 // Owns the host protocol (listens for __activate_edit_mode / __deactivate_edit_mode,

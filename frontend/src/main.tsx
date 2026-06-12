@@ -1,6 +1,7 @@
 // ============================================================
 // 主应用 — 导航壳 / 路由 / 主题 / Tweaks
-// import 顺序即求值顺序:boot(全局 React) → data(MC_DATA) → shared(MCStore) → 各页面
+// 模块间依赖已走真正的 import/export(TS 迁移后),不再依赖求值顺序;
+// boot/data 的 window 挂载仅为运行时兼容保留(见 global.d.ts)。
 // ============================================================
 import React from 'react';
 import { createRoot } from 'react-dom/client';
