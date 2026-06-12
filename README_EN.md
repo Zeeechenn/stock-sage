@@ -1,12 +1,9 @@
-# MingCang
+# MingCang · LLM-Powered A-Share AI Research Workbench
 
-**MingCang is a local-first personal A-share research and decision workbench.** It breaks "I like this stock" into an auditable loop — **import judgment → record evidence → falsify → track → review & attribute → update memory** — so every judgment can be replayed, challenged, and verified, and every outcome becomes evidence you can use next time.
+> **Every day, AI gives you signals, news sentiment, stop-loss/take-profit, and reviews — runs locally, no data upload.**
+> And more than that — **every research call, signal, position, and review is distilled into a growing, layered research memory (L0–L4) that sharpens your next decision.**
 
-The goal isn't a smarter "prediction AI." It's a **research operating system** for the individual investor:
-
-- **You** own alpha, sector knowledge, and the final decision;
-- **AI** handles breadth sweeps, falsification, and short-term risk discipline;
-- **the system** turns judgments and outcomes into memory that grows over time.
+**MingCang is a local-first personal A-share research operating system**: you own alpha and the final call, AI handles breadth sweeps and falsification, and the system turns judgments and outcomes into memory that grows over time.
 
 [![Docs](https://img.shields.io/badge/%F0%9F%93%96_Docs-mingcang.docs-ffd400?labelColor=07070d)](https://zeeechenn.github.io/MingCang/)
 [![CI](https://github.com/Zeeechenn/MingCang/actions/workflows/test.yml/badge.svg)](https://github.com/Zeeechenn/MingCang/actions/workflows/test.yml)
@@ -19,6 +16,76 @@ The goal isn't a smarter "prediction AI." It's a **research operating system** f
 **📖 Online docs**: <https://zeeechenn.github.io/MingCang/>
 
 **Language**: [简体中文](README.md) · [English](README_EN.md)
+
+---
+
+## It learns from every outcome
+
+MingCang turns "I like this stock" into a loop that replays, owns its mistakes, and compounds. The signal is just the start — **the most valuable part is what it learns from a loss.** After an outcome lands it attributes, scores, and distills the lesson into memory you can use next time.
+
+> ### 📌 A real sample: how one loss became a new rule
+> **2026-05 · CATL (300750) · paper trading**
+>
+> 1. **Signal entry** 05-14 @ 449.38, stop 395.57.
+> 2. **Signal kept weakening**, but there was no "exit on signal reversal" rule yet — so we had to hold →
+> 3. **Manual exit** 05-25 @ 411.28, booked **−8.48%**.
+> 4. **Review & attribution**: root cause — *missing signal-reversal exit rule* (not a mechanical-stop problem).
+> 5. **Distilled into improvement**: this lesson **directly spawned Test-2's new "signal-reversal exit" rule.**
+>
+> 👉 The loss wasn't wasted — it became a rule in the system's memory. [See the full chain →](docs_public/ningde_live_sample.md)
+
+## What you get daily: one signal card
+
+```
+┌─ 600584 JCET ────────────────────── 2026-06-02 ─┐
+│   Composite  25.8       Call  🟡 Small starter    │
+│   ───────────────────────────────────────────    │
+│   Technical 28.6 · Quant 25.8 · News sent. +18.0  │
+│   Stop 64.66   Target 98.17   (ATR 2.5 trailing)  │
+└──────── rule: aggregate_v1 · stays on your box ───┘
+```
+
+Scan the whole day at a glance:
+
+| Code | Name | Composite | Call | Tech | Quant | News sent. | Stop | Target |
+|---|---|---:|---|---:|---:|---:|---:|---:|
+| 600584 | JCET | **25.8** | 🟡 Small starter | 28.6 | 25.8 | +18.0 | 64.66 | 98.17 |
+| 603986 | GigaDevice | 4.3 | 🔵 Watch | 26.4 | 4.5 | −55.2 | 414.86 | 603.09 |
+| 300750 | CATL | −1.7 | ⚪ Stand by | −12.5 | 1.3 | +18.0 | 397.42 | 488.68 |
+| 002050 | Sanhua | −7.9 | ⚪ Stand by | 6.4 | 5.2 | −85.3 | — | — |
+
+> Tiers and discipline levels only — **never "buy / guaranteed gains."** News sentiment is scored by an LLM reading the day's news; stops/targets are ATR rules. Today's production signal is a plain formula (technical 0.6 + news 0.4 + ATR 2.5 trailing) — **the real value is in the learning loop above.**
+
+## It shows its own track record (losses included)
+
+```
+┌─ 📒 Test 1 · paper-trading final review ── 2026-05-12 ~ 06-01 ─┐
+│   7 trades all closed · 20% size each                          │
+│   Position-weighted total  +3.79%     Sum of 7 names  +18.94%  │
+│   ──────────────────────────────────────────────────────────  │
+│   🟢 2 winners   GigaDevice +34.26%  ·  JCET +11.33%           │
+│   🛑 5 stops     avg −5.33% (max −9.20%, none ran away)        │
+│   Cut small, let winners run:  +22.8% / −5.3% ≈ 4.3 : 1        │
+└─ paper-trading replay · not real money · history not rewritten ┘
+```
+
+> **We list every single stop, exactly as it happened.** All 5 stops were cut small (max −9.2%), 2 winners ran to +22.8% — a loss isn't a stain, it's proof the ATR stop discipline works.
+>
+> 🔎 How? See the [research-to-decision loop](#architecture-the-research-to-decision-loop) below — L0 memory · L1 evidence · L2 thesis · L3 signal/position · L4 review.
+
+## A built-in team of research-framework analysts
+
+MingCang **encodes mature research methodologies into reusable analyst modules** that each judge a stock from a different angle, then fuses them:
+
+| Analyst | Methodology source | Looks at |
+|---|---|---|
+| 📊 **Piotroski F-Score** | classic academic 9 factors | financial quality: profitability / leverage / efficiency |
+| 📈 **Prosperity analyst** | Kaiyuan Securities "Prosperity Investing" 7×34 framework | Δ marginal change: acceleration of profit / revenue / ROE |
+| 🔗 **Supply-chain analyst** | industry-chain · five-layer framework | tech/hardware sectors: supply-chain check → overseas leading indicators → cyclical vs structural → hype filter → overbought filter |
+
+> Three analysts → weighted blend → **one-veto** fusion → long-term label (Hold-worthy / Overvalued / Stand by / Avoid), **on by default, each toggleable.** A **supply-chain chokepoint analyst (Serenity, observe-only, in beta)**, QFII flow, and more are being added.
+>
+> Note: this is a **long-term research layer** separate from the **daily signal (plain formula)** — it never changes the daily signal directly. These frameworks are also exposed as **skills / CLI / MCP**, callable from Claude Code / Codex / Cursor.
 
 ---
 
