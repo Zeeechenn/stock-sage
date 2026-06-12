@@ -19,22 +19,23 @@
 
 ---
 
-## MingCang learns from every outcome
+## Case study: how one loss became a rule
 
-MingCang turns "I like this stock" into a loop that replays, owns its mistakes, and compounds. The signal is just the start — **the most valuable part is what it learns from a loss.** After an outcome lands it attributes, scores, and distills the lesson into memory you can use next time.
+MingCang runs research as a loop: judgment → signal → position → review → memory. Here is one complete paper-trading record.
 
-> ### 📌 A real sample: how one loss became a new rule
-> **2026-05 · CATL (300750) · paper trading**
->
-> 1. **Signal entry** 05-14 @ 449.38, stop 395.57.
-> 2. **Signal kept weakening**, but there was no "exit on signal reversal" rule yet — so we had to hold →
-> 3. **Manual exit** 05-25 @ 411.28, booked **−8.48%**.
-> 4. **Review & attribution**: root cause — *missing signal-reversal exit rule* (not a mechanical-stop problem).
-> 5. **Distilled into improvement**: this lesson **directly spawned Test-2's new "signal-reversal exit" rule.**
->
-> 👉 The loss wasn't wasted — it became a rule in the system's memory. [See the full chain →](docs_public/ningde_live_sample.md)
+**CATL (300750) · 2026-05 · paper trading**
 
-## What you get daily: one signal card
+| Step | Record |
+|---|---|
+| Entry | 05-14 @ 449.38, stop 395.57 |
+| Hold | signal kept weakening; no "signal-reversal exit" rule existed, position held |
+| Exit | 05-25 @ 411.28, loss −8.48% |
+| Review | root cause: missing signal-reversal exit rule |
+| Improvement | added a "signal-reversal exit" rule in Test 2 |
+
+Full chain: [CATL live sample](docs_public/ningde_live_sample.md).
+
+## Signal card: daily output example
 
 ```
   600584 JCET                                       2026-06-02
@@ -46,7 +47,7 @@ MingCang turns "I like this stock" into a loop that replays, owns its mistakes, 
   rule: aggregate_v1  ·  stays on your box
 ```
 
-Scan the whole day at a glance:
+Same day, full batch:
 
 | Code | Name | Composite | Call | Tech | Quant | News sent. | Stop | Target |
 |---|---|---:|---|---:|---:|---:|---:|---:|
@@ -54,9 +55,9 @@ Scan the whole day at a glance:
 | 603986 | GigaDevice | 4.3 | 🔵 Watch | 26.4 | 4.5 | −55.2 | 414.86 | 603.09 |
 | 300750 | CATL | −1.7 | ⚪ Stand by | −12.5 | 1.3 | +18.0 | 397.42 | 488.68 |
 
-> Tiers and discipline levels only — **never "buy / guaranteed gains."** News sentiment is scored by an LLM reading the day's news; stops/targets are ATR rules — **the real value is in the learning loop above.**
+> Tiered calls with ATR stop/target levels; no price predictions, no "buy / guaranteed gains." News sentiment is scored by an LLM reading the day's news.
 
-## MingCang shows its own track record (losses included)
+## Test 1: paper-trading results
 
 ```
   📒 Test 1 · paper-trading final review        2026-05-12 ~ 06-01
@@ -64,17 +65,17 @@ Scan the whole day at a glance:
   7 trades all closed · 20% size each
   Position-weighted total  +3.79%      Sum of 7 names  +18.94%
   ────────────────────────────────────────────────────────────
-  🟢 2 winners   GigaDevice +34.26%   ·   JCET +11.33%
-  🛑 5 stops     avg −5.33% (max −9.20%, none ran away)
+  2 winners   GigaDevice +34.26%   ·   JCET +11.33%
+  5 stops     avg −5.33% (max −9.20%)
 
-  Cut small, let winners run:  +22.8% / −5.3% ≈ 4.3 : 1
+  Win/loss ratio ≈ 4.3 : 1 (avg win +22.8% / avg loss −5.3%)
   ────────────────────────────────────────────────────────────
   paper-trading replay · not real money · history not rewritten
 ```
 
-> **We list every single stop, exactly as it happened.** All 5 stops were cut small (max −9.2%), 2 winners ran to +22.8% — a loss isn't a stain, it's proof the ATR stop discipline works.
+> 7 trades all closed: 2 winners, 5 stops; stops averaged −5.33% (max −9.20%), position-weighted total +3.79%. Paper-trading replay, not real money, history not rewritten.
 >
-> 🔎 How? See the [research-to-decision loop](#architecture-the-research-to-decision-loop) below.
+> Mechanism: see the [research-to-decision loop](#architecture-the-research-to-decision-loop) below.
 
 <details>
 <summary><b>🔬 One layer deeper than the signal: research-framework analysts + data layer (click to expand)</b></summary>
